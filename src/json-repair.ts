@@ -1,11 +1,11 @@
-
 /**
- * Repair a JSON-like string containing. For example changes JavaScript
- * notation into JSON notation.
- * This function for example changes a string like "{a: 2, 'b': {c: 'd'}"
- * into '{"a": 2, "b": {"c": "d"}'
- * @param {string} jsString
- * @returns {string} json
+ * Repair a string containing an invalid JSON document.
+ * For example changes JavaScript notation into JSON notation.
+ *
+ * Example:
+ *
+ *     repair('{name: \'John\'}") // '{"name": "John"}'
+ *
  */
 export default function repair (jsString: string) : string {
   // TODO: refactor this function, it's too large and complicated now
