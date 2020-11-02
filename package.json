@@ -16,7 +16,7 @@
     "build": "del-cli lib && tsc -p tsconfig.json && tsc -p tsconfig-esm.json && cp-cli tools/cjs lib/cjs",
     "link": "npm run build",
     "lint": "eslint src/**/*.ts",
-    "prepublishOnly": "npm run build && test:lib && npm run lint"
+    "prepublishOnly": "npm run build && npm run test:lib && npm run lint"
   },
   "files": [
     "README.md",
