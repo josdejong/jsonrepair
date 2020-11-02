@@ -3,19 +3,20 @@
   "version": "0.0.1",
   "description": "Repair broken JSON documents",
   "type": "module",
-  "main": "./lib/cjs",
-  "module": "./lib/esm",
-  "types": "dist/index.d.ts",
+  "main": "lib/cjs/index-commonjs.js",
+  "module": "lib/esm/json-repair.js",
+  "types": "lib/esm/json-repair.d.ts",
   "keywords": [
     "json",
     "repair"
   ],
   "scripts": {
     "test": "mocha",
-    "build": "del-cli dist && tsc -p tsconfig.json && tsc -p tsconfig-esm.json && cp-cli tools/cjs/package.json lib/cjs/package.json",
+    "test:lib": "mocha test-lib/*.test.*",
+    "build": "del-cli lib && tsc -p tsconfig.json && tsc -p tsconfig-esm.json && cp-cli tools/cjs lib/cjs",
     "link": "npm run build",
     "lint": "eslint src/**/*.ts",
-    "prepublishOnly": "npm run build && npm test && npm run lint"
+    "prepublishOnly": "npm run build && test:lib && npm run lint"
   },
   "files": [
     "README.md",

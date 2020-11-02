@@ -22,12 +22,13 @@ The following issues can be fixed:
 ```js
 import repair from 'json-repair'
 
-// The following is invalid JSON: 
-// missing double quotes around key "a"
-const json = '{a: 2}'
- 
+// The following is invalid JSON: is consists of JSON contents copied from 
+// a JavaScript code base, where the keys are missing double quotes, 
+// and strings are using single quotes:
+const json = '{name: \'John\'}'
+
 const repaired = repair(json)
-console.log(repaired) // {"a": 2}
+console.log(repaired) // '{"name": "John"}'
 ```
 
 ### API

@@ -1,5 +1,5 @@
 import { strictEqual } from 'assert'
-import repair from './index'
+import repair from './json-repair'
 
 describe('repair', () => {
   it('should leave valid JSON as is', () => {
