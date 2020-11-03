@@ -544,8 +544,28 @@ function parseSymbol () : void {
 
     // for example replace None with null
     if (PYTHON_SYMBOLS[token]) {
-      token = PYTHON_SYMBOLS[token] // replace token
+      token = PYTHON_SYMBOLS[token]
       processNextToken()
+      return
+    }
+
+    if (c === '(') {
+      // a function call
+      // Can be a MongoDB data type like in {"_id": ObjectId("123")}
+      token = '' // do not output the token
+      next() // do not output the (
+
+      // process the part inside the brackets
+      processNextToken()
+
+      // skip the closing bracket ")"
+      // @ts-ignore
+      if (c === ')') {
+        next()
+      }
+
+      processNextToken()
+
       return
     }
 

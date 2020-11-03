@@ -165,7 +165,9 @@ describe('jsonRepair2', () => {
       strictEqual(jsonRepair2('"{a:2,}"'), '"{a:2,}"')
     })
 
-    it.skip('should strip MongoDB data types', () => {
+    it('should strip MongoDB data types', () => {
+      strictEqual(jsonRepair2('{"_id":ObjectId("123")}'), '{"_id":"123"}')
+
       const mongoDocument = '{\n' +
         '   "_id" : ObjectId("123"),\n' +
         '   "isoDate" : ISODate("2012-12-19T06:01:17.171Z"),\n' +
@@ -221,20 +223,20 @@ describe('jsonRepair2', () => {
       // strictEqual(jsonRepair2('{greeting: hello world!}'), '{"greeting": "hello world!"}') // TODO
     })
 
-    it.skip('should jsonRepair2 missing comma between objects', () => {
+    it.skip('should repair missing comma between objects', () => {
       const text = '{"aray": [{}{}]}'
       const expected = '{"aray": [{},{}]}'
 
       strictEqual(jsonRepair2(text), expected)
     })
 
-    it.skip('should not jsonRepair2 normal array with comma separated objects', () => {
+    it.skip('should not repair normal array with comma separated objects', () => {
       const text = '[\n{},\n{}\n]'
 
       strictEqual(jsonRepair2(text), text)
     })
 
-    it.skip('should jsonRepair2 newline separated json (for example from MongoDB)', () => {
+    it.skip('should repair newline separated json (for example from MongoDB)', () => {
       const text = '' +
         '/* 1 */\n' +
         '{}\n' +
