@@ -99,6 +99,11 @@ function getToken () {
     next()
   }
 
+  getTokenDelimiter()
+}
+
+// check for delimiters like ':', '{', ']'
+function getTokenDelimiter () {
   // check for delimiters
   if (DELIMITERS[c]) {
     tokenType = TOKENTYPE.DELIMITER
@@ -107,7 +112,11 @@ function getToken () {
     return
   }
 
-  // check for a number
+  getTokenNumber()
+}
+
+// check for a number like "2.3e+5"
+function getTokenNumber () {
   if (isDigit(c) || c === '-') {
     tokenType = TOKENTYPE.NUMBER
 
@@ -167,8 +176,13 @@ function getToken () {
     return
   }
 
-  // check for a string
+  getTokenString()
+}
+
+// get a token string like '"hello world"'
+function getTokenString () {
   if (c === '"') {
+
     token += c
     tokenType = TOKENTYPE.STRING
     next()
@@ -215,7 +229,11 @@ function getToken () {
     return
   }
 
-  // check for symbols (true, false, null)
+  getTokenAlpha()
+}
+
+// check for symbols (true, false, null)
+function getTokenAlpha () {
   if (isAlpha(c)) {
     tokenType = TOKENTYPE.SYMBOL
 
@@ -227,12 +245,18 @@ function getToken () {
     return
   }
 
-  // something unknown is found, wrong characters -> a syntax error
+  getTokenUnknown ()
+}
+
+// something unknown is found, wrong characters -> a syntax error
+function getTokenUnknown () {
   tokenType = TOKENTYPE.UNKNOWN
+
   while (c !== '') {
     token += c
     next()
   }
+
   throw createSyntaxError('Syntax error in part "' + token + '"')
 }
 
@@ -243,7 +267,6 @@ function getToken () {
  *                      error happened. If not provided, the start of
  *                      the current token is taken
  * @return {SyntaxError} instantiated error
- * @private
  */
 function createSyntaxError (message, c = undefined) {
   if (c === undefined) {
