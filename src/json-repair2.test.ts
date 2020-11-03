@@ -193,22 +193,32 @@ describe('jsonRepair2', () => {
       strictEqual(jsonRepair2(mongoDocument), expectedJson)
     })
 
-    it.skip('should replace Python constants None, True, False', () => {
+    it('should replace Python constants None, True, False', () => {
       const pythonDocument = '{\n' +
         '  "null": None,\n' +
         '  "true": True,\n' +
-        '  "false": False\n' +
-        '  "array": [1, foo, None, True, False]\n' +
+        '  "false": False,\n' +
+        '  "array": [1, None, True, False]\n' +
         '}'
 
       const expectedJson = '{\n' +
         '  "null": null,\n' +
         '  "true": true,\n' +
-        '  "false": false\n' +
-        '  "array": [1, "foo", null, true, false]\n' +
+        '  "false": false,\n' +
+        '  "array": [1, null, true, false]\n' +
         '}'
 
       strictEqual(jsonRepair2(pythonDocument), expectedJson)
+    })
+
+    it('should turn unknown symbols into a string', () => {
+      strictEqual(jsonRepair2('[1,foo,4]'), '[1,"foo",4]')
+      strictEqual(jsonRepair2('foo'), '"foo"')
+      strictEqual(jsonRepair2('{foo: bar}'), '{"foo": "bar"}')
+
+      strictEqual(jsonRepair2('foo 2 bar'), '"foo 2 bar"')
+      strictEqual(jsonRepair2('{greeting: hello world}'), '{"greeting": "hello world"}')
+      // strictEqual(jsonRepair2('{greeting: hello world!}'), '{"greeting": "hello world!"}') // TODO
     })
 
     it.skip('should jsonRepair2 missing comma between objects', () => {
@@ -261,7 +271,7 @@ describe('jsonRepair2', () => {
     throws(function () { jsonRepair2('-') }, { message: /Invalid number, digit expected \(char 1\)/ }, 'should throw an exception when parsing an invalid number')
 
     throws(function () { jsonRepair2('"a') }, { message: /End of string expected/ }, 'should throw an exception when parsing an invalid number')
-    throws(function () { jsonRepair2('foo') }, { message: /Unknown symbol "foo"/ }, 'should throw an exception when parsing an invalid number')
+    throws(function () { jsonRepair2('foo [') }, { message: /Unexpected characters \(char 4\)/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('"\\a"') }, { message: /Invalid escape character "\\a" / }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('"\\u26"') }, { message: /Invalid unicode character/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('"\\uZ000"') }, { message: /Invalid unicode character/ }, 'should throw an exception when parsing an invalid number')

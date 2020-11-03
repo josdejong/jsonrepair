@@ -2,7 +2,6 @@
 
 // token types enumeration
 enum TOKEN_TYPE {
-  NULL,
   DELIMITER,
   NUMBER,
   STRING,
@@ -59,12 +58,24 @@ const DOUBLE_QUOTES = [
   '\u201D' // double quote right
 ]
 
+const SYMBOLS = {
+  null: 'null',
+  true: 'true',
+  false: 'false'
+}
+
+const PYTHON_SYMBOLS = {
+  None: 'null',
+  True: 'true',
+  False: 'false'
+}
+
 let input = '' // current json text
 let output = '' // generated output
 let index = 0 // current index in text
 let c = '' // current token character in text
 let token = '' // current token
-let tokenType = TOKEN_TYPE.NULL // type of current token
+let tokenType = TOKEN_TYPE.UNKNOWN // type of current token
 
 /**
  * Repair a string containing an invalid JSON document.
@@ -82,7 +93,7 @@ export default function jsonRepair2 (text) {
   index = 0
   c = input.charAt(0)
   token = ''
-  tokenType = TOKEN_TYPE.NULL
+  tokenType = TOKEN_TYPE.UNKNOWN
 
   // get first token
   processNextToken()
@@ -526,12 +537,27 @@ function parseNumber () : void {
  */
 function parseSymbol () : void {
   if (tokenType === TOKEN_TYPE.SYMBOL) {
-    if (token === 'true' || token === 'false' || token === 'null') {
+    if (SYMBOLS[token]) {
       processNextToken()
       return
     }
 
-    throw createSyntaxError('Unknown symbol "' + token + '"')
+    // for example replace None with null
+    if (PYTHON_SYMBOLS[token]) {
+      token = PYTHON_SYMBOLS[token] // replace token
+      processNextToken()
+      return
+    }
+
+    // unknown symbol => turn into in a string
+    output += '"'
+    processNextToken()
+    while (tokenType === TOKEN_TYPE.SYMBOL || tokenType === TOKEN_TYPE.NUMBER) {
+      processNextToken()
+    }
+    output += '"'
+
+    return
   }
 
   parseEnd()
