@@ -1,13 +1,13 @@
 'use strict'
 
 // token types enumeration
-const TOKENTYPE = {
-  NULL: 0,
-  DELIMITER: 1,
-  NUMBER: 2,
-  STRING: 3,
-  SYMBOL: 4,
-  UNKNOWN: 5
+enum TOKEN_TYPE {
+  NULL,
+  DELIMITER,
+  NUMBER,
+  STRING,
+  SYMBOL,
+  UNKNOWN
 }
 
 // map with all delimiters
@@ -39,7 +39,7 @@ let output = '' // generated output
 let index = 0 // current index in text
 let c = '' // current token character in text
 let token = '' // current token
-let tokenType = TOKENTYPE.NULL // type of current token
+let tokenType = TOKEN_TYPE.NULL // type of current token
 
 /**
  * Repair a string containing an invalid JSON document.
@@ -57,7 +57,7 @@ export default function jsonRepair2 (text) {
   index = 0
   c = input.charAt(0)
   token = ''
-  tokenType = TOKENTYPE.NULL
+  tokenType = TOKEN_TYPE.NULL
 
   // get first token
   getToken()
@@ -90,7 +90,7 @@ function next () {
  * @private
  */
 function getToken () {
-  tokenType = TOKENTYPE.NULL
+  tokenType = TOKEN_TYPE.NULL
   token = ''
 
   // skip over whitespaces: space, tab, newline, and carriage return
@@ -104,9 +104,8 @@ function getToken () {
 
 // check for delimiters like ':', '{', ']'
 function getTokenDelimiter () {
-  // check for delimiters
   if (DELIMITERS[c]) {
-    tokenType = TOKENTYPE.DELIMITER
+    tokenType = TOKEN_TYPE.DELIMITER
     token = c
     next()
     return
@@ -118,7 +117,7 @@ function getTokenDelimiter () {
 // check for a number like "2.3e+5"
 function getTokenNumber () {
   if (isDigit(c) || c === '-') {
-    tokenType = TOKENTYPE.NUMBER
+    tokenType = TOKEN_TYPE.NUMBER
 
     if (c === '-') {
       token += c
@@ -184,7 +183,7 @@ function getTokenString () {
   if (c === '"') {
 
     token += c
-    tokenType = TOKENTYPE.STRING
+    tokenType = TOKEN_TYPE.STRING
     next()
 
     // @ts-ignore
@@ -235,7 +234,7 @@ function getTokenString () {
 // check for symbols (true, false, null)
 function getTokenAlpha () {
   if (isAlpha(c)) {
-    tokenType = TOKENTYPE.SYMBOL
+    tokenType = TOKEN_TYPE.SYMBOL
 
     while (isAlpha(c)) {
       token += c
@@ -250,7 +249,7 @@ function getTokenAlpha () {
 
 // something unknown is found, wrong characters -> a syntax error
 function getTokenUnknown () {
-  tokenType = TOKENTYPE.UNKNOWN
+  tokenType = TOKEN_TYPE.UNKNOWN
 
   while (c !== '') {
     token += c
@@ -284,12 +283,12 @@ function createSyntaxError (message, c = undefined) {
  * @return {*}
  */
 function parseObject () {
-  if (tokenType === TOKENTYPE.DELIMITER && token === '{') {
+  if (tokenType === TOKEN_TYPE.DELIMITER && token === '{') {
     output += token
     getToken()
 
     // @ts-ignore
-    if (tokenType === TOKENTYPE.DELIMITER && token === '}') {
+    if (tokenType === TOKEN_TYPE.DELIMITER && token === '}') {
       // empty object
       output += token
       getToken()
@@ -298,7 +297,8 @@ function parseObject () {
 
     while (true) {
       // parse key
-      if (tokenType !== TOKENTYPE.STRING) {
+      // @ts-ignore
+      if (tokenType !== TOKEN_TYPE.STRING) {
         throw createSyntaxError('Object key expected')
       }
       output += token
@@ -306,7 +306,7 @@ function parseObject () {
 
       // parse key/value separator
       // @ts-ignore
-      if (tokenType !== TOKENTYPE.DELIMITER || token !== ':') {
+      if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ':') {
         throw createSyntaxError('Colon expected')
       }
       output += token
@@ -316,14 +316,14 @@ function parseObject () {
       parseObject()
 
       // parse key/value pair separator
-      if (tokenType !== TOKENTYPE.DELIMITER || token !== ',') {
+      if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ',') {
         break
       }
       output += token
       getToken()
     }
 
-    if (tokenType !== TOKENTYPE.DELIMITER || token !== '}') {
+    if (tokenType !== TOKEN_TYPE.DELIMITER || token !== '}') {
       throw createSyntaxError('Comma or end of object "}" expected')
     }
     output += token
@@ -340,12 +340,12 @@ function parseObject () {
  * @return {*}
  */
 function parseArray () : void {
-  if (tokenType === TOKENTYPE.DELIMITER && token === '[') {
+  if (tokenType === TOKEN_TYPE.DELIMITER && token === '[') {
     output += token
     getToken()
 
     // @ts-ignore
-    if (tokenType === TOKENTYPE.DELIMITER && token === ']') {
+    if (tokenType === TOKEN_TYPE.DELIMITER && token === ']') {
       // empty array
       output += token
       getToken()
@@ -358,7 +358,7 @@ function parseArray () : void {
 
       // parse item separator
       // @ts-ignore
-      if (tokenType !== TOKENTYPE.DELIMITER || token !== ',') {
+      if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ',') {
         break
       }
       output += token
@@ -366,7 +366,7 @@ function parseArray () : void {
     }
 
     // @ts-ignore
-    if (tokenType !== TOKENTYPE.DELIMITER || token !== ']') {
+    if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ']') {
       throw createSyntaxError('Comma or end of array "]" expected')
     }
     output += token
@@ -382,7 +382,7 @@ function parseArray () : void {
  * @return {*}
  */
 function parseString () : void {
-  if (tokenType === TOKENTYPE.STRING) {
+  if (tokenType === TOKEN_TYPE.STRING) {
     output += token
     getToken()
     return
@@ -395,7 +395,7 @@ function parseString () : void {
  * Parse a number
  */
 function parseNumber () : void {
-  if (tokenType === TOKENTYPE.NUMBER) {
+  if (tokenType === TOKEN_TYPE.NUMBER) {
     output += token
     getToken()
     return
@@ -408,7 +408,7 @@ function parseNumber () : void {
  * Parse constants true, false, null
  */
 function parseSymbol () : void {
-  if (tokenType === TOKENTYPE.SYMBOL) {
+  if (tokenType === TOKEN_TYPE.SYMBOL) {
     if (token === 'true' || token === 'false' || token === 'null') {
       output += token
       getToken()
