@@ -34,28 +34,28 @@ const ESCAPE_CHARACTERS = {
   // \u is handled by getToken()
 }
 
-let jsonText = '' // current json text
+let input = '' // current json text
+let output = '' // generated output
 let index = 0 // current index in text
 let c = '' // current token character in text
 let token = '' // current token
 let tokenType = TOKENTYPE.NULL // type of current token
 
 /**
- * The LosslessJSON.parse() method parses a string as JSON, optionally transforming
- * the value produced by parsing.
+ * Repair a string containing an invalid JSON document.
+ * For example changes JavaScript notation into JSON notation.
  *
- * @param {string} text
- * The string to parse as JSON. See the JSON object for a description of JSON syntax.
+ * Example:
  *
- * @returns Returns the Object corresponding to the given JSON text.
+ *     repair('{name: \'John\'}") // '{"name": "John"}'
  *
- * @throws Throws a SyntaxError exception if the string to parse is not valid JSON.
  */
-export function parse (text) {
+export function jsonRepair2 (text) {
   // initialize
-  jsonText = text
+  input = text
+  output = ''
   index = 0
-  c = jsonText.charAt(0)
+  c = input.charAt(0)
   token = ''
   tokenType = TOKENTYPE.NULL
 
@@ -63,13 +63,13 @@ export function parse (text) {
   getToken()
 
   // parse everything
-  const json = parseObject()
+  parseObject()
 
   if (token !== '') {
     throw createSyntaxError('Unexpected characters')
   }
 
-  return json
+  return output
 }
 
 /**
@@ -80,7 +80,8 @@ export function parse (text) {
  */
 function next () {
   index++
-  c = jsonText.charAt(index)
+  c = input.charAt(index)
+  // not using input[index] because that returns undefined when index is out of range
 }
 
 /**
@@ -93,7 +94,8 @@ function getToken () {
   token = ''
 
   // skip over whitespaces: space, tab, newline, and carriage return
-  while (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+  while (isWhiteSpace(c)) {
+    output += c
     next()
   }
 
@@ -167,6 +169,7 @@ function getToken () {
 
   // check for a string
   if (c === '"') {
+    token += c
     tokenType = TOKENTYPE.STRING
     next()
 
@@ -174,26 +177,25 @@ function getToken () {
     while (c !== '' && c !== '"') {
       if (c === '\\') {
         // handle escape characters
+        token += c
         next()
 
         const unescaped = ESCAPE_CHARACTERS[c]
         if (unescaped !== undefined) {
-          token += unescaped
+          token += c
           next()
         } else if (c === 'u') {
           // parse escaped unicode character, like '\\u260E'
+          token += c
           next()
 
-          let hex = ''
           for (let u = 0; u < 4; u++) {
             if (!isHex(c)) {
               throw createSyntaxError('Invalid unicode character')
             }
-            hex += c
+            token += c
             next()
           }
-
-          token += String.fromCharCode(parseInt(hex, 16))
         } else {
           throw createSyntaxError('Invalid escape character "\\' + c + '"', index)
         }
@@ -207,6 +209,7 @@ function getToken () {
     if (c !== '"') {
       throw createSyntaxError('End of string expected')
     }
+    token += c
     next()
 
     return
@@ -231,34 +234,6 @@ function getToken () {
     next()
   }
   throw createSyntaxError('Syntax error in part "' + token + '"')
-}
-
-/**
- * Check if the given character contains an alpha character, a-z, A-Z, _
- * @param {string} c   a string with one character
- * @return {boolean}
- */
-function isAlpha (c) {
-  return /^[a-zA-Z_]/.test(c)
-}
-
-/**
- * Check if the given character contains a hexadecimal character 0-9, a-f, A-F
- * @param {string} c   a string with one character
- * @return {boolean}
- */
-function isHex (c) {
-  return /^[0-9a-fA-F]/.test(c)
-}
-
-/**
- * checks if the given char c is a digit
- * @param {string} c   a string with one character
- * @return {boolean}
- * @private
- */
-function isDigit (c) {
-  return (c >= '0' && c <= '9')
 }
 
 /**
@@ -287,16 +262,15 @@ function createSyntaxError (message, c = undefined) {
  */
 function parseObject () {
   if (tokenType === TOKENTYPE.DELIMITER && token === '{') {
+    output += token
     getToken()
-
-    let key
-    const object = {}
 
     // @ts-ignore
     if (tokenType === TOKENTYPE.DELIMITER && token === '}') {
       // empty object
+      output += token
       getToken()
-      return object
+      return
     }
 
     while (true) {
@@ -304,7 +278,7 @@ function parseObject () {
       if (tokenType !== TOKENTYPE.STRING) {
         throw createSyntaxError('Object key expected')
       }
-      key = token
+      output += token
       getToken()
 
       // parse key/value separator
@@ -312,55 +286,59 @@ function parseObject () {
       if (tokenType !== TOKENTYPE.DELIMITER || token !== ':') {
         throw createSyntaxError('Colon expected')
       }
+      output += token
       getToken()
 
       // parse value
-      object[key] = parseObject()
+      parseObject()
 
       // parse key/value pair separator
       if (tokenType !== TOKENTYPE.DELIMITER || token !== ',') {
         break
       }
+      output += token
       getToken()
     }
 
     if (tokenType !== TOKENTYPE.DELIMITER || token !== '}') {
       throw createSyntaxError('Comma or end of object "}" expected')
     }
+    output += token
     getToken()
 
-    return object
+    return
   }
 
-  return parseArray()
+  parseArray()
 }
 
 /**
  * Parse an object like '["item1", "item2", ...]'
  * @return {*}
  */
-function parseArray () {
+function parseArray () : void {
   if (tokenType === TOKENTYPE.DELIMITER && token === '[') {
+    output += token
     getToken()
-
-    const array = []
 
     // @ts-ignore
     if (tokenType === TOKENTYPE.DELIMITER && token === ']') {
       // empty array
+      output += token
       getToken()
-      return array
+      return
     }
 
     while (true) {
       // parse item
-      array.push(parseObject())
+      parseObject()
 
       // parse item separator
       // @ts-ignore
       if (tokenType !== TOKENTYPE.DELIMITER || token !== ',') {
         break
       }
+      output += token
       getToken()
     }
 
@@ -368,65 +346,56 @@ function parseArray () {
     if (tokenType !== TOKENTYPE.DELIMITER || token !== ']') {
       throw createSyntaxError('Comma or end of array "]" expected')
     }
+    output += token
     getToken()
-
-    return array
+    return
   }
 
-  return parseString()
+  parseString()
 }
 
 /**
  * Parse a string enclosed by double quotes "...". Can contain escaped quotes
  * @return {*}
  */
-function parseString () {
+function parseString () : void {
   if (tokenType === TOKENTYPE.STRING) {
-    const str = token
+    output += token
     getToken()
-    return str
+    return
   }
 
-  return parseNumber()
+  parseNumber()
 }
 
 /**
- * Parse a number. The number will be parsed as a LosslessNumber.
- * @return {*}
+ * Parse a number
  */
-function parseNumber () {
+function parseNumber () : void {
   if (tokenType === TOKENTYPE.NUMBER) {
-    const number = parseFloat(token)
+    output += token
     getToken()
-    return number
+    return
   }
 
-  return parseSymbol()
+  parseSymbol()
 }
 
 /**
  * Parse constants true, false, null
- * @return {boolean | null}
  */
-function parseSymbol () {
+function parseSymbol () : void {
   if (tokenType === TOKENTYPE.SYMBOL) {
-    if (token === 'true') {
+    if (token === 'true' || token === 'false' || token === 'null') {
+      output += token
       getToken()
-      return true
-    }
-    if (token === 'false') {
-      getToken()
-      return false
-    }
-    if (token === 'null') {
-      getToken()
-      return null
+      return
     }
 
     throw createSyntaxError('Unknown symbol "' + token + '"')
   }
 
-  return parseEnd()
+  parseEnd()
 }
 
 /**
@@ -439,4 +408,39 @@ function parseEnd () {
   } else {
     throw createSyntaxError('Value expected')
   }
+}
+
+/**
+ * Check if the given character contains an alpha character, a-z, A-Z, _
+ * @param {string} c   a string with one character
+ * @return {boolean}
+ */
+function isAlpha (c) {
+  return /^[a-zA-Z_]$/.test(c)
+}
+
+/**
+ * Check if the given character contains a hexadecimal character 0-9, a-f, A-F
+ * @param {string} c   a string with one character
+ * @return {boolean}
+ */
+function isHex (c) {
+  return /^[0-9a-fA-F]$/.test(c)
+}
+
+/**
+ * checks if the given char c is a digit
+ * @param {string} c   a string with one character
+ * @return {boolean}
+ */
+function isDigit (c) {
+  return (c >= '0' && c <= '9')
+}
+
+/**
+ * Check if the given character is a whitespace character like space, tab, or
+ * newline
+ */
+function isWhiteSpace (c: string) : boolean {
+  return c === ' ' || c === '\t' || c === '\n' || c === '\r'
 }

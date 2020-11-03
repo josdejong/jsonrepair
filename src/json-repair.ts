@@ -304,6 +304,7 @@ export default function repair (jsString: string) : string {
   }
 
   if (isLineSeparatedJson) {
+    // FIXME: only add enclosing [...] when not already there
     chars.unshift('[\n')
     chars.push('\n]')
   }
