@@ -391,6 +391,7 @@ function parseObject () {
     processNextToken()
 
     // @ts-ignore
+    // TODO: can we make this redundant?
     if (tokenType === TOKEN_TYPE.DELIMITER && token === '}') {
       // empty object
       processNextToken()
@@ -399,6 +400,14 @@ function parseObject () {
 
     while (true) {
       // parse key
+
+      // @ts-ignore
+      if (tokenType === TOKEN_TYPE.SYMBOL ||tokenType === TOKEN_TYPE.NUMBER) {
+        // unquoted key -> add quotes around it, change it into a string
+        tokenType = TOKEN_TYPE.STRING
+        token = `"${token}"`
+      }
+
       // @ts-ignore
       if (tokenType !== TOKEN_TYPE.STRING) {
         throw createSyntaxError('Object key expected')
@@ -416,12 +425,21 @@ function parseObject () {
       parseObject()
 
       // parse key/value pair separator
+      // @ts-ignore
       if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ',') {
         break
       }
       processNextToken()
+
+      // @ts-ignore
+      if (tokenType === TOKEN_TYPE.DELIMITER && token === '}') {
+        // we've just passed a trailing comma -> remove the trailing comma
+        output = stripLastOccurrence(output, ',')
+        break
+      }
     }
 
+    // @ts-ignore
     if (tokenType !== TOKEN_TYPE.DELIMITER || token !== '}') {
       throw createSyntaxError('Comma or end of object "}" expected')
     }
@@ -458,6 +476,13 @@ function parseArray () : void {
         break
       }
       processNextToken()
+
+      // @ts-ignore
+      if (tokenType === TOKEN_TYPE.DELIMITER && token === ']') {
+        // we've just passed a trailing comma -> remove the trailing comma
+        output = stripLastOccurrence(output, ',')
+        break
+      }
     }
 
     // @ts-ignore
@@ -589,4 +614,11 @@ function normalizeQuote (c: string) : string {
   }
 
   return c
+}
+
+function stripLastOccurrence(text, c) {
+  const index = output.lastIndexOf(c)
+  return (index !== -1)
+    ? text.substring(0, index) + text.substring(index + 1)
+    : text
 }

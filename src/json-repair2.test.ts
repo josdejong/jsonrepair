@@ -67,9 +67,11 @@ describe('jsonRepair2', () => {
   })
 
   describe('repair invalid json', () => {
-    it.skip('should replace JavaScript with JSON', () => {
+    it('should replace JavaScript with JSON', () => {
       strictEqual(jsonRepair2('{a:2}'), '{"a":2}')
       strictEqual(jsonRepair2('{a: 2}'), '{"a": 2}')
+      strictEqual(jsonRepair2('{2: 2}'), '{"2": 2}')
+      strictEqual(jsonRepair2('{true: 2}'), '{"true": 2}')
       strictEqual(jsonRepair2('{\n  a: 2\n}'), '{\n  "a": 2\n}')
       strictEqual(jsonRepair2('{\'a\':2}'), '{"a":2}')
       strictEqual(jsonRepair2('{a:\'foo\'}'), '{"a":"foo"}')
@@ -143,15 +145,23 @@ describe('jsonRepair2', () => {
       strictEqual(jsonRepair2('callback({}'), 'callback({}')
     })
 
-    it.skip('should strip trailing commas', () => {
-      // matching
+    it('should strip trailing commas from an array', () => {
       strictEqual(jsonRepair2('[1,2,3,]'), '[1,2,3]')
       strictEqual(jsonRepair2('[1,2,3,\n]'), '[1,2,3\n]')
       strictEqual(jsonRepair2('[1,2,3,  \n  ]'), '[1,2,3  \n  ]')
-      strictEqual(jsonRepair2('{"a":2,}'), '{"a":2}')
+      strictEqual(jsonRepair2('[1,2,3,/*foo*/]'), '[1,2,3]')
 
-      // not matching
+      // not matching: inside a string
       strictEqual(jsonRepair2('"[1,2,3,]"'), '"[1,2,3,]"')
+    })
+
+    it('should strip trailing commas from an object', () => {
+      strictEqual(jsonRepair2('{"a":2,}'), '{"a":2}')
+      strictEqual(jsonRepair2('{"a":2  ,  }'), '{"a":2    }')
+      strictEqual(jsonRepair2('{"a":2  , \n }'), '{"a":2   \n }')
+      strictEqual(jsonRepair2('{"a":2/*foo*/,/*foo*/}'), '{"a":2}')
+
+      // not matching: inside a string
       strictEqual(jsonRepair2('"{a:2,}"'), '"{a:2,}"')
     })
 
@@ -235,14 +245,14 @@ describe('jsonRepair2', () => {
 
     throws(function () { jsonRepair2('{') }, { message: /Object key expected/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('{"a",') }, { message: /Colon expected/ }, 'should throw an exception when parsing an invalid number')
-    throws(function () { jsonRepair2('{a:2}') }, { message: /Object key expected/ }, 'should throw an exception when parsing an invalid number')
-    throws(function () { jsonRepair2('{"a":2,}') }, { message: /Object key expected/ }, 'should throw an exception when parsing an invalid number')
+    throws(function () { jsonRepair2('{:2}') }, { message: /Object key expected/ }, 'should throw an exception when parsing an invalid number')
+    throws(function () { jsonRepair2('{"a":2,]') }, { message: /Object key expected/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('{"a" "b"}') }, { message: /Colon expected/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('{}{}') }, { message: /Unexpected characters/ }, 'should throw an exception when parsing an invalid number')
 
     throws(function () { jsonRepair2('[') }, { message: /Unexpected end of json string/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('[2,') }, { message: /Unexpected end of json string/ }, 'should throw an exception when parsing an invalid number')
-    throws(function () { jsonRepair2('[2,]') }, { message: /Value expected/ }, 'should throw an exception when parsing an invalid number')
+    throws(function () { jsonRepair2('[2,}') }, { message: /Value expected/ }, 'should throw an exception when parsing an invalid number')
 
     throws(function () { jsonRepair2('2.3.4') }, { message: /Syntax error in part ".4" \(char 3\)/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('2..3') }, { message: /Invalid number, digit expected \(char 2\)/ }, 'should throw an exception when parsing an invalid number')
