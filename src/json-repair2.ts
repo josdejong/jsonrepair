@@ -7,6 +7,8 @@ enum TOKEN_TYPE {
   NUMBER,
   STRING,
   SYMBOL,
+  WHITESPACE,
+  COMMENT,
   UNKNOWN
 }
 
@@ -34,6 +36,29 @@ const ESCAPE_CHARACTERS = {
   // \u is handled by getToken()
 }
 
+// TODO: can we unify CONTROL_CHARACTERS and ESCAPE_CHARACTERS?
+const CONTROL_CHARACTERS = {
+  '\b': '\\b',
+  '\f': '\\f',
+  '\n': '\\n',
+  '\r': '\\r',
+  '\t': '\\t'
+}
+
+const SINGLE_QUOTES = [
+  '\'', // quote
+  '\u2018', // quote left
+  '\u2019', // quote right
+  '\u0060', // grave accent
+  '\u00B4' // acute accent
+]
+
+const DOUBLE_QUOTES = [
+  '"',
+  '\u201C', // double quote left
+  '\u201D' // double quote right
+]
+
 let input = '' // current json text
 let output = '' // generated output
 let index = 0 // current index in text
@@ -60,7 +85,7 @@ export default function jsonRepair2 (text) {
   tokenType = TOKEN_TYPE.NULL
 
   // get first token
-  getToken()
+  processNextToken()
 
   // parse everything
   parseObject()
@@ -76,30 +101,40 @@ export default function jsonRepair2 (text) {
  * Get the next character from the expression.
  * The character is stored into the char c. If the end of the expression is
  * reached, the function puts an empty string in c.
- * @private
  */
 function next () {
   index++
   c = input.charAt(index)
-  // not using input[index] because that returns undefined when index is out of range
+  // Note: not using input[index] because that returns undefined when index is out of range
 }
 
 /**
- * Get next token in the current text.
- * The token and token type are available as token and tokenType
- * @private
+ * Process the previous token, and get next token in the current text
  */
-function getToken () {
-  tokenType = TOKEN_TYPE.NULL
+function processNextToken () {
+  output += token
+
+  tokenType = TOKEN_TYPE.UNKNOWN
   token = ''
 
-  // skip over whitespaces: space, tab, newline, and carriage return
-  while (isWhiteSpace(c)) {
-    output += c
-    next()
+  getTokenDelimiter()
+
+  // @ts-ignore
+  if (tokenType === TOKEN_TYPE.WHITESPACE) {
+    // we leave the whitespace as it is, except replacing special white
+    // space character
+    token = normalizeWhitespace(token)
+    processNextToken()
   }
 
-  getTokenDelimiter()
+  // @ts-ignore
+  if (tokenType === TOKEN_TYPE.COMMENT) {
+    // ignore comments
+    tokenType = TOKEN_TYPE.UNKNOWN
+    token = ''
+
+    processNextToken()
+  }
 }
 
 // check for delimiters like ':', '{', ']'
@@ -180,26 +215,27 @@ function getTokenNumber () {
 
 // get a token string like '"hello world"'
 function getTokenString () {
-  if (c === '"') {
+  if (isQuote(c)) {
+    const quote = normalizeQuote(c)
 
-    token += c
+    token += '"' // output valid double quote
     tokenType = TOKEN_TYPE.STRING
     next()
 
     // @ts-ignore
-    while (c !== '' && c !== '"') {
+    while (c !== '' && normalizeQuote(c) !== quote) {
       if (c === '\\') {
         // handle escape characters
-        token += c
         next()
 
         const unescaped = ESCAPE_CHARACTERS[c]
         if (unescaped !== undefined) {
-          token += c
+          token += '\\' + c
           next()
+          // @ts-ignore
         } else if (c === 'u') {
           // parse escaped unicode character, like '\\u260E'
-          token += c
+          token += '\\u'
           next()
 
           for (let u = 0; u < 4; u++) {
@@ -209,9 +245,23 @@ function getTokenString () {
             token += c
             next()
           }
+        // @ts-ignore
+        } else if (c === '\'') {
+          // escaped single quote character -> remove the escape character
+          token += '\''
+          next()
         } else {
           throw createSyntaxError('Invalid escape character "\\' + c + '"', index)
         }
+      } else if (CONTROL_CHARACTERS[c]) {
+        // unescaped special character
+        // fix by adding an escape character
+        token += CONTROL_CHARACTERS[c]
+        next()
+      } else if (c === '"') {
+        // unescaped double quote -> escape it
+        token += '\\"'
+        next()
       } else {
         // a regular character
         token += c
@@ -219,10 +269,10 @@ function getTokenString () {
       }
     }
 
-    if (c !== '"') {
+    if (normalizeQuote(c) !== quote) {
       throw createSyntaxError('End of string expected')
     }
-    token += c
+    token += '"' // output valid double quote
     next()
 
     return
@@ -236,7 +286,7 @@ function getTokenAlpha () {
   if (isAlpha(c)) {
     tokenType = TOKEN_TYPE.SYMBOL
 
-    while (isAlpha(c)) {
+    while (isAlpha(c) || isDigit(c) || c === '$') {
       token += c
       next()
     }
@@ -244,7 +294,61 @@ function getTokenAlpha () {
     return
   }
 
-  getTokenUnknown ()
+  getTokenWhitespace ()
+}
+
+// get whitespaces: space, tab, newline, and carriage return
+function getTokenWhitespace () {
+  if (isWhitespace(c) || isSpecialWhitespace(c)) {
+    tokenType = TOKEN_TYPE.WHITESPACE
+
+    while (isWhitespace(c) || isSpecialWhitespace(c)) {
+      token += c
+      next()
+    }
+
+    return
+  }
+
+  getTokenComment()
+}
+
+function getTokenComment () {
+  // find a block comment '/* ... */'
+  if (c === '/' && input[index + 1] === '*') {
+    tokenType = TOKEN_TYPE.COMMENT
+
+    // @ts-ignore
+    while (c !== '' && (c !== '*' || (c === '*' && input[index + 1] !== '/'))) {
+      token += c
+      next()
+    }
+
+    if (c === '*' && input[index + 1] === '/') {
+      token += c
+      next()
+
+      token += c
+      next()
+    }
+
+    return
+  }
+
+  // find a comment '// ...'
+  if (c === '/' && input[index + 1] === '/') {
+    tokenType = TOKEN_TYPE.COMMENT
+
+    // @ts-ignore
+    while (c !== '' && c !== '\n') {
+      token += c
+      next()
+    }
+
+    return
+  }
+
+  getTokenUnknown()
 }
 
 // something unknown is found, wrong characters -> a syntax error
@@ -284,14 +388,12 @@ function createSyntaxError (message, c = undefined) {
  */
 function parseObject () {
   if (tokenType === TOKEN_TYPE.DELIMITER && token === '{') {
-    output += token
-    getToken()
+    processNextToken()
 
     // @ts-ignore
     if (tokenType === TOKEN_TYPE.DELIMITER && token === '}') {
       // empty object
-      output += token
-      getToken()
+      processNextToken()
       return
     }
 
@@ -301,16 +403,14 @@ function parseObject () {
       if (tokenType !== TOKEN_TYPE.STRING) {
         throw createSyntaxError('Object key expected')
       }
-      output += token
-      getToken()
+      processNextToken()
 
       // parse key/value separator
       // @ts-ignore
       if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ':') {
         throw createSyntaxError('Colon expected')
       }
-      output += token
-      getToken()
+      processNextToken()
 
       // parse value
       parseObject()
@@ -319,15 +419,13 @@ function parseObject () {
       if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ',') {
         break
       }
-      output += token
-      getToken()
+      processNextToken()
     }
 
     if (tokenType !== TOKEN_TYPE.DELIMITER || token !== '}') {
       throw createSyntaxError('Comma or end of object "}" expected')
     }
-    output += token
-    getToken()
+    processNextToken()
 
     return
   }
@@ -341,14 +439,12 @@ function parseObject () {
  */
 function parseArray () : void {
   if (tokenType === TOKEN_TYPE.DELIMITER && token === '[') {
-    output += token
-    getToken()
+    processNextToken()
 
     // @ts-ignore
     if (tokenType === TOKEN_TYPE.DELIMITER && token === ']') {
       // empty array
-      output += token
-      getToken()
+      processNextToken()
       return
     }
 
@@ -361,16 +457,14 @@ function parseArray () : void {
       if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ',') {
         break
       }
-      output += token
-      getToken()
+      processNextToken()
     }
 
     // @ts-ignore
     if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ']') {
       throw createSyntaxError('Comma or end of array "]" expected')
     }
-    output += token
-    getToken()
+    processNextToken()
     return
   }
 
@@ -383,8 +477,7 @@ function parseArray () : void {
  */
 function parseString () : void {
   if (tokenType === TOKEN_TYPE.STRING) {
-    output += token
-    getToken()
+    processNextToken()
     return
   }
 
@@ -396,8 +489,7 @@ function parseString () : void {
  */
 function parseNumber () : void {
   if (tokenType === TOKEN_TYPE.NUMBER) {
-    output += token
-    getToken()
+    processNextToken()
     return
   }
 
@@ -410,8 +502,7 @@ function parseNumber () : void {
 function parseSymbol () : void {
   if (tokenType === TOKEN_TYPE.SYMBOL) {
     if (token === 'true' || token === 'false' || token === 'null') {
-      output += token
-      getToken()
+      processNextToken()
       return
     }
 
@@ -435,28 +526,22 @@ function parseEnd () {
 
 /**
  * Check if the given character contains an alpha character, a-z, A-Z, _
- * @param {string} c   a string with one character
- * @return {boolean}
  */
-function isAlpha (c) {
+function isAlpha (c: string) : boolean {
   return /^[a-zA-Z_]$/.test(c)
 }
 
 /**
  * Check if the given character contains a hexadecimal character 0-9, a-f, A-F
- * @param {string} c   a string with one character
- * @return {boolean}
  */
-function isHex (c) {
+function isHex (c: string) : boolean {
   return /^[0-9a-fA-F]$/.test(c)
 }
 
 /**
  * checks if the given char c is a digit
- * @param {string} c   a string with one character
- * @return {boolean}
  */
-function isDigit (c) {
+function isDigit (c: string) : boolean {
   return (c >= '0' && c <= '9')
 }
 
@@ -464,6 +549,44 @@ function isDigit (c) {
  * Check if the given character is a whitespace character like space, tab, or
  * newline
  */
-function isWhiteSpace (c: string) : boolean {
+function isWhitespace (c: string) : boolean {
   return c === ' ' || c === '\t' || c === '\n' || c === '\r'
+}
+
+function isSpecialWhitespace (c: string) : boolean {
+  return (
+    c === '\u00A0' ||
+    (c >= '\u2000' && c <= '\u200A') ||
+    c === '\u202F' ||
+    c === '\u205F' ||
+    c === '\u3000')
+}
+
+function normalizeWhitespace (text: string) : string {
+  let normalized = ''
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]
+    normalized += isSpecialWhitespace(char)
+      ? ' '
+      : char
+  }
+
+  return normalized
+}
+
+function isQuote (c: string) : boolean {
+  return SINGLE_QUOTES.includes(c) || DOUBLE_QUOTES.includes(c)
+}
+
+function normalizeQuote (c: string) : string {
+  if (SINGLE_QUOTES.includes(c)) {
+    return '\''
+  }
+
+  if (DOUBLE_QUOTES.includes(c)) {
+    return '"'
+  }
+
+  return c
 }

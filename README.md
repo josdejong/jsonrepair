@@ -9,6 +9,7 @@ The following issues can be fixed:
 - Turn newline delimited JSON into a valid JSON array
 - Add missing escape characters
 - Replace special white space characters with regular spaces
+- Replace special quote characters like `“...”`  with regular double quotes
 - Add missing commas
 - Strip trailing commas
 - Strip comments like `/* ... */` and `// ...`
