@@ -1,8 +1,7 @@
 import { strictEqual, deepStrictEqual, throws } from 'assert'
-import repair from './json-repair'
-import { jsonRepair2 } from './json-repair2'
+import jsonRepair2 from './json-repair2'
 
-describe('repair', () => {
+describe('jsonRepair2', () => {
   it('parse full JSON object', function () {
     const text = '{"a":2.3e100,"b":"str","c":null,"d":false,"e":[1,2,3]}'
     const parsed = jsonRepair2(text)
@@ -66,86 +65,86 @@ describe('repair', () => {
   })
 
   it.skip('should replace JavaScript with JSON', () => {
-    strictEqual(repair('{a:2}'), '{"a":2}')
-    strictEqual(repair('{a: 2}'), '{"a": 2}')
-    strictEqual(repair('{\n  a: 2\n}'), '{\n  "a": 2\n}')
-    strictEqual(repair('{\'a\':2}'), '{"a":2}')
-    strictEqual(repair('{a:\'foo\'}'), '{"a":"foo"}')
-    strictEqual(repair('{a:\'foo\',b:\'bar\'}'), '{"a":"foo","b":"bar"}')
+    strictEqual(jsonRepair2('{a:2}'), '{"a":2}')
+    strictEqual(jsonRepair2('{a: 2}'), '{"a": 2}')
+    strictEqual(jsonRepair2('{\n  a: 2\n}'), '{\n  "a": 2\n}')
+    strictEqual(jsonRepair2('{\'a\':2}'), '{"a":2}')
+    strictEqual(jsonRepair2('{a:\'foo\'}'), '{"a":"foo"}')
+    strictEqual(jsonRepair2('{a:\'foo\',b:\'bar\'}'), '{"a":"foo","b":"bar"}')
 
     // should leave string content untouched
-    strictEqual(repair('"{a:b}"'), '"{a:b}"')
+    strictEqual(jsonRepair2('"{a:b}"'), '"{a:b}"')
   })
 
   it.skip('should add/remove escape characters', () => {
-    strictEqual(repair('"foo\'bar"'), '"foo\'bar"')
-    strictEqual(repair('"foo\\"bar"'), '"foo\\"bar"')
-    strictEqual(repair('\'foo"bar\''), '"foo\\"bar"')
-    strictEqual(repair('\'foo\\\'bar\''), '"foo\'bar"')
-    strictEqual(repair('"foo\\\'bar"'), '"foo\'bar"')
+    strictEqual(jsonRepair2('"foo\'bar"'), '"foo\'bar"')
+    strictEqual(jsonRepair2('"foo\\"bar"'), '"foo\\"bar"')
+    strictEqual(jsonRepair2('\'foo"bar\''), '"foo\\"bar"')
+    strictEqual(jsonRepair2('\'foo\\\'bar\''), '"foo\'bar"')
+    strictEqual(jsonRepair2('"foo\\\'bar"'), '"foo\'bar"')
   })
 
   it.skip('should replace special white space characters', () => {
-    strictEqual(repair('{"a":\u00a0"foo\u00a0bar"}'), '{"a": "foo\u00a0bar"}')
-    strictEqual(repair('{"a":\u2009"foo"}'), '{"a": "foo"}')
+    strictEqual(jsonRepair2('{"a":\u00a0"foo\u00a0bar"}'), '{"a": "foo\u00a0bar"}')
+    strictEqual(jsonRepair2('{"a":\u2009"foo"}'), '{"a": "foo"}')
   })
 
   it.skip('should escape unescaped control characters', () => {
-    strictEqual(repair('"hello\bworld"'), '"hello\\bworld"')
-    strictEqual(repair('"hello\fworld"'), '"hello\\fworld"')
-    strictEqual(repair('"hello\nworld"'), '"hello\\nworld"')
-    strictEqual(repair('"hello\rworld"'), '"hello\\rworld"')
-    strictEqual(repair('"hello\tworld"'), '"hello\\tworld"')
-    strictEqual(repair('{"value\n": "dc=hcm,dc=com"}'), '{"value\\n": "dc=hcm,dc=com"}')
+    strictEqual(jsonRepair2('"hello\bworld"'), '"hello\\bworld"')
+    strictEqual(jsonRepair2('"hello\fworld"'), '"hello\\fworld"')
+    strictEqual(jsonRepair2('"hello\nworld"'), '"hello\\nworld"')
+    strictEqual(jsonRepair2('"hello\rworld"'), '"hello\\rworld"')
+    strictEqual(jsonRepair2('"hello\tworld"'), '"hello\\tworld"')
+    strictEqual(jsonRepair2('{"value\n": "dc=hcm,dc=com"}'), '{"value\\n": "dc=hcm,dc=com"}')
   })
 
   it.skip('should replace left/right quotes', () => {
-    strictEqual(repair('\u2018foo\u2019'), '"foo"')
-    strictEqual(repair('\u201Cfoo\u201D'), '"foo"')
-    strictEqual(repair('\u0060foo\u00B4'), '"foo"')
+    strictEqual(jsonRepair2('\u2018foo\u2019'), '"foo"')
+    strictEqual(jsonRepair2('\u201Cfoo\u201D'), '"foo"')
+    strictEqual(jsonRepair2('\u0060foo\u00B4'), '"foo"')
   })
 
   it.skip('remove comments', () => {
-    strictEqual(repair('/* foo */ {}'), ' {}')
-    strictEqual(repair('/* foo */ {}'), ' {}')
-    strictEqual(repair('{a:\'foo\',/*hello*/b:\'bar\'}'), '{"a":"foo","b":"bar"}')
-    strictEqual(repair('{\na:\'foo\',//hello\nb:\'bar\'\n}'), '{\n"a":"foo",\n"b":"bar"\n}')
+    strictEqual(jsonRepair2('/* foo */ {}'), ' {}')
+    strictEqual(jsonRepair2('/* foo */ {}'), ' {}')
+    strictEqual(jsonRepair2('{a:\'foo\',/*hello*/b:\'bar\'}'), '{"a":"foo","b":"bar"}')
+    strictEqual(jsonRepair2('{\na:\'foo\',//hello\nb:\'bar\'\n}'), '{\n"a":"foo",\n"b":"bar"\n}')
 
     // should not remove comments in string
-    strictEqual(repair('{"str":"/* foo */"}'), '{"str":"/* foo */"}')
+    strictEqual(jsonRepair2('{"str":"/* foo */"}'), '{"str":"/* foo */"}')
   })
 
   it.skip('should strip JSONP notation', () => {
     // matching
-    strictEqual(repair('callback_123({});'), '{}')
-    strictEqual(repair('callback_123([]);'), '[]')
-    strictEqual(repair('callback_123(2);'), '2')
-    strictEqual(repair('callback_123("foo");'), '"foo"')
-    strictEqual(repair('callback_123(null);'), 'null')
-    strictEqual(repair('callback_123(true);'), 'true')
-    strictEqual(repair('callback_123(false);'), 'false')
-    strictEqual(repair('/* foo bar */ callback_123 ({})'), '{}')
-    strictEqual(repair('/* foo bar */ callback_123 ({})'), '{}')
-    strictEqual(repair('/* foo bar */\ncallback_123({})'), '{}')
-    strictEqual(repair('/* foo bar */ callback_123 (  {}  )'), '  {}  ')
-    strictEqual(repair('  /* foo bar */   callback_123 ({});  '), '{}')
-    strictEqual(repair('\n/* foo\nbar */\ncallback_123 ({});\n\n'), '{}')
+    strictEqual(jsonRepair2('callback_123({});'), '{}')
+    strictEqual(jsonRepair2('callback_123([]);'), '[]')
+    strictEqual(jsonRepair2('callback_123(2);'), '2')
+    strictEqual(jsonRepair2('callback_123("foo");'), '"foo"')
+    strictEqual(jsonRepair2('callback_123(null);'), 'null')
+    strictEqual(jsonRepair2('callback_123(true);'), 'true')
+    strictEqual(jsonRepair2('callback_123(false);'), 'false')
+    strictEqual(jsonRepair2('/* foo bar */ callback_123 ({})'), '{}')
+    strictEqual(jsonRepair2('/* foo bar */ callback_123 ({})'), '{}')
+    strictEqual(jsonRepair2('/* foo bar */\ncallback_123({})'), '{}')
+    strictEqual(jsonRepair2('/* foo bar */ callback_123 (  {}  )'), '  {}  ')
+    strictEqual(jsonRepair2('  /* foo bar */   callback_123 ({});  '), '{}')
+    strictEqual(jsonRepair2('\n/* foo\nbar */\ncallback_123 ({});\n\n'), '{}')
 
     // non-matching
-    strictEqual(repair('callback {}'), 'callback {}')
-    strictEqual(repair('callback({}'), 'callback({}')
+    strictEqual(jsonRepair2('callback {}'), 'callback {}')
+    strictEqual(jsonRepair2('callback({}'), 'callback({}')
   })
 
   it.skip('should strip trailing commas', () => {
     // matching
-    strictEqual(repair('[1,2,3,]'), '[1,2,3]')
-    strictEqual(repair('[1,2,3,\n]'), '[1,2,3\n]')
-    strictEqual(repair('[1,2,3,  \n  ]'), '[1,2,3  \n  ]')
-    strictEqual(repair('{"a":2,}'), '{"a":2}')
+    strictEqual(jsonRepair2('[1,2,3,]'), '[1,2,3]')
+    strictEqual(jsonRepair2('[1,2,3,\n]'), '[1,2,3\n]')
+    strictEqual(jsonRepair2('[1,2,3,  \n  ]'), '[1,2,3  \n  ]')
+    strictEqual(jsonRepair2('{"a":2,}'), '{"a":2}')
 
     // not matching
-    strictEqual(repair('"[1,2,3,]"'), '"[1,2,3,]"')
-    strictEqual(repair('"{a:2,}"'), '"{a:2,}"')
+    strictEqual(jsonRepair2('"[1,2,3,]"'), '"[1,2,3,]"')
+    strictEqual(jsonRepair2('"{a:2,}"'), '"{a:2,}"')
   })
 
   it.skip('should strip MongoDB data types', () => {
@@ -173,7 +172,7 @@ describe('repair', () => {
       '   "decimal2" : 4\n' +
       '}'
 
-    strictEqual(repair(mongoDocument), expectedJson)
+    strictEqual(jsonRepair2(mongoDocument), expectedJson)
   })
 
   it.skip('should replace Python constants None, True, False', () => {
@@ -191,23 +190,23 @@ describe('repair', () => {
       '  "array": [1, "foo", null, true, false]\n' +
       '}'
 
-    strictEqual(repair(pythonDocument), expectedJson)
+    strictEqual(jsonRepair2(pythonDocument), expectedJson)
   })
 
-  it.skip('should repair missing comma between objects', () => {
+  it.skip('should jsonRepair2 missing comma between objects', () => {
     const text = '{"aray": [{}{}]}'
     const expected = '{"aray": [{},{}]}'
 
-    strictEqual(repair(text), expected)
+    strictEqual(jsonRepair2(text), expected)
   })
 
-  it.skip('should not repair normal array with comma separated objects', () => {
+  it.skip('should not jsonRepair2 normal array with comma separated objects', () => {
     const text = '[\n{},\n{}\n]'
 
-    strictEqual(repair(text), text)
+    strictEqual(jsonRepair2(text), text)
   })
 
-  it.skip('should repair newline separated json (for example from MongoDB)', () => {
+  it.skip('should jsonRepair2 newline separated json (for example from MongoDB)', () => {
     const text = '' +
       '/* 1 */\n' +
       '{}\n' +
@@ -219,7 +218,7 @@ describe('repair', () => {
       '{}\n'
     const expected = '[\n{},\n\n{},\n\n{}\n\n]'
 
-    strictEqual(repair(text), expected)
+    strictEqual(jsonRepair2(text), expected)
   })
 
   it('should throw exceptions', function () {
@@ -251,5 +250,5 @@ describe('repair', () => {
 })
 
 function assertRepair(text: string) {
-  deepStrictEqual(jsonRepair2(text), text, 'should parse an empty object')
+  strictEqual(jsonRepair2(text), text)
 }

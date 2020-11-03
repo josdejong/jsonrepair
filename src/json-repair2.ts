@@ -50,7 +50,7 @@ let tokenType = TOKENTYPE.NULL // type of current token
  *     repair('{name: \'John\'}") // '{"name": "John"}'
  *
  */
-export function jsonRepair2 (text) {
+export default function jsonRepair2 (text) {
   // initialize
   input = text
   output = ''
