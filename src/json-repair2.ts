@@ -98,11 +98,29 @@ export default function jsonRepair2 (text) {
   // get first token
   processNextToken()
 
+  // @ts-ignore
+  const isRootLevelObject = tokenType === TOKEN_TYPE.DELIMITER && token === '{'
+
   // parse everything
   parseObject()
 
   if (token !== '') {
-    throw createSyntaxError('Unexpected characters')
+    if (isRootLevelObject && tokenIsStartOfValue()) {
+      // start of a new value after end of the root level object: looks like
+      // newline delimited JSON -> turn into a root level array
+
+      while (tokenIsStartOfValue()) {
+        output = insertBeforeLastWhitespace(output, ',')
+
+        // parse next newline delimited item
+        parseObject()
+      }
+
+      // wrap the output in an array
+      return `[\n${output}\n]`
+    } else {
+      throw createSyntaxError('Unexpected characters')
+    }
   }
 
   return output

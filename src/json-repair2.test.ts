@@ -242,7 +242,7 @@ describe('jsonRepair2', () => {
       strictEqual(jsonRepair2('{"a" "b"}'), '{"a": "b"}')
     })
 
-    it.skip('should repair newline separated json (for example from MongoDB)', () => {
+    it('should repair newline separated json (for example from MongoDB)', () => {
       const text = '' +
         '/* 1 */\n' +
         '{}\n' +
@@ -252,7 +252,7 @@ describe('jsonRepair2', () => {
         '\n' +
         '/* 3 */\n' +
         '{}\n'
-      const expected = '[\n{},\n\n{},\n\n{}\n\n]'
+      const expected = '[\n\n{},\n\n\n{},\n\n\n{}\n\n]'
 
       strictEqual(jsonRepair2(text), expected)
     })
@@ -266,7 +266,7 @@ describe('jsonRepair2', () => {
     throws(function () { jsonRepair2('{:2}') }, { message: /Object key expected/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('{"a":2,]') }, { message: /Object key expected/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('{"a" ]') }, { message: /Colon expected/ }, 'should throw an exception when parsing an invalid number')
-    throws(function () { jsonRepair2('{}{}') }, { message: /Unexpected characters/ }, 'should throw an exception when parsing an invalid number')
+    throws(function () { jsonRepair2('{}}') }, { message: /Unexpected characters/ }, 'should throw an exception when parsing an invalid number')
 
     throws(function () { jsonRepair2('[') }, { message: /Unexpected end of json string/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('[2,') }, { message: /Unexpected end of json string/ }, 'should throw an exception when parsing an invalid number')
