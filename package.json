@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Repair broken JSON documents",
   "type": "module",
-  "main": "lib/cjs/index-commonjs.js",
+  "main": "lib/umd/jsonRepair.js",
   "module": "lib/esm/json-repair.js",
   "types": "lib/esm/json-repair.d.ts",
   "keywords": [
@@ -13,7 +13,12 @@
   "scripts": {
     "test": "mocha",
     "test:lib": "mocha test-lib/*.test.*",
-    "build": "del-cli lib && tsc -p tsconfig.json && tsc -p tsconfig-esm.json && cp-cli tools/cjs lib/cjs",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:umd && npm run build:umd:min",
+    "clean": "del-cli lib",
+    "build:esm": "tsc --module es2015 --target es5 --outDir lib/esm",
+    "build:cjs": "tsc --module commonjs --target es5 --outDir lib/cjs && cp-cli tools/cjs lib/cjs",
+    "build:umd": "rollup lib/esm/json-repair.js --format umd --name 'jsonRepair' --sourcemap --output.file lib/umd/jsonRepair.js",
+    "build:umd:min": "uglifyjs --compress --mangle --source-map --comments --output lib/umd/jsonRepair.min.js -- lib/umd/jsonRepair.js",
     "link": "npm run build",
     "lint": "eslint src/**/*.ts",
     "prepublishOnly": "npm run build && npm run test:lib && npm run lint"
@@ -37,8 +42,10 @@
     "eslint-plugin-node": "11.1.0",
     "eslint-plugin-promise": "4.2.1",
     "mocha": "8.2.0",
+    "rollup": "2.33.1",
     "ts-node": "9.0.0",
     "tslib": "2.0.3",
-    "typescript": "4.0.5"
+    "typescript": "4.0.5",
+    "uglify-js": "3.11.5"
   }
 }

@@ -4,13 +4,13 @@ const path = require('path')
 
 describe('lib', () => {
   it('should load the library using ESM', (done) => {
-      const filename = path.join(__dirname, 'apps/cjsApp.cjs')
+    const filename = path.join(__dirname, 'apps/cjsApp.cjs')
 
-      cp.exec(`node ${filename}`, function (error, result) {
-        strictEqual(error, null)
-        strictEqual(result, '{"name": "John"}\n')
-        done()
-      })
+    cp.exec(`node ${filename}`, function (error, result) {
+      strictEqual(error, null)
+      strictEqual(result, '{"name": "John"}\n')
+      done()
+    })
   })
 
   it('should load the library using CJS', (done) => {

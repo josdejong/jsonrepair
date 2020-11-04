@@ -10,7 +10,7 @@ import {
   normalizeQuote,
   normalizeWhitespace,
   stripLastOccurrence
-} from './stringUtils.js'
+} from './stringUtils'
 
 // token types enumeration
 const DELIMITER = 0
