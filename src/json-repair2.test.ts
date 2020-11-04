@@ -141,6 +141,7 @@ describe('jsonRepair2', () => {
       strictEqual(jsonRepair2('\n/* foo\nbar */\ncallback_123 ({});\n\n'), '{}')
 
       // non-matching
+      // FIXME: will throw an exception
       strictEqual(jsonRepair2('callback {}'), 'callback {}')
       strictEqual(jsonRepair2('callback({}'), 'callback({}')
     })
@@ -227,6 +228,7 @@ describe('jsonRepair2', () => {
 
     it('should repair missing comma between array items', () => {
       strictEqual(jsonRepair2('{"aray": [{}{}]}'), '{"aray": [{},{}]}')
+      strictEqual(jsonRepair2('{"aray": [{} {}]}'), '{"aray": [{}, {}]}')
       strictEqual(jsonRepair2('{"aray": [{}\n{}]}'), '{"aray": [{},\n{}]}')
 
       // should leave normal array as is

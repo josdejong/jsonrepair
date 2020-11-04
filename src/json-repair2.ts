@@ -606,7 +606,8 @@ function parseSymbol () : void {
       return
     }
 
-    if (c === '(') { // TODO: this is a bit of a trick (doesn't work with a space in between for example
+    // FIXME: this is a bit of a trick (doesn't work with a space in between for example)
+    if (c === '(') {
       // a function call
       // Can be a MongoDB data type like in {"_id": ObjectId("123")}
       token = '' // do not output the token
