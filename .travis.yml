@@ -1,6 +1,7 @@
 language: node_js
 
 node_js:
-  - lts
+  - lts/*
+  - node
 
 script: npm run prepublishOnly
