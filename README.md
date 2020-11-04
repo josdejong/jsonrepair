@@ -21,14 +21,14 @@ The following issues can be fixed:
 ## Usage
 
 ```js
-import repair from 'json-repair'
+import jsonRepair from 'json-repair'
 
 // The following is invalid JSON: is consists of JSON contents copied from 
 // a JavaScript code base, where the keys are missing double quotes, 
 // and strings are using single quotes:
 const json = '{name: \'John\'}'
 
-const repaired = repair(json)
+const repaired = jsonRepair(json)
 console.log(repaired) // '{"name": "John"}'
 ```
 
