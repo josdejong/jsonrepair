@@ -119,6 +119,23 @@ function next () {
   // Note: not using input[index] because that returns undefined when index is out of range
 }
 
+// check whether the current token is the start of a value:
+// object, array, number, string, or symbol
+function tokenIsStartOfValue () : boolean {
+  return (tokenType === TOKEN_TYPE.DELIMITER && (token === '[' || token === '{')) ||
+    tokenType === TOKEN_TYPE.STRING ||
+    tokenType === TOKEN_TYPE.NUMBER ||
+    tokenType === TOKEN_TYPE.SYMBOL
+}
+
+// check whether the current token is the start of a key (or possible key):
+// number, string, or symbol
+function tokenIsStartOfKey () : boolean {
+  return tokenType === TOKEN_TYPE.STRING ||
+    tokenType === TOKEN_TYPE.NUMBER ||
+    tokenType === TOKEN_TYPE.SYMBOL
+}
+
 /**
  * Process the previous token, and get next token in the current text
  */
@@ -425,28 +442,42 @@ function parseObject () {
       }
       processNextToken()
 
-      // parse key/value separator
+      // parse colon (key/value separator)
       // @ts-ignore
-      if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ':') {
-        throw createSyntaxError('Colon expected')
+      if (tokenType === TOKEN_TYPE.DELIMITER && token === ':') {
+        processNextToken()
+      } else {
+        if (tokenIsStartOfValue()) {
+          // we expect a colon here, but got the start of a value
+          // -> insert a colon before any inserted whitespaces at the end of output
+          output = insertBeforeLastWhitespace(output, ':')
+        } else {
+          throw createSyntaxError('Colon expected')
+        }
       }
-      processNextToken()
 
       // parse value
       parseObject()
 
-      // parse key/value pair separator
+      // parse comma (key/value pair separator)
       // @ts-ignore
-      if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ',') {
-        break
-      }
-      processNextToken()
+      if (tokenType === TOKEN_TYPE.DELIMITER && token === ',') {
+        processNextToken()
 
-      // @ts-ignore
-      if (tokenType === TOKEN_TYPE.DELIMITER && token === '}') {
-        // we've just passed a trailing comma -> remove the trailing comma
-        output = stripLastOccurrence(output, ',')
-        break
+        // @ts-ignore
+        if (tokenType === TOKEN_TYPE.DELIMITER && token === '}') {
+          // we've just passed a trailing comma -> remove the trailing comma
+          output = stripLastOccurrence(output, ',')
+          break
+        }
+      } else {
+        if (tokenIsStartOfKey()) {
+          // we expect a comma here, but got the start of a new key
+          // -> insert a comma before any inserted whitespaces at the end of output
+          output = insertBeforeLastWhitespace(output, ',')
+        } else {
+          break
+        }
       }
     }
 
@@ -481,18 +512,25 @@ function parseArray () : void {
       // parse item
       parseObject()
 
-      // parse item separator
+      // parse comma (item separator)
       // @ts-ignore
-      if (tokenType !== TOKEN_TYPE.DELIMITER || token !== ',') {
-        break
-      }
-      processNextToken()
+      if (tokenType === TOKEN_TYPE.DELIMITER && token === ',') {
+        processNextToken()
 
-      // @ts-ignore
-      if (tokenType === TOKEN_TYPE.DELIMITER && token === ']') {
-        // we've just passed a trailing comma -> remove the trailing comma
-        output = stripLastOccurrence(output, ',')
-        break
+        // @ts-ignore
+        if (tokenType === TOKEN_TYPE.DELIMITER && token === ']') {
+          // we've just passed a trailing comma -> remove the trailing comma
+          output = stripLastOccurrence(output, ',')
+          break
+        }
+      } else {
+        if (tokenIsStartOfValue()) {
+          // we expect a comma here, but got the start of a new item
+          // -> insert a comma before any inserted whitespaces at the end of output
+          output = insertBeforeLastWhitespace(output, ',')
+        } else {
+          break
+        }
       }
     }
 
@@ -537,6 +575,7 @@ function parseNumber () : void {
  */
 function parseSymbol () : void {
   if (tokenType === TOKEN_TYPE.SYMBOL) {
+    // a supported symbol: true, false, null
     if (SYMBOLS[token]) {
       processNextToken()
       return
@@ -549,7 +588,7 @@ function parseSymbol () : void {
       return
     }
 
-    if (c === '(') {
+    if (c === '(') { // TODO: this is a bit of a trick (doesn't work with a space in between for example
       // a function call
       // Can be a MongoDB data type like in {"_id": ObjectId("123")}
       token = '' // do not output the token
@@ -667,4 +706,8 @@ function stripLastOccurrence(text, c) {
   return (index !== -1)
     ? text.substring(0, index) + text.substring(index + 1)
     : text
+}
+
+function insertBeforeLastWhitespace (text, textToInsert) {
+  return text.replace(/\s*$/, match => textToInsert + match)
 }

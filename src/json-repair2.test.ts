@@ -135,9 +135,9 @@ describe('jsonRepair2', () => {
       strictEqual(jsonRepair2('callback_123(false);'), 'false')
       strictEqual(jsonRepair2('/* foo bar */ callback_123 ({})'), '{}')
       strictEqual(jsonRepair2('/* foo bar */ callback_123 ({})'), '{}')
-      strictEqual(jsonRepair2('/* foo bar */\ncallback_123({})'), '{}')
+      strictEqual(jsonRepair2('/* foo bar */\ncallback_123({})'), '\n{}')
       strictEqual(jsonRepair2('/* foo bar */ callback_123 (  {}  )'), '  {}  ')
-      strictEqual(jsonRepair2('  /* foo bar */   callback_123 ({});  '), '{}')
+      strictEqual(jsonRepair2('  /* foo bar */   callback_123({});  '), '     {}  ')
       strictEqual(jsonRepair2('\n/* foo\nbar */\ncallback_123 ({});\n\n'), '{}')
 
       // non-matching
@@ -166,8 +166,10 @@ describe('jsonRepair2', () => {
     })
 
     it('should strip MongoDB data types', () => {
+      // simple
       strictEqual(jsonRepair2('{"_id":ObjectId("123")}'), '{"_id":"123"}')
 
+      // extensive
       const mongoDocument = '{\n' +
         '   "_id" : ObjectId("123"),\n' +
         '   "isoDate" : ISODate("2012-12-19T06:01:17.171Z"),\n' +
@@ -223,17 +225,21 @@ describe('jsonRepair2', () => {
       // strictEqual(jsonRepair2('{greeting: hello world!}'), '{"greeting": "hello world!"}') // TODO
     })
 
-    it.skip('should repair missing comma between objects', () => {
-      const text = '{"aray": [{}{}]}'
-      const expected = '{"aray": [{},{}]}'
+    it('should repair missing comma between array items', () => {
+      strictEqual(jsonRepair2('{"aray": [{}{}]}'), '{"aray": [{},{}]}')
+      strictEqual(jsonRepair2('{"aray": [{}\n{}]}'), '{"aray": [{},\n{}]}')
 
-      strictEqual(jsonRepair2(text), expected)
+      // should leave normal array as is
+      strictEqual(jsonRepair2('[\n{},\n{}\n]'), '[\n{},\n{}\n]')
     })
 
-    it.skip('should not repair normal array with comma separated objects', () => {
-      const text = '[\n{},\n{}\n]'
+    it('should repair missing comma between object properties', () => {
+      strictEqual(jsonRepair2('{"a":2\n"b":3\n}'), '{"a":2,\n"b":3\n}')
+      strictEqual(jsonRepair2('{"a":2\n"b":3\nc:4}'), '{"a":2,\n"b":3,\n"c":4}')
+    })
 
-      strictEqual(jsonRepair2(text), text)
+    it('should repair missing comma colon between object key and value', () => {
+      strictEqual(jsonRepair2('{"a" "b"}'), '{"a": "b"}')
     })
 
     it.skip('should repair newline separated json (for example from MongoDB)', () => {
@@ -252,14 +258,14 @@ describe('jsonRepair2', () => {
     })
   })
 
-  it('should throw exceptions in case of non-repairable issues', function () {
+  it('should throw an exception in case of non-repairable issues', function () {
     throws(function () { jsonRepair2('') }, { message: /Unexpected end of json string/ }, 'should throw an exception when parsing an invalid number')
 
     throws(function () { jsonRepair2('{') }, { message: /Object key expected/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('{"a",') }, { message: /Colon expected/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('{:2}') }, { message: /Object key expected/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('{"a":2,]') }, { message: /Object key expected/ }, 'should throw an exception when parsing an invalid number')
-    throws(function () { jsonRepair2('{"a" "b"}') }, { message: /Colon expected/ }, 'should throw an exception when parsing an invalid number')
+    throws(function () { jsonRepair2('{"a" ]') }, { message: /Colon expected/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonRepair2('{}{}') }, { message: /Unexpected characters/ }, 'should throw an exception when parsing an invalid number')
 
     throws(function () { jsonRepair2('[') }, { message: /Unexpected end of json string/ }, 'should throw an exception when parsing an invalid number')
