@@ -756,6 +756,6 @@ function insertBeforeLastWhitespace (text: string, textToInsert: string) {
   return text.replace(/\s*$/, match => textToInsert + match)
 }
 
-function insertAtIndex(text: string, textToInsert: string, index: number): string {
+function insertAtIndex (text: string, textToInsert: string, index: number): string {
   return text.substring(0, index) + textToInsert + text.substring(index)
 }
