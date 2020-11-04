@@ -124,7 +124,7 @@ describe('jsonRepair2', () => {
       strictEqual(jsonRepair('{"str":"/* foo */"}'), '{"str":"/* foo */"}')
     })
 
-    it.only('should strip JSONP notation', () => {
+    it('should strip JSONP notation', () => {
       // matching
       strictEqual(jsonRepair('callback_123({});'), '{}')
       strictEqual(jsonRepair('callback_123([]);'), '[]')
@@ -133,17 +133,16 @@ describe('jsonRepair2', () => {
       strictEqual(jsonRepair('callback_123(null);'), 'null')
       strictEqual(jsonRepair('callback_123(true);'), 'true')
       strictEqual(jsonRepair('callback_123(false);'), 'false')
-      strictEqual(jsonRepair('/* foo bar */ callback_123 ({})'), '{}')
-      strictEqual(jsonRepair('/* foo bar */ callback_123 ({})'), '{}')
+      strictEqual(jsonRepair('callback({}'), '{}')
+      strictEqual(jsonRepair('/* foo bar */ callback_123 ({})'), '  {}')
+      strictEqual(jsonRepair('/* foo bar */ callback_123 ({})'), '  {}')
       strictEqual(jsonRepair('/* foo bar */\ncallback_123({})'), '\n{}')
-      strictEqual(jsonRepair('/* foo bar */ callback_123 (  {}  )'), '  {}  ')
+      strictEqual(jsonRepair('/* foo bar */ callback_123 (  {}  )'), '    {}  ')
       strictEqual(jsonRepair('  /* foo bar */   callback_123({});  '), '     {}  ')
-      strictEqual(jsonRepair('\n/* foo\nbar */\ncallback_123 ({});\n\n'), '{}')
+      strictEqual(jsonRepair('\n/* foo\nbar */\ncallback_123 ({});\n\n'), '\n\n {}\n\n')
 
       // non-matching
-      // FIXME: will throw an exception
-      strictEqual(jsonRepair('callback {}'), 'callback {}')
-      strictEqual(jsonRepair('callback({}'), 'callback({}')
+      throws(() => jsonRepair('callback {}'), /Unexpected characters/)
     })
 
     it('should strip trailing commas from an array', () => {

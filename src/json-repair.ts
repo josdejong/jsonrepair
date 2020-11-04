@@ -613,13 +613,19 @@ function parseSymbol () : void {
       return
     }
 
+    // make a copy of the symbol, let's see what comes next
+    const symbol: string = token
+    const symbolIndex = output.length
+    token = ''
+    processNextToken()
+
     // @ts-ignore
     // if (tokenType === DELIMITER && token === '(') {
-    if (c === '(') {
-      // a function call
+    if (tokenType === DELIMITER && token === '(') {
+      // a MongoDB function call or JSONP call
       // Can be a MongoDB data type like in {"_id": ObjectId("123")}
-      token = '' // do not output the function name
-      processNextToken()
+      // token = '' // do not output the function name
+      // processNextToken()
 
       // next()
       token = '' // do not output the ( character
@@ -644,8 +650,10 @@ function parseSymbol () : void {
     }
 
     // unknown symbol => turn into in a string
-    output += '"'
-    processNextToken()
+    // it is possible that by reading the next token we already inserted
+    // extra spaces in the output which should be inside the string,
+    // hence the symbolIndex
+    output = insertAtIndex(output, `"${symbol}`, symbolIndex)
     while (tokenType === SYMBOL || tokenType === NUMBER) {
       processNextToken()
     }
@@ -737,13 +745,17 @@ function normalizeQuote (c: string) : string {
   return c
 }
 
-function stripLastOccurrence (text, c) {
-  const index = output.lastIndexOf(c)
+function stripLastOccurrence (text: string, textToStrip: string) : string {
+  const index = output.lastIndexOf(textToStrip)
   return (index !== -1)
     ? text.substring(0, index) + text.substring(index + 1)
     : text
 }
 
-function insertBeforeLastWhitespace (text, textToInsert) {
+function insertBeforeLastWhitespace (text: string, textToInsert: string) {
   return text.replace(/\s*$/, match => textToInsert + match)
+}
+
+function insertAtIndex(text: string, textToInsert: string, index: number): string {
+  return text.substring(0, index) + textToInsert + text.substring(index)
 }
