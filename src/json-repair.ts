@@ -20,7 +20,12 @@ const DELIMITERS = {
   '[': true,
   ']': true,
   ':': true,
-  ',': true
+  ',': true,
+
+  // for JSONP and MongoDB data type notation
+  '(': true,
+  ')': true,
+  ';': true
 }
 
 // map with all escape characters
@@ -105,26 +110,27 @@ export default function jsonRepair (text) {
   // parse everything
   parseObject()
 
-  if (token !== '') {
-    if (isRootLevelObject && tokenIsStartOfValue()) {
-      // start of a new value after end of the root level object: looks like
-      // newline delimited JSON -> turn into a root level array
-
-      while (tokenIsStartOfValue()) {
-        output = insertBeforeLastWhitespace(output, ',')
-
-        // parse next newline delimited item
-        parseObject()
-      }
-
-      // wrap the output in an array
-      return `[\n${output}\n]`
-    } else {
-      throw createSyntaxError('Unexpected characters')
-    }
+  if (token === '') {
+    // reached the end of the document properly
+    return output
   }
 
-  return output
+  if (isRootLevelObject && tokenIsStartOfValue()) {
+    // start of a new value after end of the root level object: looks like
+    // newline delimited JSON -> turn into a root level array
+
+    while (tokenIsStartOfValue()) {
+      output = insertBeforeLastWhitespace(output, ',')
+
+      // parse next newline delimited item
+      parseObject()
+    }
+
+    // wrap the output in an array
+    return `[\n${output}\n]`
+  }
+
+  throw createSyntaxError('Unexpected characters')
 }
 
 /**
@@ -607,23 +613,32 @@ function parseSymbol () : void {
       return
     }
 
-    // FIXME: this is a bit of a trick (doesn't work with a space in between for example)
+    // @ts-ignore
+    // if (tokenType === DELIMITER && token === '(') {
     if (c === '(') {
       // a function call
       // Can be a MongoDB data type like in {"_id": ObjectId("123")}
-      token = '' // do not output the token
-      next() // do not output the (
+      token = '' // do not output the function name
+      processNextToken()
+
+      // next()
+      token = '' // do not output the ( character
+      processNextToken()
 
       // process the part inside the brackets
-      processNextToken()
+      parseObject()
 
-      // skip the closing bracket ")"
+      // skip the closing bracket ")" and ");"
       // @ts-ignore
-      if (c === ')') {
-        next()
-      }
+      if (tokenType === DELIMITER && token === ')') {
+        token = '' // do not output the ) character
+        processNextToken()
 
-      processNextToken()
+        if (tokenType === DELIMITER && token === ';') {
+          token = '' // do not output the semicolon character
+          processNextToken()
+        }
+      }
 
       return
     }
@@ -689,7 +704,8 @@ function isSpecialWhitespace (c: string) : boolean {
     (c >= '\u2000' && c <= '\u200A') ||
     c === '\u202F' ||
     c === '\u205F' ||
-    c === '\u3000')
+    c === '\u3000'
+  )
 }
 
 function normalizeWhitespace (text: string) : string {

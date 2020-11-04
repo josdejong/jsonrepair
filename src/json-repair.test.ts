@@ -124,7 +124,7 @@ describe('jsonRepair2', () => {
       strictEqual(jsonRepair('{"str":"/* foo */"}'), '{"str":"/* foo */"}')
     })
 
-    it.skip('should strip JSONP notation', () => {
+    it.only('should strip JSONP notation', () => {
       // matching
       strictEqual(jsonRepair('callback_123({});'), '{}')
       strictEqual(jsonRepair('callback_123([]);'), '[]')
