@@ -1,1 +1,1 @@
-module.exports = require('./json-repair.js').default
+module.exports = require('./simpleJsonRepair.js').default

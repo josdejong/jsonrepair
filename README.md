@@ -1,4 +1,4 @@
-# json-repair
+# simple-json-repair
 
 Repair invalid JSON documents.
 
@@ -18,25 +18,37 @@ The following issues can be fixed:
 - Replace Python constants `None`, `True`, and `False` with `null`, `true`, and `false`
 
 
-## Usage
+## Install
+
+```
+npm install simple-json-repair
+```
+
+
+## Use
 
 ```js
-import jsonRepair from 'json-repair'
+import simpleJsonRepair from 'simple-json-repair'
 
 // The following is invalid JSON: is consists of JSON contents copied from 
 // a JavaScript code base, where the keys are missing double quotes, 
 // and strings are using single quotes:
 const json = '{name: \'John\'}'
 
-const repaired = jsonRepair(json)
+const repaired = simpleJsonRepair(json)
 console.log(repaired) // '{"name": "John"}'
 ```
+
 
 ### API
 
 ```
-repair(json: string) : string
+simpleJsonRepair(json: string) : string
 ```
+
+The function `simpleJsonRepair` throws an exception when an issue is encountered
+which could not be solved. When no error is thrown, the output will be valid JSON.
+
 
 ## License
 

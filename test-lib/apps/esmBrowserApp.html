@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>JSON Repair</title>
+  <title>Simple JSON Repair</title>
 </head>
 <body>
   <script type="module">
-    import jsonRepair from '../../lib/esm/json-repair.js'
+    import simpleJsonRepair from '../../lib/esm/simpleJsonRepair.js'
 
     const invalidJson = '{name: \'John\'}'
-    const repairedJson = jsonRepair(invalidJson)
+    const repairedJson = simpleJsonRepair(invalidJson)
 
     document.write('Invalid JSON:' + invalidJson + '<br>')
     document.write('Repaired JSON:' + repairedJson + '<br>')
