@@ -226,6 +226,13 @@ describe('jsonRepair2', () => {
       // strictEqual(jsonRepair2('{greeting: hello world!}'), '{"greeting": "hello world!"}') // TODO
     })
 
+    it('should concatenate strings', () => {
+      strictEqual(simpleJsonRepair('"hello" + " world"'), '"hello world"')
+      strictEqual(simpleJsonRepair('"hello" +\n " world"'), '"hello world"')
+      strictEqual(simpleJsonRepair('"hello" + /*comment*/ " world"'), '"hello world"')
+      strictEqual(simpleJsonRepair('{\n  "greeting": \'hello\' +\n \'world\'\n}'), '{\n  "greeting": "helloworld"\n}')
+    })
+
     it('should repair missing comma between array items', () => {
       strictEqual(simpleJsonRepair('{"aray": [{}{}]}'), '{"aray": [{},{}]}')
       strictEqual(simpleJsonRepair('{"aray": [{} {}]}'), '{"aray": [{}, {}]}')

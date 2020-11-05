@@ -12,6 +12,7 @@ The following issues can be fixed:
 - Add missing escape characters
 - Replace special white space characters with regular spaces
 - Replace special quote characters like `“...”`  with regular double quotes
+- Concatenate strings like `"long text" + "more text on next line"`
 - Add missing commas
 - Strip trailing commas
 - Strip comments like `/* ... */` and `// ...`

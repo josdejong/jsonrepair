@@ -38,7 +38,10 @@ const DELIMITERS = {
   // for JSONP and MongoDB data type notation
   '(': true,
   ')': true,
-  ';': true
+  ';': true,
+
+  // for string concatenation
+  '+': true
 }
 
 // map with all escape characters
@@ -557,6 +560,22 @@ function parseArray () : void {
 function parseString () : void {
   if (tokenType === STRING) {
     processNextToken()
+
+    // @ts-ignore
+    while (tokenType === DELIMITER && token === '+') {
+      // string concatenation like "hello" + "world"
+      token = '' // don't output the concatenation
+      processNextToken()
+
+      if (tokenType === STRING) {
+        // concatenate with the previous string
+        const endIndex = output.lastIndexOf('"')
+        output = output.substring(0, endIndex) + token.substring(1)
+        token = ''
+        processNextToken()
+      }
+    }
+
     return
   }
 
