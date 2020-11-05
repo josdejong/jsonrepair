@@ -66,6 +66,7 @@ textarea {
   border-radius: 3px;
   padding: 5px;
   box-sizing: border-box;
+  font-family: monospace;
 }
 
 .error {

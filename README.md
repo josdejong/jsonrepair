@@ -2,6 +2,8 @@
 
 Repair invalid JSON documents.
 
+Try it out: https://josdejong.github.io/simple-json-repair/
+
 The following issues can be fixed:
 
 - Add missing quotes around keys

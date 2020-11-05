@@ -222,6 +222,7 @@ describe('jsonRepair2', () => {
 
       strictEqual(simpleJsonRepair('foo 2 bar'), '"foo 2 bar"')
       strictEqual(simpleJsonRepair('{greeting: hello world}'), '{"greeting": "hello world"}')
+      // strictEqual(simpleJsonRepair('{greeting: hello world\nnext: "line"}'), '{"greeting": "hello world",\n"next": "line"}') // TODO
       // strictEqual(jsonRepair2('{greeting: hello world!}'), '{"greeting": "hello world!"}') // TODO
     })
 

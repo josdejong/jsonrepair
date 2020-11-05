@@ -9,7 +9,7 @@
 </head>
 <body>
   <div class="app">
-    <h1>simple-json-repair playground</h1>
+    <h1>simple-json-repair</h1>
     <div class="info">
       Repair invalid JSON documents. Documentation:
       <a href="https://github.com/josdejong/simple-json-repair">
@@ -19,7 +19,16 @@
     <div class="playground">
       <div class="column">
         <label for="input-text">Input (invalid JSON)</label>
-        <textarea id="input-text">{name: 'John'}</textarea>
+        <textarea id="input-text">{
+  'firstName': 'John'
+
+  lastName: “Smith”
+
+  fullName: John Smith,
+
+  // TODO: fill in last season
+  scores: [ 7.8, 6.3, 7.1, ]
+}</textarea>
       </div>
       <div class="separator"></div>
       <div class="column">
