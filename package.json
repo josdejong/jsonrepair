@@ -1,6 +1,6 @@
 {
   "name": "simple-json-repair",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Repair broken JSON documents",
   "type": "module",
   "main": "lib/cjs/index-commonjs.js",
