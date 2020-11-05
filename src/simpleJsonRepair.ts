@@ -1,3 +1,4 @@
+import JsonRepairError from './JsonRepairError'
 import {
   insertAtIndex,
   insertBeforeLastWhitespace,
@@ -128,7 +129,7 @@ export default function simpleJsonRepair (text) {
     return `[\n${output}\n]`
   }
 
-  throw createSyntaxError('Unexpected characters')
+  throw new JsonRepairError('Unexpected characters', index - token.length)
 }
 
 /**
@@ -210,7 +211,7 @@ function getTokenNumber () {
       next()
 
       if (!isDigit(c)) {
-        throw createSyntaxError('Invalid number, digit expected', index)
+        throw new JsonRepairError('Invalid number, digit expected', index)
       }
     } else if (c === '0') {
       token += c
@@ -229,7 +230,7 @@ function getTokenNumber () {
       next()
 
       if (!isDigit(c)) {
-        throw createSyntaxError('Invalid number, digit expected', index)
+        throw new JsonRepairError('Invalid number, digit expected', index)
       }
 
       while (isDigit(c)) {
@@ -249,7 +250,7 @@ function getTokenNumber () {
       }
 
       if (!isDigit(c)) {
-        throw createSyntaxError('Invalid number, digit expected', index)
+        throw new JsonRepairError('Invalid number, digit expected', index)
       }
 
       while (isDigit(c)) {
@@ -291,7 +292,7 @@ function getTokenString () {
 
           for (let u = 0; u < 4; u++) {
             if (!isHex(c)) {
-              throw createSyntaxError('Invalid unicode character')
+              throw new JsonRepairError('Invalid unicode character', index - token.length)
             }
             token += c
             next()
@@ -302,7 +303,7 @@ function getTokenString () {
           token += '\''
           next()
         } else {
-          throw createSyntaxError('Invalid escape character "\\' + c + '"', index)
+          throw new JsonRepairError('Invalid escape character "\\' + c + '"', index)
         }
       } else if (CONTROL_CHARACTERS[c]) {
         // unescaped special character
@@ -321,7 +322,7 @@ function getTokenString () {
     }
 
     if (normalizeQuote(c) !== quote) {
-      throw createSyntaxError('End of string expected')
+      throw new JsonRepairError('End of string expected', index - token.length)
     }
     token += '"' // output valid double quote
     next()
@@ -411,26 +412,7 @@ function getTokenUnknown () {
     next()
   }
 
-  throw createSyntaxError('Syntax error in part "' + token + '"')
-}
-
-/**
- * Create an error
- * @param {string} message
- * @param {number} [c]  Optional index (character position) where the
- *                      error happened. If not provided, the start of
- *                      the current token is taken
- * @return {SyntaxError} instantiated error
- */
-function createSyntaxError (message, c = undefined) {
-  if (c === undefined) {
-    c = index - token.length
-  }
-  const error = new SyntaxError(message + ' (char ' + c + ')')
-  // @ts-ignore
-  error.char = c
-
-  return error
+  throw new JsonRepairError('Syntax error in part "' + token + '"', index - token.length)
 }
 
 /**
@@ -461,7 +443,7 @@ function parseObject () {
 
       // @ts-ignore
       if (tokenType !== STRING) {
-        throw createSyntaxError('Object key expected')
+        throw new JsonRepairError('Object key expected', index - token.length)
       }
       processNextToken()
 
@@ -475,7 +457,7 @@ function parseObject () {
           // -> insert a colon before any inserted whitespaces at the end of output
           output = insertBeforeLastWhitespace(output, ':')
         } else {
-          throw createSyntaxError('Colon expected')
+          throw new JsonRepairError('Colon expected', index - token.length)
         }
       }
 
@@ -506,7 +488,7 @@ function parseObject () {
 
     // @ts-ignore
     if (tokenType !== DELIMITER || token !== '}') {
-      throw createSyntaxError('Comma or end of object "}" expected')
+      throw new JsonRepairError('Comma or end of object "}" expected', index - token.length)
     }
     processNextToken()
 
@@ -559,7 +541,7 @@ function parseArray () : void {
 
     // @ts-ignore
     if (tokenType !== DELIMITER || token !== ']') {
-      throw createSyntaxError('Comma or end of array "]" expected')
+      throw new JsonRepairError('Comma or end of array "]" expected', index - token.length)
     }
     processNextToken()
     return
@@ -669,8 +651,8 @@ function parseSymbol () : void {
 function parseEnd () {
   if (token === '') {
     // syntax error or unexpected end of expression
-    throw createSyntaxError('Unexpected end of json string')
+    throw new JsonRepairError('Unexpected end of json string', index - token.length)
   } else {
-    throw createSyntaxError('Value expected')
+    throw new JsonRepairError('Value expected', index - token.length)
   }
 }

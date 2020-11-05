@@ -22,7 +22,7 @@
     "build:esm": "tsc --module es2015 --target es5 --outDir lib/esm",
     "build:esm:fix:imports": "node tools/esm/fixImportExtensions.cjs",
     "build:cjs": "tsc --module commonjs --target es5 --outDir lib/cjs && cp-cli tools/cjs lib/cjs",
-    "build:umd": "rollup lib/esm/simpleJsonRepair.js --format umd --name 'simpleJsonRepair' --sourcemap --output.file lib/umd/simpleJsonRepair.js",
+    "build:umd": "rollup lib/esm/simpleJsonRepair.js --format umd --name 'simpleJsonRepair' --sourcemap --output.file lib/umd/simpleJsonRepair.js && cp-cli tools/cjs/package.json lib/umd/package.json",
     "build:umd:min": "uglifyjs --compress --mangle --source-map --comments --output lib/umd/simpleJsonRepair.min.js -- lib/umd/simpleJsonRepair.js",
     "link": "npm run build",
     "lint": "eslint src/**/*.ts",
