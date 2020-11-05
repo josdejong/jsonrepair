@@ -7,12 +7,15 @@ html, body {
   overflow: hidden;
 }
 
-body, textarea, a {
+body, textarea {
   color: #4d4d4d;
 }
 
-a:hover {
+a {
   color: dodgerblue;
+}
+a:hover {
+  color: #187ad7;
 }
 
 body {
