@@ -5,6 +5,7 @@
   "type": "module",
   "main": "lib/cjs/index-commonjs.js",
   "module": "lib/esm/simpleJsonRepair.js",
+  "browser": "lib/umd/simpleJsonRepair.min.js",
   "types": "lib/esm/simpleJsonRepair.d.ts",
   "keywords": [
     "simple",

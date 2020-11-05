@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es2015",
-    "declaration": true,
-    "outDir": "./lib/cjs"
+    "target": "es5",
+    "declaration": true
   },
   "include": [
     "src/**/*.ts",

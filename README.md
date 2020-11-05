@@ -24,6 +24,8 @@ The following issues can be fixed:
 npm install simple-json-repair
 ```
 
+Note that in the `lib` folder, there are builds for ESM, UMD, and CommonJs.
+
 
 ## Use
 
