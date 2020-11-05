@@ -24,7 +24,7 @@ The following issues can be fixed:
 ## Install
 
 ```
-npm install simple-json-repair
+$ npm install simple-json-repair
 ```
 
 Note that in the `lib` folder, there are builds for ESM, UMD, and CommonJs.
@@ -60,26 +60,26 @@ which could not be solved. When no error is thrown, the output will be valid JSO
 To build the library (ESM, CommonJs, and UMD output in the folder `lib`):
 
 ```
-npm install 
-npm run build
+$ npm install 
+$ npm run build
 ```
 
 To run the unit tests:
 
 ```
-npm test
+$ npm test
 ```
 
 To run the linter (eslint):
 
 ```
-npm run lint
+$ npm run lint
 ```
 
 To run the linter, build all, and run unit tests and integration tests:
 
 ```
-npm run build-and-test
+$ npm run build-and-test
 ```
 
 
