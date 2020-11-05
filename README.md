@@ -54,6 +54,34 @@ The function `simpleJsonRepair` throws an exception when an issue is encountered
 which could not be solved. When no error is thrown, the output will be valid JSON.
 
 
+### Develop
+
+To build the library (ESM, CommonJs, and UMD output in the folder `lib`):
+
+```
+npm install 
+npm run build
+```
+
+To run the unit tests:
+
+```
+npm test
+```
+
+To run the linter (eslint):
+
+```
+npm run lint
+```
+
+To run the linter, build all, and run unit tests and integration tests:
+
+```
+npm run build-and-test
+```
+
+
 ## License
 
 Released under the [ISC license](LICENSE.md).

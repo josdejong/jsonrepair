@@ -26,7 +26,8 @@
     "build:umd:min": "uglifyjs --compress --mangle --source-map --comments --output lib/umd/simpleJsonRepair.min.js -- lib/umd/simpleJsonRepair.js",
     "link": "npm run build",
     "lint": "eslint src/**/*.ts",
-    "prepublishOnly": "npm run build && npm run test:lib && npm run lint"
+    "build-and-test": "npm run lint && npm run build && npm run test:lib",
+    "prepublishOnly": "npm run build-and-test"
   },
   "files": [
     "README.md",

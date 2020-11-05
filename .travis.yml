@@ -4,4 +4,4 @@ node_js:
   - lts/*
   - node
 
-script: npm run prepublishOnly
+script: npm run build-and-test
