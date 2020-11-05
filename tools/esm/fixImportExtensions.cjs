@@ -21,7 +21,7 @@ fs.readdirSync(folder)
 
     const code = String(fs.readFileSync(path.join(folder, file)))
 
-    const updatedCode = code.replace(importRegex, (text, left, middle, right) => {
+    const fixedCode = code.replace(importRegex, (text, left, middle, right) => {
       if (!middle.endsWith(EXTENSION)) {
         if (DEBUG) {
           console.log(`  Change "${middle}" to "${middle + EXTENSION}"`)
@@ -33,5 +33,5 @@ fs.readdirSync(folder)
       }
     })
 
-    fs.writeFileSync(path.join(folder, file), updatedCode)
+    fs.writeFileSync(path.join(folder, file), fixedCode)
   })
