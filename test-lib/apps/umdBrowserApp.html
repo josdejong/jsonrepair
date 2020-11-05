@@ -7,8 +7,11 @@
 </head>
 <body>
   <script>
-    document.write(jsonRepair('{name: \'John\'}'))
-  </script>
+    const invalidJson = '{name: \'John\'}'
+    const repairedJson = jsonRepair(invalidJson)
 
+    document.write('Invalid JSON:' + invalidJson + '<br>')
+    document.write('Repaired JSON:' + repairedJson + '<br>')
+  </script>
 </body>
 </html>

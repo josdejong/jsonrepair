@@ -8,8 +8,11 @@
   <script type="module">
     import jsonRepair from '../../lib/esm/json-repair.js'
 
-    document.write(jsonRepair('{name: \'John\'}'))
-  </script>
+    const invalidJson = '{name: \'John\'}'
+    const repairedJson = jsonRepair(invalidJson)
 
+    document.write('Invalid JSON:' + invalidJson + '<br>')
+    document.write('Repaired JSON:' + repairedJson + '<br>')
+  </script>
 </body>
 </html>

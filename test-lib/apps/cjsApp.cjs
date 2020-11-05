@@ -1,3 +1,3 @@
-const repair = require('../../lib/umd/jsonRepair.js')
+const repair = require('../..')
 
 console.log(repair('{name: \'John\'}'))
