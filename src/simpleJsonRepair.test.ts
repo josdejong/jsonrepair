@@ -165,6 +165,21 @@ describe('jsonRepair2', () => {
       strictEqual(simpleJsonRepair('"{a:2,}"'), '"{a:2,}"')
     })
 
+    it('should add a missing closing bracket for an object', () => {
+      strictEqual(simpleJsonRepair('{"a":2'), '{"a":2}')
+      strictEqual(simpleJsonRepair('{"a":{"b":2}'), '{"a":{"b":2}}')
+      strictEqual(simpleJsonRepair('{\n  "a":{"b":2\n}'), '{\n  "a":{"b":2\n}}')
+      strictEqual(simpleJsonRepair('[{"b":2]'), '[{"b":2}]')
+      strictEqual(simpleJsonRepair('[{"b":2\n]'), '[{"b":2}\n]')
+      strictEqual(simpleJsonRepair('[{"i":1{"i":2}]'), '[{"i":1},{"i":2}]')
+      // TODO strictEqual(simpleJsonRepair('[{"i":1,{"i":2}]'), '[{"i":1},{"i":2}]')
+    })
+
+    it('should add a missing closing bracket for an array', () => {
+      strictEqual(simpleJsonRepair('[1,2,3'), '[1,2,3]')
+      strictEqual(simpleJsonRepair('{\n"values":[1,2,3\n}'), '{\n"values":[1,2,3]\n}')
+    })
+
     it('should strip MongoDB data types', () => {
       // simple
       strictEqual(simpleJsonRepair('{"_id":ObjectId("123")}'), '{"_id":"123"}')

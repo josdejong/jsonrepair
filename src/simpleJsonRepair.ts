@@ -490,10 +490,12 @@ function parseObject () {
     }
 
     // @ts-ignore
-    if (tokenType !== DELIMITER || token !== '}') {
-      throw new JsonRepairError('Comma or end of object "}" expected', index - token.length)
+    if (tokenType === DELIMITER && token === '}') {
+      processNextToken()
+    } else {
+      // missing end bracket -> insert the missing bracket
+      output = insertBeforeLastWhitespace(output, '}')
     }
-    processNextToken()
 
     return
   }
@@ -543,10 +545,12 @@ function parseArray () : void {
     }
 
     // @ts-ignore
-    if (tokenType !== DELIMITER || token !== ']') {
-      throw new JsonRepairError('Comma or end of array "]" expected', index - token.length)
+    if (tokenType === DELIMITER && token === ']') {
+      processNextToken()
+    } else {
+      // missing end bracket -> insert the missing bracket
+      output = insertBeforeLastWhitespace(output, ']')
     }
-    processNextToken()
     return
   }
 
