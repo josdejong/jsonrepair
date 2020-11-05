@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>simple-json-repair playground</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="Repair broken JSON documents">
+  <meta name="keywords" content="json, repair, simple, json-simple-repair, fix, invalid">
+</head>
+<body>
+  <div class="app">
+    <h1>simple-json-repair playground</h1>
+    <div class="info">
+      Repair invalid JSON documents. Documentation:
+      <a href="https://github.com/josdejong/simple-json-repair">
+        https://github.com/josdejong/simple-json-repair
+      </a>
+    </div>
+    <div class="playground">
+      <div class="column">
+        <label for="input-text">Input (invalid JSON)</label>
+        <textarea id="input-text">{name: 'John'}</textarea>
+      </div>
+      <div class="separator"></div>
+      <div class="column">
+        <label for="output-text">Output (fixed JSON)</label>
+        <textarea id="output-text" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import simpleJsonRepair from 'https://unpkg.com/simple-json-repair@latest/lib/esm/simpleJsonRepair.js'
+
+    function repairIt () {
+      try {
+        outputText.value = simpleJsonRepair(inputText.value)
+        outputText.classList.remove('error')
+      } catch (err) {
+        outputText.value = err.message
+        outputText.classList.add('error')
+      }
+    }
+
+    const inputText = document.getElementById('input-text')
+    const outputText = document.getElementById('output-text')
+    inputText.addEventListener('input', repairIt)
+    repairIt()
+  </script>
+</body>
+</html>

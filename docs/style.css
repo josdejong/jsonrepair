@@ -1,0 +1,73 @@
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: ubuntu, arial, sans-serif;
+  overflow: hidden;
+}
+
+body, textarea, a {
+  color: #4d4d4d;
+}
+
+a:hover {
+  color: dodgerblue;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+}
+
+h1 {
+  font-size: 150%;
+  color: dodgerblue;
+  margin: 0;
+  padding: 20px 0;
+}
+
+.app {
+  max-width: 1000px;
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.info {
+  padding: 0 0 40px 0;
+}
+
+.playground {
+  flex: 1;
+  display: flex;
+}
+
+.column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.separator {
+  width: 20px;
+}
+
+label {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+textarea {
+  width: 100%;
+  flex: 1;
+  border: 1px solid #bfbfbf;
+  border-radius: 3px;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.error {
+  color: #f65252;
+}
