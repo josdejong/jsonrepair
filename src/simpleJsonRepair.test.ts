@@ -172,7 +172,7 @@ describe('jsonRepair2', () => {
       strictEqual(simpleJsonRepair('[{"b":2]'), '[{"b":2}]')
       strictEqual(simpleJsonRepair('[{"b":2\n]'), '[{"b":2}\n]')
       strictEqual(simpleJsonRepair('[{"i":1{"i":2}]'), '[{"i":1},{"i":2}]')
-      // TODO strictEqual(simpleJsonRepair('[{"i":1,{"i":2}]'), '[{"i":1},{"i":2}]')
+      // strictEqual(simpleJsonRepair('[{"i":1,{"i":2}]'), '[{"i":1},{"i":2}]') // TODO
     })
 
     it('should add a missing closing bracket for an array', () => {

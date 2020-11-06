@@ -446,6 +446,7 @@ function parseObject () {
 
       // @ts-ignore
       if (tokenType !== STRING) {
+        // TODO: handle ambiguous cases like '[{"i":1,{"i":2}]'
         throw new JsonRepairError('Object key expected', index - token.length)
       }
       processNextToken()

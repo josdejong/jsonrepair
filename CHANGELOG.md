@@ -1,6 +1,6 @@
 # Changelog
 
-## not yet published, version 1.1.0
+## 2020-11-06, version 1.1.0
 
 - Implement support for string concatenation.
 - Implement support for adding missing end brackets for objects and arrays.
