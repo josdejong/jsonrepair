@@ -11,9 +11,9 @@
     $ git add CHANGELOG.md package.json package-lock.json
     $ git commit -m "Publish v1.2.3"
     ```
-5.  Merge `develop` into `master`:
+5.  Merge `develop` into `main`:
     ```
-    $ git checkout master
+    $ git checkout main
     $ git merge develop
     ```
 6.  Push changes:
