@@ -1,5 +1,5 @@
 import { strictEqual, deepStrictEqual, throws } from 'assert'
-import simpleJsonRepair from './simpleJsonRepair'
+import simpleJsonRepair from './simpleJsonRepair.js'
 
 describe('jsonRepair2', () => {
   describe('parse valid JSON', () => {
@@ -310,6 +310,9 @@ describe('jsonRepair2', () => {
   })
 })
 
-function assertRepair (text: string) {
+/**
+ * @param {string} text
+ */
+function assertRepair (text) {
   strictEqual(simpleJsonRepair(text), text)
 }

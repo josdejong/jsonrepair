@@ -10,7 +10,7 @@
   "main": "lib/cjs/index-commonjs.js",
   "module": "lib/esm/simpleJsonRepair.js",
   "browser": "lib/umd/simpleJsonRepair.min.js",
-  "types": "lib/esm/simpleJsonRepair.d.ts",
+  "types": "lib/index.d.ts",
   "keywords": [
     "simple",
     "json",
@@ -21,15 +21,15 @@
   "scripts": {
     "test": "mocha",
     "test:lib": "mocha test-lib/*.test.*",
-    "build": "npm run clean && npm run build:esm && npm run build:esm:fix:imports && npm run build:cjs && npm run build:umd && npm run build:umd:min",
+    "build": "npm run clean && npm run build:ts && npm run build:esm && npm run build:cjs && npm run build:umd && npm run build:umd:min",
     "clean": "del-cli lib",
-    "build:esm": "tsc --module es2015 --target es5 --outDir lib/esm",
-    "build:esm:fix:imports": "node tools/esm/fixImportExtensions.cjs",
-    "build:cjs": "tsc --module commonjs --target es5 --outDir lib/cjs && cp-cli tools/cjs lib/cjs",
-    "build:umd": "rollup lib/esm/simpleJsonRepair.js --format umd --name 'simpleJsonRepair' --sourcemap --output.file lib/umd/simpleJsonRepair.js && cp-cli tools/cjs/package.json lib/umd/package.json",
+    "build:ts": "cpy src/index.d.ts lib",
+    "build:esm": "babel src --out-dir lib/esm --source-maps --config-file ./babel.config.json",
+    "build:cjs": "babel src --out-dir lib/cjs --source-maps --config-file ./babel-cjs.config.json && cpy tools/cjs lib/cjs",
+    "build:umd": "rollup lib/esm/simpleJsonRepair.js --format umd --name 'simpleJsonRepair' --sourcemap --output.file lib/umd/simpleJsonRepair.js && cpy tools/cjs/package.json lib/umd",
     "build:umd:min": "uglifyjs --compress --mangle --source-map --comments --output lib/umd/simpleJsonRepair.min.js -- lib/umd/simpleJsonRepair.js",
     "link": "npm run build",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint src/**/*.js",
     "build-and-test": "npm run lint && npm run build && npm run test:lib",
     "prepublishOnly": "npm run build-and-test"
   },
@@ -41,10 +41,10 @@
   "author": "Jos de Jong",
   "license": "ISC",
   "devDependencies": {
-    "@types/mocha": "8.0.3",
-    "@typescript-eslint/eslint-plugin": "4.6.0",
-    "@typescript-eslint/parser": "4.6.0",
-    "cp-cli": "2.0.0",
+    "@babel/cli": "7.12.1",
+    "@babel/core": "7.12.3",
+    "@babel/preset-env": "7.12.1",
+    "cpy-cli": "3.1.1",
     "del-cli": "3.0.1",
     "eslint": "7.12.1",
     "eslint-config-standard": "16.0.1",
@@ -53,9 +53,6 @@
     "eslint-plugin-promise": "4.2.1",
     "mocha": "8.2.0",
     "rollup": "2.33.1",
-    "ts-node": "9.0.0",
-    "tslib": "2.0.3",
-    "typescript": "4.0.5",
     "uglify-js": "3.11.5"
   }
 }

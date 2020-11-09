@@ -1,4 +1,4 @@
-import JsonRepairError from './JsonRepairError'
+import JsonRepairError from './JsonRepairError.js'
 import {
   insertAtIndex,
   insertBeforeLastWhitespace,
@@ -11,7 +11,7 @@ import {
   normalizeQuote,
   normalizeWhitespace,
   stripLastOccurrence
-} from './stringUtils'
+} from './stringUtils.js'
 
 // token types enumeration
 const DELIMITER = 0
@@ -22,8 +22,9 @@ const WHITESPACE = 4
 const COMMENT = 5
 const UNKNOWN = 6
 
-// TODO: is there a better way to define TokenType?
-type TokenType = 0 | 1 | 2 | 3 | 4 | 5 | 6
+/**
+ * @typedef {DELIMITER | NUMBER | STRING | SYMBOL | WHITESPACE | COMMENT | UNKNOWN} TokenType
+ */
 
 // map with all delimiters
 const DELIMITERS = {
@@ -83,7 +84,7 @@ let output = '' // generated output
 let index = 0 // current index in text
 let c = '' // current token character in text
 let token = '' // current token
-let tokenType: TokenType = UNKNOWN // type of current token
+let tokenType = UNKNOWN // type of current token
 
 /**
  * Repair a string containing an invalid JSON document.
@@ -93,6 +94,8 @@ let tokenType: TokenType = UNKNOWN // type of current token
  *
  *     repair('{name: \'John\'}") // '{"name": "John"}'
  *
+ * @param {string} text
+ * @return {string}
  */
 export default function simpleJsonRepair (text) {
   // initialize
@@ -106,7 +109,6 @@ export default function simpleJsonRepair (text) {
   // get first token
   processNextToken()
 
-  // @ts-ignore
   const isRootLevelObject = tokenType === DELIMITER && token === '{'
 
   // parse everything
@@ -146,18 +148,24 @@ function next () {
   // Note: not using input[index] because that returns undefined when index is out of range
 }
 
-// check whether the current token is the start of a value:
-// object, array, number, string, or symbol
-function tokenIsStartOfValue () : boolean {
+/**
+ * check whether the current token is the start of a value:
+ * object, array, number, string, or symbol
+ * @returns {boolean}
+ */
+function tokenIsStartOfValue () {
   return (tokenType === DELIMITER && (token === '[' || token === '{')) ||
     tokenType === STRING ||
     tokenType === NUMBER ||
     tokenType === SYMBOL
 }
 
-// check whether the current token is the start of a key (or possible key):
-// number, string, or symbol
-function tokenIsStartOfKey () : boolean {
+/**
+ * check whether the current token is the start of a key (or possible key):
+ * number, string, or symbol
+ * @returns {boolean}
+ */
+function tokenIsStartOfKey () {
   return tokenType === STRING ||
     tokenType === NUMBER ||
     tokenType === SYMBOL
@@ -174,7 +182,6 @@ function processNextToken () {
 
   getTokenDelimiter()
 
-  // @ts-ignore
   if (tokenType === WHITESPACE) {
     // we leave the whitespace as it is, except replacing special white
     // space character
@@ -182,7 +189,6 @@ function processNextToken () {
     processNextToken()
   }
 
-  // @ts-ignore
   if (tokenType === COMMENT) {
     // ignore comments
     tokenType = UNKNOWN
@@ -246,7 +252,6 @@ function getTokenNumber () {
       token += c
       next()
 
-      // @ts-ignore
       if (c === '+' || c === '-') {
         token += c
         next()
@@ -277,7 +282,6 @@ function getTokenString () {
     tokenType = STRING
     next()
 
-    // @ts-ignore
     while (c !== '' && normalizeQuote(c) !== quote) {
       if (c === '\\') {
         // handle escape characters
@@ -287,7 +291,6 @@ function getTokenString () {
         if (unescaped !== undefined) {
           token += '\\' + c
           next()
-          // @ts-ignore
         } else if (c === 'u') {
           // parse escaped unicode character, like '\\u260E'
           token += '\\u'
@@ -300,7 +303,6 @@ function getTokenString () {
             token += c
             next()
           }
-        // @ts-ignore
         } else if (c === '\'') {
           // escaped single quote character -> remove the escape character
           token += '\''
@@ -373,7 +375,6 @@ function getTokenComment () {
   if (c === '/' && input[index + 1] === '*') {
     tokenType = COMMENT
 
-    // @ts-ignore
     while (c !== '' && (c !== '*' || (c === '*' && input[index + 1] !== '/'))) {
       token += c
       next()
@@ -394,7 +395,6 @@ function getTokenComment () {
   if (c === '/' && input[index + 1] === '/') {
     tokenType = COMMENT
 
-    // @ts-ignore
     while (c !== '' && c !== '\n') {
       token += c
       next()
@@ -426,7 +426,6 @@ function parseObject () {
   if (tokenType === DELIMITER && token === '{') {
     processNextToken()
 
-    // @ts-ignore
     // TODO: can we make this redundant?
     if (tokenType === DELIMITER && token === '}') {
       // empty object
@@ -437,14 +436,12 @@ function parseObject () {
     while (true) {
       // parse key
 
-      // @ts-ignore
       if (tokenType === SYMBOL || tokenType === NUMBER) {
         // unquoted key -> add quotes around it, change it into a string
         tokenType = STRING
         token = `"${token}"`
       }
 
-      // @ts-ignore
       if (tokenType !== STRING) {
         // TODO: handle ambiguous cases like '[{"i":1,{"i":2}]'
         throw new JsonRepairError('Object key expected', index - token.length)
@@ -452,7 +449,6 @@ function parseObject () {
       processNextToken()
 
       // parse colon (key/value separator)
-      // @ts-ignore
       if (tokenType === DELIMITER && token === ':') {
         processNextToken()
       } else {
@@ -469,11 +465,9 @@ function parseObject () {
       parseObject()
 
       // parse comma (key/value pair separator)
-      // @ts-ignore
       if (tokenType === DELIMITER && token === ',') {
         processNextToken()
 
-        // @ts-ignore
         if (tokenType === DELIMITER && token === '}') {
           // we've just passed a trailing comma -> remove the trailing comma
           output = stripLastOccurrence(output, ',')
@@ -490,7 +484,6 @@ function parseObject () {
       }
     }
 
-    // @ts-ignore
     if (tokenType === DELIMITER && token === '}') {
       processNextToken()
     } else {
@@ -506,13 +499,11 @@ function parseObject () {
 
 /**
  * Parse an object like '["item1", "item2", ...]'
- * @return {*}
  */
-function parseArray () : void {
+function parseArray () {
   if (tokenType === DELIMITER && token === '[') {
     processNextToken()
 
-    // @ts-ignore
     if (tokenType === DELIMITER && token === ']') {
       // empty array
       processNextToken()
@@ -524,11 +515,9 @@ function parseArray () : void {
       parseObject()
 
       // parse comma (item separator)
-      // @ts-ignore
       if (tokenType === DELIMITER && token === ',') {
         processNextToken()
 
-        // @ts-ignore
         if (tokenType === DELIMITER && token === ']') {
           // we've just passed a trailing comma -> remove the trailing comma
           output = stripLastOccurrence(output, ',')
@@ -545,7 +534,6 @@ function parseArray () : void {
       }
     }
 
-    // @ts-ignore
     if (tokenType === DELIMITER && token === ']') {
       processNextToken()
     } else {
@@ -560,13 +548,11 @@ function parseArray () : void {
 
 /**
  * Parse a string enclosed by double quotes "...". Can contain escaped quotes
- * @return {*}
  */
-function parseString () : void {
+function parseString () {
   if (tokenType === STRING) {
     processNextToken()
 
-    // @ts-ignore
     while (tokenType === DELIMITER && token === '+') {
       // string concatenation like "hello" + "world"
       token = '' // don't output the concatenation
@@ -590,7 +576,7 @@ function parseString () : void {
 /**
  * Parse a number
  */
-function parseNumber () : void {
+function parseNumber () {
   if (tokenType === NUMBER) {
     processNextToken()
     return
@@ -602,7 +588,7 @@ function parseNumber () : void {
 /**
  * Parse constants true, false, null
  */
-function parseSymbol () : void {
+function parseSymbol () {
   if (tokenType === SYMBOL) {
     // a supported symbol: true, false, null
     if (SYMBOLS[token]) {
@@ -618,12 +604,11 @@ function parseSymbol () : void {
     }
 
     // make a copy of the symbol, let's see what comes next
-    const symbol: string = token
+    const symbol = token
     const symbolIndex = output.length
     token = ''
     processNextToken()
 
-    // @ts-ignore
     // if (tokenType === DELIMITER && token === '(') {
     if (tokenType === DELIMITER && token === '(') {
       // a MongoDB function call or JSONP call
@@ -639,7 +624,6 @@ function parseSymbol () : void {
       parseObject()
 
       // skip the closing bracket ")" and ");"
-      // @ts-ignore
       if (tokenType === DELIMITER && token === ')') {
         token = '' // do not output the ) character
         processNextToken()
