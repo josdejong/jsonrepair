@@ -25,7 +25,7 @@
     $ git tag v1.2.3
     $ git push --tags
     ```
-8.  Wait until the tests in [Travis CI](https://travis-ci.org/) finish and are green
+8.  Wait until the github build workflow finish and is green
 9.  Publish on npm:
     ```
     $ npm publish
