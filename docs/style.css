@@ -70,6 +70,7 @@ textarea {
   padding: 5px;
   box-sizing: border-box;
   font-family: monospace;
+  max-height: 500px;
 }
 
 textarea[readonly] {
