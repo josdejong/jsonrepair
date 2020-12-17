@@ -443,7 +443,7 @@ function parseObject () {
       }
 
       if (tokenType !== STRING) {
-        // TODO: handle ambiguous cases like '[{"i":1,{"i":2}]'
+        // TODO: handle ambiguous cases like '[{"a":1,{"b":2}]' which could be an array with two objects or one
         throw new JsonRepairError('Object key expected', index - token.length)
       }
       processNextToken()
