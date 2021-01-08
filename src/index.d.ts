@@ -4,7 +4,7 @@
  *
  * Example:
  *
- *     repair('{name: \'John\'}") // '{"name": "John"}'
+ *     jsonrepair('{name: \'John\'}") // '{"name": "John"}'
  *
  */
-export default function simpleJsonRepair(text: any): string
+export default function jsonrepair(text: any): string

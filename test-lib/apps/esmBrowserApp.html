@@ -6,10 +6,10 @@
 </head>
 <body>
   <script type="module">
-    import simpleJsonRepair from '../../lib/esm/simpleJsonRepair.js'
+    import jsonrepair from '../../lib/esm/jsonrepair.js'
 
     const invalidJson = '{name: \'John\'}'
-    const repairedJson = simpleJsonRepair(invalidJson)
+    const repairedJson = jsonrepair(invalidJson)
 
     document.write('Invalid JSON:' + invalidJson + '<br>')
     document.write('Repaired JSON:' + repairedJson + '<br>')

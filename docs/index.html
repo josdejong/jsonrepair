@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>simple-json-repair playground</title>
+  <title>jsonrepair playground</title>
   <link rel="stylesheet" href="style.css">
   <meta name="description" content="Repair broken JSON documents">
   <meta name="keywords" content="json, repair, simple, json-simple-repair, fix, invalid">
 </head>
 <body>
   <div class="app">
-    <h1>simple-json-repair</h1>
+    <h1>jsonrepair</h1>
     <div class="info">
       Repair invalid JSON documents. Documentation:
-      <a href="https://github.com/josdejong/simple-json-repair">
-        https://github.com/josdejong/simple-json-repair
+      <a href="https://github.com/josdejong/jsonrepair">
+        https://github.com/josdejong/jsonrepair
       </a>
     </div>
     <div class="playground">
@@ -42,11 +42,11 @@
   </div>
 
   <script type="module">
-    import simpleJsonRepair from 'https://jspm.dev/simple-json-repair'
+    import jsonrepair from 'https://jspm.dev/jsonrepair'
 
     function repairIt () {
       try {
-        outputText.value = simpleJsonRepair(inputText.value)
+        outputText.value = jsonrepair(inputText.value)
         outputText.classList.remove('error')
       } catch (err) {
         outputText.value = err.message

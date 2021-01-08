@@ -1,3 +1,3 @@
-const repair = require('../..')
+const jsonrepair = require('../..')
 
-console.log(repair('{name: \'John\'}'))
+console.log(jsonrepair('{name: \'John\'}'))

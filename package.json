@@ -1,15 +1,15 @@
 {
-  "name": "simple-json-repair",
+  "name": "jsonrepair",
   "version": "1.1.0",
   "description": "Repair broken JSON documents",
   "repository": {
     "type": "git",
-    "url": "https://github.com/josdejong/simple-json-repair.git"
+    "url": "https://github.com/josdejong/jsonrepair.git"
   },
   "type": "module",
   "main": "lib/cjs/index-commonjs.js",
-  "module": "lib/esm/simpleJsonRepair.js",
-  "browser": "lib/umd/simpleJsonRepair.min.js",
+  "module": "lib/esm/jsonrepair.js",
+  "browser": "lib/umd/jsonrepair.min.js",
   "types": "lib/index.d.ts",
   "keywords": [
     "simple",
@@ -26,8 +26,8 @@
     "build:ts": "cpy src/index.d.ts lib",
     "build:esm": "babel src --out-dir lib/esm --source-maps --config-file ./babel.config.json",
     "build:cjs": "babel src --out-dir lib/cjs --source-maps --config-file ./babel-cjs.config.json && cpy tools/cjs lib/cjs",
-    "build:umd": "rollup lib/esm/simpleJsonRepair.js --format umd --name 'simpleJsonRepair' --sourcemap --output.file lib/umd/simpleJsonRepair.js && cpy tools/cjs/package.json lib/umd",
-    "build:umd:min": "uglifyjs --compress --mangle --source-map --comments --output lib/umd/simpleJsonRepair.min.js -- lib/umd/simpleJsonRepair.js",
+    "build:umd": "rollup lib/esm/jsonrepair.js --format umd --name 'jsonrepair' --sourcemap --output.file lib/umd/jsonrepair.js && cpy tools/cjs/package.json lib/umd",
+    "build:umd:min": "uglifyjs --compress --mangle --source-map --comments --output lib/umd/jsonrepair.min.js -- lib/umd/jsonrepair.js",
     "link": "npm run build",
     "lint": "eslint src/**/*.js",
     "build-and-test": "npm run lint && npm run build && npm run test:lib",

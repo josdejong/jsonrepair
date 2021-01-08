@@ -2,6 +2,8 @@
 
 ## not yet published, version 1.1.1
 
+- Renamed the library from `simple-json-repair` to `jsonrepair`.
+  Thanks a lot @vmx for making this npm package name available!
 - Change source code from TypeScript to JavaScript. Reasons: TypeScript 
   conflicts with using native ESM, requiring ugly workarounds. 
   Due to some (old) TypeScript issues we also have to use `@ts-ignore` a lot. 

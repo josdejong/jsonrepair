@@ -92,12 +92,12 @@ let tokenType = UNKNOWN // type of current token
  *
  * Example:
  *
- *     repair('{name: \'John\'}") // '{"name": "John"}'
+ *     jsonrepair('{name: \'John\'}") // '{"name": "John"}'
  *
  * @param {string} text
  * @return {string}
  */
-export default function simpleJsonRepair (text) {
+export default function jsonrepair (text) {
   // initialize
   input = text
   output = ''

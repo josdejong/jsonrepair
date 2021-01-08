@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <title>Simple JSON Repair</title>
-  <script src="../../lib/umd/simpleJsonRepair.js"></script>
+  <script src="../../lib/umd/jsonrepair.js"></script>
 </head>
 <body>
   <script>
     const invalidJson = '{name: \'John\'}'
-    const repairedJson = simpleJsonRepair(invalidJson)
+    const repairedJson = jsonrepair(invalidJson)
 
     document.write('Invalid JSON:' + invalidJson + '<br>')
     document.write('Repaired JSON:' + repairedJson + '<br>')

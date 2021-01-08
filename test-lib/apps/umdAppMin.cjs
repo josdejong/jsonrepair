@@ -1,3 +1,3 @@
-const repair = require('../../lib/umd/simpleJsonRepair.min.js')
+const jsonrepair = require('../../lib/umd/jsonrepair.min.js')
 
-console.log(repair('{name: \'John\'}'))
+console.log(jsonrepair('{name: \'John\'}'))

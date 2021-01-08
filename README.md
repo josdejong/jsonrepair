@@ -1,8 +1,8 @@
-# simple-json-repair
+# jsonrepair
 
 Repair invalid JSON documents.
 
-Try it out: https://josdejong.github.io/simple-json-repair/
+Try it out: https://josdejong.github.io/jsonrepair/
 
 The following issues can be fixed:
 
@@ -24,7 +24,7 @@ The following issues can be fixed:
 ## Install
 
 ```
-$ npm install simple-json-repair
+$ npm install jsonrepair
 ```
 
 Note that in the `lib` folder, there are builds for ESM, UMD, and CommonJs.
@@ -33,14 +33,14 @@ Note that in the `lib` folder, there are builds for ESM, UMD, and CommonJs.
 ## Use
 
 ```js
-import simpleJsonRepair from 'simple-json-repair'
+import jsonrepair from 'jsonrepair'
 
 // The following is invalid JSON: is consists of JSON contents copied from 
 // a JavaScript code base, where the keys are missing double quotes, 
 // and strings are using single quotes:
 const json = '{name: \'John\'}'
 
-const repaired = simpleJsonRepair(json)
+const repaired = jsonrepair(json)
 console.log(repaired) // '{"name": "John"}'
 ```
 
@@ -48,10 +48,10 @@ console.log(repaired) // '{"name": "John"}'
 ### API
 
 ```
-simpleJsonRepair(json: string) : string
+jsonrepair(json: string) : string
 ```
 
-The function `simpleJsonRepair` throws an exception when an issue is encountered
+The function `jsonrepair` throws an exception when an issue is encountered
 which could not be solved. When no error is thrown, the output will be valid JSON.
 
 

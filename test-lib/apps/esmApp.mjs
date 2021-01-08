@@ -1,3 +1,3 @@
-import repair from '../../lib/esm/simpleJsonRepair.js'
+import jsonrepair from '../../lib/esm/jsonrepair.js'
 
-console.log(repair('{name: \'John\'}'))
+console.log(jsonrepair('{name: \'John\'}'))
