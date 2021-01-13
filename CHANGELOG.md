@@ -2,6 +2,11 @@
 
 ## 2021-01-13, version 2.0.0
 
+**This library has been deprecated. It is renamed to `jsonrepair`, 
+please use the new library instead.**
+
+New library location: https://github.com/josdejong/jsonrepair
+
 - Renamed the library from `simple-json-repair` to `jsonrepair`.
   Thanks a lot @vmx for making this npm package name available!
 - Change source code from TypeScript to JavaScript. Reasons: TypeScript 
