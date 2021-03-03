@@ -158,7 +158,18 @@ export function stripLastOccurrence (text, textToStrip) {
  * @returns {string}
  */
 export function insertBeforeLastWhitespace (text, textToInsert) {
-  return text.replace(/\s*$/, match => textToInsert + match)
+  let index = text.length
+
+  if (!isWhitespace(text[index - 1])) {
+    // no trailing whitespaces
+    return text + textToInsert
+  }
+
+  while (isWhitespace(text[index - 1])) {
+    index--
+  }
+
+  return text.substring(0, index) + textToInsert + text.substring(index)
 }
 
 /**
