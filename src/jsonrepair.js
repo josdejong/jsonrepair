@@ -4,8 +4,10 @@ import {
   insertBeforeLastWhitespace,
   isAlpha,
   isDigit,
+  isDoubleQuote,
   isHex,
   isQuote,
+  isSingleQuote,
   isSpecialWhitespace,
   isWhitespace,
   normalizeQuote,
@@ -277,12 +279,13 @@ function getTokenNumber () {
 function getTokenString () {
   if (isQuote(c)) {
     const quote = normalizeQuote(c)
+    const isEndQuote = isSingleQuote(c) ? isSingleQuote : isDoubleQuote
 
     token += '"' // output valid double quote
     tokenType = STRING
     next()
 
-    while (c !== '' && normalizeQuote(c) !== quote) {
+    while (c !== '' && !isEndQuote(c)) {
       if (c === '\\') {
         // handle escape characters
         next()

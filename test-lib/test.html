@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>jsonrepair test performance</title>
+</head>
+<body>
+  <div class="app">
+    <h1>jsonrepair test performance</h1>
+    <div class="info">
+      <input id="loadFile" type="file">
+    </div>
+  </div>
+
+  <script type="module">
+    import jsonrepair from '../lib/esm/jsonrepair.js'
+
+    function repairIt (text) {
+      console.time('repair')
+      const repaired = jsonrepair(text)
+      console.timeEnd('repair')
+
+      console.log('done, length:', {
+        textLength: text.length,
+        repairedLength: repaired.length,
+        changed: repaired !== text
+      })
+    }
+
+    document.getElementById('loadFile').onchange = function loadFile(event) {
+      console.log('loadFile', event.target.files)
+      console.time('load file')
+
+      const reader = new FileReader()
+      const file = event.target.files[0]
+      reader.onload = function (event) {
+        console.timeEnd('load file')
+        const text = event.target.result
+
+        repairIt(text)
+      }
+      reader.readAsText(file)
+    }
+  </script>
+</body>
+</html>

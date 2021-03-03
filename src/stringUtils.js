@@ -1,17 +1,17 @@
 
-const SINGLE_QUOTES = [
-  '\'', // quote
-  '\u2018', // quote left
-  '\u2019', // quote right
-  '\u0060', // grave accent
-  '\u00B4' // acute accent
-]
+const SINGLE_QUOTES = {
+  '\'': true, // quote
+  '\u2018': true, // quote left
+  '\u2019': true, // quote right
+  '\u0060': true, // grave accent
+  '\u00B4': true // acute accent
+}
 
-const DOUBLE_QUOTES = [
-  '"',
-  '\u201C', // double quote left
-  '\u201D' // double quote right
-]
+const DOUBLE_QUOTES = {
+  '"': true,
+  '\u201C': true, // double quote left
+  '\u201D': true // double quote right
+}
 
 /**
  * Check if the given character contains an alpha character, a-z, A-Z, _
@@ -19,8 +19,10 @@ const DOUBLE_QUOTES = [
  * @return {boolean}
  */
 export function isAlpha (c) {
-  return /^[a-zA-Z_]$/.test(c)
+  return ALPHA_REGEX.test(c)
 }
+
+const ALPHA_REGEX = /^[a-zA-Z_]$/
 
 /**
  * Check if the given character contains a hexadecimal character 0-9, a-f, A-F
@@ -28,8 +30,10 @@ export function isAlpha (c) {
  * @return {boolean}
  */
 export function isHex (c) {
-  return /^[0-9a-fA-F]$/.test(c)
+  return HEX_REGEX.test(c)
 }
+
+const HEX_REGEX = /^[0-9a-fA-F]$/
 
 /**
  * checks if the given char c is a digit
@@ -37,8 +41,10 @@ export function isHex (c) {
  * @return {boolean}
  */
 export function isDigit (c) {
-  return (c >= '0' && c <= '9')
+  return DIGIT_REGEX.test(c)
 }
+
+const DIGIT_REGEX = /^[0-9]$/
 
 /**
  * Check if the given character is a whitespace character like space, tab, or
@@ -91,7 +97,27 @@ export function normalizeWhitespace (text) {
  * @returns {boolean}
  */
 export function isQuote (c) {
-  return SINGLE_QUOTES.includes(c) || DOUBLE_QUOTES.includes(c)
+  return SINGLE_QUOTES[c] === true || DOUBLE_QUOTES[c] === true
+}
+
+/**
+ * Test whether the given character is a single quote character.
+ * Also tests for special variants of single quotes.
+ * @param {string} c
+ * @returns {boolean}
+ */
+export function isSingleQuote (c) {
+  return SINGLE_QUOTES[c] === true
+}
+
+/**
+ * Test whether the given character is a double quote character.
+ * Also tests for special variants of double quotes.
+ * @param {string} c
+ * @returns {boolean}
+ */
+export function isDoubleQuote (c) {
+  return DOUBLE_QUOTES[c] === true
 }
 
 /**
@@ -101,11 +127,11 @@ export function isQuote (c) {
  * @returns {string}
  */
 export function normalizeQuote (c) {
-  if (SINGLE_QUOTES.includes(c)) {
+  if (SINGLE_QUOTES[c] === true) {
     return '\''
   }
 
-  if (DOUBLE_QUOTES.includes(c)) {
+  if (DOUBLE_QUOTES[c] === true) {
     return '"'
   }
 
