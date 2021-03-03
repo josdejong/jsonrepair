@@ -125,15 +125,20 @@ export default function jsonrepair (text) {
     // start of a new value after end of the root level object: looks like
     // newline delimited JSON -> turn into a root level array
 
+    let stashedOutput = ''
+
     while (tokenIsStartOfValue()) {
       output = insertBeforeLastWhitespace(output, ',')
+
+      stashedOutput += output
+      output = ''
 
       // parse next newline delimited item
       parseObject()
     }
 
     // wrap the output in an array
-    return `[\n${output}\n]`
+    return `[\n${stashedOutput}${output}\n]`
   }
 
   throw new JsonRepairError('Unexpected characters', index - token.length)
