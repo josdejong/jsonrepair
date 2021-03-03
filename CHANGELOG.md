@@ -1,5 +1,10 @@
 # Changelog
 
+## 2021-03-01, version 2.0.1
+
+- Performance improvements.
+
+
 ## 2021-01-13, version 2.0.0
 
 - Renamed the library from `simple-json-repair` to `jsonrepair`.
