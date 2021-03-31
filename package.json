@@ -41,18 +41,18 @@
   "author": "Jos de Jong",
   "license": "ISC",
   "devDependencies": {
-    "@babel/cli": "7.12.16",
-    "@babel/core": "7.12.16",
-    "@babel/preset-env": "7.12.16",
+    "@babel/cli": "7.13.14",
+    "@babel/core": "7.13.14",
+    "@babel/preset-env": "7.13.12",
     "cpy-cli": "3.1.1",
     "del-cli": "3.0.1",
-    "eslint": "7.20.0",
+    "eslint": "7.23.0",
     "eslint-config-standard": "16.0.2",
     "eslint-plugin-import": "2.22.1",
     "eslint-plugin-node": "11.1.0",
     "eslint-plugin-promise": "4.3.1",
-    "mocha": "8.3.0",
-    "rollup": "2.39.0",
-    "uglify-js": "3.12.8"
+    "mocha": "8.3.2",
+    "rollup": "2.44.0",
+    "uglify-js": "3.13.3"
   }
 }
