@@ -1,6 +1,6 @@
 # Changelog
 
-## not yet published, version 2.2.0
+## 2021-04-01, version 2.2.0
 
 - Implement #16: turn an escaped string containing JSON into valid JSON.
 
