@@ -7,18 +7,23 @@ Try it out: https://josdejong.github.io/jsonrepair/
 The following issues can be fixed:
 
 - Add missing quotes around keys
-- Replace single quotes with double quotes
-- Turn newline delimited JSON into a valid JSON array
 - Add missing escape characters
-- Replace special white space characters with regular spaces
-- Replace special quote characters like `“...”`  with regular double quotes
-- Concatenate strings like `"long text" + "more text on next line"`
 - Add missing commas
+- Replace single quotes with double quotes
+- Replace special quote characters like `“...”`  with regular double quotes
+- Replace special white space characters with regular spaces
+- Replace Python constants `None`, `True`, and `False` with `null`, `true`, and `false`
 - Strip trailing commas
 - Strip comments like `/* ... */` and `// ...`
 - Strip JSONP notation like `callback({ ... })`
+- Strip escape characters from an escaped string like `{\"stringified\": \"content\"}`
 - Strip MongoDB data types like `NumberLong(2)` and `ISODate("2012-12-19T06:01:17.171Z")`
-- Replace Python constants `None`, `True`, and `False` with `null`, `true`, and `false`
+- Concatenate strings like `"long text" + "more text on next line"`
+- Turn newline delimited JSON into a valid JSON array, for example:
+    ```
+    { "id": 1, "name": "John" }
+    { "id": 2, "name": "Sarah" }
+    ```
 
 
 ## Install

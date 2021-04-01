@@ -156,6 +156,16 @@ function next () {
 }
 
 /**
+ * Special version of the function next, used to parse escaped strings
+ */
+function nextSkipEscape () {
+  next()
+  if (c === '\\') {
+    next()
+  }
+}
+
+/**
  * check whether the current token is the start of a value:
  * object, array, number, string, or symbol
  * @returns {boolean}
@@ -277,44 +287,56 @@ function getTokenNumber () {
     return
   }
 
-  getTokenString()
+  getTokenEscapedString()
+}
+
+// get a token string like '\"hello world\"'
+function getTokenEscapedString () {
+  if (c === '\\' && input.charAt(index + 1) === '"') {
+    // an escaped piece of JSON
+    next()
+    getTokenString(nextSkipEscape)
+  } else {
+    getTokenString(next)
+  }
 }
 
 // get a token string like '"hello world"'
-function getTokenString () {
+function getTokenString (getNext) {
   if (isQuote(c)) {
     const quote = normalizeQuote(c)
     const isEndQuote = isSingleQuote(c) ? isSingleQuote : isDoubleQuote
 
     token += '"' // output valid double quote
     tokenType = STRING
-    next()
+    getNext()
 
+    // eslint-disable-next-line no-unmodified-loop-condition
     while (c !== '' && !isEndQuote(c)) {
       if (c === '\\') {
         // handle escape characters
-        next()
+        getNext()
 
         const unescaped = ESCAPE_CHARACTERS[c]
         if (unescaped !== undefined) {
           token += '\\' + c
-          next()
+          getNext()
         } else if (c === 'u') {
           // parse escaped unicode character, like '\\u260E'
           token += '\\u'
-          next()
+          getNext()
 
           for (let u = 0; u < 4; u++) {
             if (!isHex(c)) {
               throw new JsonRepairError('Invalid unicode character', index - token.length)
             }
             token += c
-            next()
+            getNext()
           }
         } else if (c === '\'') {
           // escaped single quote character -> remove the escape character
           token += '\''
-          next()
+          getNext()
         } else {
           throw new JsonRepairError('Invalid escape character "\\' + c + '"', index)
         }
@@ -322,15 +344,15 @@ function getTokenString () {
         // unescaped special character
         // fix by adding an escape character
         token += CONTROL_CHARACTERS[c]
-        next()
+        getNext()
       } else if (c === '"') {
         // unescaped double quote -> escape it
         token += '\\"'
-        next()
+        getNext()
       } else {
         // a regular character
         token += c
-        next()
+        getNext()
       }
     }
 
@@ -338,7 +360,7 @@ function getTokenString () {
       throw new JsonRepairError('End of string expected', index - token.length)
     }
     token += '"' // output valid double quote
-    next()
+    getNext()
 
     return
   }

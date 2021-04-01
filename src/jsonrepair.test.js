@@ -145,6 +145,13 @@ describe('jsonRepair', () => {
       throws(() => jsonrepair('callback {}'), /Unexpected characters/)
     })
 
+    it('should repair escaped string contents', () => {
+      strictEqual(jsonrepair('\\"hello \\\\"world\\\\"\\"'), '"hello \\"world\\""')
+      strictEqual(jsonrepair('[\\"hello \\\\"world\\\\"\\"]'), '["hello \\"world\\""]')
+      strictEqual(jsonrepair('{\\"stringified\\": \\"hello \\\\"world\\\\"\\"}'),
+        '{"stringified": "hello \\"world\\""}')
+    })
+
     it('should strip trailing commas from an array', () => {
       strictEqual(jsonrepair('[1,2,3,]'), '[1,2,3]')
       strictEqual(jsonrepair('[1,2,3,\n]'), '[1,2,3\n]')
