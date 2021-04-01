@@ -1,6 +1,6 @@
 # Changelog
 
-## not yet published, version 2.1.0
+## 2021-04-01, version 2.1.0
 
 - Implemented command line interface (CLI), see #34.
 
