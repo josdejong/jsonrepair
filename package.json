@@ -18,6 +18,9 @@
     "fix",
     "invalid"
   ],
+  "bin": {
+    "jsonrepair": "./bin/cli.js"
+  },
   "scripts": {
     "test": "mocha",
     "test:lib": "mocha test-lib/*.test.*",

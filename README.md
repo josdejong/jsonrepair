@@ -55,6 +55,37 @@ The function `jsonrepair` throws an exception when an issue is encountered
 which could not be solved. When no error is thrown, the output will be valid JSON.
 
 
+### Command Line Interface (CLI)
+
+When `jsonrepair` is installed globally using npm, it can be used on the command line. To install `jsonrepair` globally:
+
+```bash
+$ npm install -g jsonrepair
+```
+
+Usage:
+
+```
+$ jsonrepair [filename] {OPTIONS}
+```
+
+Options:
+
+```
+--version, -v       Show application version
+--help,    -h       Show help
+```
+
+Example usage:
+
+```
+$ jsonrepair broken.json                         # Repair a file, output to console
+$ jsonrepair broken.json > repaired.json         # Repair a file, output to file
+$ jsonrepair broken.json --overwrite             # Repair a file, replace the file itself
+$ cat broken.json | jsonrepair                   # Repair data from an input stream
+$ cat broken.json | jsonrepair > repaired.json   # Repair data from an input stream, output to file
+```
+
 ### Develop
 
 To build the library (ESM, CommonJs, and UMD output in the folder `lib`):

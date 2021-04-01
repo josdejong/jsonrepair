@@ -1,7 +1,7 @@
 import { strictEqual, deepStrictEqual, throws } from 'assert'
 import jsonrepair from './jsonrepair.js'
 
-describe('jsonRepair2', () => {
+describe('jsonRepair', () => {
   describe('parse valid JSON', () => {
     it('parse full JSON object', function () {
       const text = '{"a":2.3e100,"b":"str","c":null,"d":false,"e":[1,2,3]}'
