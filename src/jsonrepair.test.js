@@ -150,6 +150,10 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('[\\"hello \\\\"world\\\\"\\"]'), '["hello \\"world\\""]')
       strictEqual(jsonrepair('{\\"stringified\\": \\"hello \\\\"world\\\\"\\"}'),
         '{"stringified": "hello \\"world\\""}')
+
+      // the following is sort of invalid: the end quote should be escaped too,
+      // but the fixed result is most likely what you want in the end
+      strictEqual(jsonrepair('\\"hello"'), '"hello"')
     })
 
     it('should strip trailing commas from an array', () => {
