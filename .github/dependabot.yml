@@ -1,0 +1,60 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: weekly
+    time: "04:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: eslint
+    versions:
+    - 7.18.0
+    - 7.19.0
+    - 7.21.0
+    - 7.22.0
+    - 7.23.0
+    - 7.24.0
+  - dependency-name: uglify-js
+    versions:
+    - 3.12.5
+    - 3.12.6
+    - 3.12.7
+    - 3.13.0
+    - 3.13.1
+    - 3.13.2
+    - 3.13.3
+  - dependency-name: "@babel/preset-env"
+    versions:
+    - 7.12.13
+    - 7.12.17
+    - 7.13.10
+    - 7.13.12
+    - 7.13.8
+    - 7.13.9
+  - dependency-name: rollup
+    versions:
+    - 2.38.0
+    - 2.38.2
+    - 2.38.5
+    - 2.40.0
+    - 2.41.2
+    - 2.42.1
+    - 2.43.1
+  - dependency-name: "@babel/core"
+    versions:
+    - 7.12.13
+    - 7.12.17
+    - 7.13.10
+    - 7.13.13
+    - 7.13.8
+  - dependency-name: mocha
+    versions:
+    - 8.3.1
+    - 8.3.2
+  - dependency-name: "@babel/cli"
+    versions:
+    - 7.12.13
+    - 7.12.17
+    - 7.13.0
+    - 7.13.10
