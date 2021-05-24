@@ -56,6 +56,6 @@
     "eslint-plugin-promise": "5.1.0",
     "mocha": "8.3.2",
     "rollup": "2.45.2",
-    "uglify-js": "3.13.4"
+    "uglify-js": "3.13.7"
   }
 }
