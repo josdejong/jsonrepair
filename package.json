@@ -44,7 +44,7 @@
   "author": "Jos de Jong",
   "license": "ISC",
   "devDependencies": {
-    "@babel/cli": "7.13.16",
+    "@babel/cli": "7.14.3",
     "@babel/core": "7.13.16",
     "@babel/preset-env": "7.13.15",
     "cpy-cli": "3.1.1",
