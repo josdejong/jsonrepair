@@ -46,7 +46,7 @@
   "devDependencies": {
     "@babel/cli": "7.13.16",
     "@babel/core": "7.13.16",
-    "@babel/preset-env": "7.13.15",
+    "@babel/preset-env": "7.14.4",
     "cpy-cli": "3.1.1",
     "del-cli": "3.0.1",
     "eslint": "7.24.0",
