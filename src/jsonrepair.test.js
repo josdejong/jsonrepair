@@ -176,6 +176,12 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('"{a:2,}"'), '"{a:2,}"')
     })
 
+    it('should strip trailing comma at the end', () => {
+      strictEqual(jsonrepair('4,'), '4')
+      strictEqual(jsonrepair('{"a":2},'), '{"a":2}')
+      strictEqual(jsonrepair('[1,2,3],'), '[1,2,3]')
+    })
+
     it('should add a missing closing bracket for an object', () => {
       strictEqual(jsonrepair('{"a":2'), '{"a":2}')
       strictEqual(jsonrepair('{"a":{"b":2}'), '{"a":{"b":2}}')
@@ -188,6 +194,7 @@ describe('jsonRepair', () => {
 
     it('should add a missing closing bracket for an array', () => {
       strictEqual(jsonrepair('[1,2,3'), '[1,2,3]')
+      // strictEqual(jsonrepair('[1,2,3,'), '[1,2,3]') // TODO
       strictEqual(jsonrepair('{\n"values":[1,2,3\n}'), '{\n"values":[1,2,3]\n}')
     })
 
@@ -290,6 +297,38 @@ describe('jsonRepair', () => {
       const expected = '[\n\n{},\n\n\n{},\n\n\n{}\n\n]'
 
       strictEqual(jsonrepair(text), expected)
+    })
+
+    it('should repair newline separated json having commas', () => {
+      const text = '' +
+        '/* 1 */\n' +
+        '{},\n' +
+        '\n' +
+        '/* 2 */\n' +
+        '{},\n' +
+        '\n' +
+        '/* 3 */\n' +
+        '{}\n'
+      const expected = '[\n\n{},\n\n\n{},\n\n\n{}\n\n]'
+
+      strictEqual(jsonrepair(text), expected)
+      strictEqual(jsonrepair('1,2,3'), '[\n1,2,3\n]')
+    })
+
+    it('should repair newline separated json having commas and trailing comma', () => {
+      const text = '' +
+        '/* 1 */\n' +
+        '{},\n' +
+        '\n' +
+        '/* 2 */\n' +
+        '{},\n' +
+        '\n' +
+        '/* 3 */\n' +
+        '{},\n'
+      const expected = '[\n\n{},\n\n\n{},\n\n\n{}\n\n]'
+
+      strictEqual(jsonrepair(text), expected)
+      strictEqual(jsonrepair('1,2,3,'), '[\n1,2,3\n]')
     })
   })
 

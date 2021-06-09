@@ -111,23 +111,26 @@ export default function jsonrepair (text) {
   // get first token
   processNextToken()
 
-  const isRootLevelObject = tokenType === DELIMITER && token === '{'
+  const rootLevelTokenType = tokenType
 
   // parse everything
   parseObject()
+
+  // ignore trailing comma
+  skipComma()
 
   if (token === '') {
     // reached the end of the document properly
     return output
   }
 
-  if (isRootLevelObject && tokenIsStartOfValue()) {
+  if (rootLevelTokenType === tokenType && tokenIsStartOfValue()) {
     // start of a new value after end of the root level object: looks like
     // newline delimited JSON -> turn into a root level array
 
     let stashedOutput = ''
 
-    while (tokenIsStartOfValue()) {
+    while (rootLevelTokenType === tokenType && tokenIsStartOfValue()) {
       output = insertBeforeLastWhitespace(output, ',')
 
       stashedOutput += output
@@ -135,6 +138,9 @@ export default function jsonrepair (text) {
 
       // parse next newline delimited item
       parseObject()
+
+      // ignore trailing comma
+      skipComma()
     }
 
     // wrap the output in an array
@@ -211,6 +217,14 @@ function processNextToken () {
     tokenType = UNKNOWN
     token = ''
 
+    processNextToken()
+  }
+}
+
+function skipComma () {
+  if (token === ',') {
+    token = ''
+    tokenType = UNKNOWN
     processNextToken()
   }
 }
