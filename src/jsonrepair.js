@@ -517,6 +517,13 @@ function parseObject () {
           output = stripLastOccurrence(output, ',')
           break
         }
+
+        if (token === '') {
+          // end of json reached, but missing }
+          // Strip the missing comma (the closing bracket will be added later)
+          output = stripLastOccurrence(output, ',')
+          break
+        }
       } else {
         if (tokenIsStartOfKey()) {
           // we expect a comma here, but got the start of a new key
@@ -564,6 +571,13 @@ function parseArray () {
 
         if (tokenType === DELIMITER && token === ']') {
           // we've just passed a trailing comma -> remove the trailing comma
+          output = stripLastOccurrence(output, ',')
+          break
+        }
+
+        if (token === '') {
+          // end of json reached, but missing ]
+          // Strip the missing comma (the closing bracket will be added later)
           output = stripLastOccurrence(output, ',')
           break
         }

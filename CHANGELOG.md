@@ -1,9 +1,10 @@
 # Changelog
 
-## 2021-06-08, version 2.2.1
+## 2021-06-09, version 2.2.1
 
 - Improved handling of trailing commas.
 - Improved handling of newline delimited JSON containing commas.
+- Improved handling of repairing objects/arrays with missing closing bracket.
 
 
 ## 2021-04-01, version 2.2.0

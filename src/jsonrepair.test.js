@@ -184,6 +184,7 @@ describe('jsonRepair', () => {
 
     it('should add a missing closing bracket for an object', () => {
       strictEqual(jsonrepair('{"a":2'), '{"a":2}')
+      strictEqual(jsonrepair('{"a":2,'), '{"a":2}')
       strictEqual(jsonrepair('{"a":{"b":2}'), '{"a":{"b":2}}')
       strictEqual(jsonrepair('{\n  "a":{"b":2\n}'), '{\n  "a":{"b":2\n}}')
       strictEqual(jsonrepair('[{"b":2]'), '[{"b":2}]')
@@ -194,8 +195,10 @@ describe('jsonRepair', () => {
 
     it('should add a missing closing bracket for an array', () => {
       strictEqual(jsonrepair('[1,2,3'), '[1,2,3]')
-      // strictEqual(jsonrepair('[1,2,3,'), '[1,2,3]') // TODO
+      strictEqual(jsonrepair('[1,2,3,'), '[1,2,3]')
+      strictEqual(jsonrepair('[[1,2,3,'), '[[1,2,3]]')
       strictEqual(jsonrepair('{\n"values":[1,2,3\n}'), '{\n"values":[1,2,3]\n}')
+      strictEqual(jsonrepair('{\n"values":[1,2,3\n'), '{\n"values":[1,2,3]}\n')
     })
 
     it('should strip MongoDB data types', () => {
@@ -343,7 +346,6 @@ describe('jsonRepair', () => {
     throws(function () { jsonrepair('{}}') }, { message: /Unexpected characters/ }, 'should throw an exception when parsing an invalid number')
 
     throws(function () { jsonrepair('[') }, { message: /Unexpected end of json string/ }, 'should throw an exception when parsing an invalid number')
-    throws(function () { jsonrepair('[2,') }, { message: /Unexpected end of json string/ }, 'should throw an exception when parsing an invalid number')
     throws(function () { jsonrepair('[2,}') }, { message: /Value expected/ }, 'should throw an exception when parsing an invalid number')
 
     throws(function () { jsonrepair('2.3.4') }, { message: /Syntax error in part ".4" \(char 3\)/ }, 'should throw an exception when parsing an invalid number')
