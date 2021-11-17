@@ -9,6 +9,7 @@ The following issues can be fixed:
 - Add missing quotes around keys
 - Add missing escape characters
 - Add missing commas
+- Add missing closing brackets
 - Replace single quotes with double quotes
 - Replace special quote characters like `“...”`  with regular double quotes
 - Replace special white space characters with regular spaces
