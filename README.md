@@ -92,6 +92,12 @@ $ cat broken.json | jsonrepair                   # Repair data from an input str
 $ cat broken.json | jsonrepair > repaired.json   # Repair data from an input stream, output to file
 ```
 
+### Alternatives:
+
+Similar libraries:
+
+- https://github.com/RyanMarcus/dirty-json
+
 ### Develop
 
 To build the library (ESM, CommonJs, and UMD output in the folder `lib`):
