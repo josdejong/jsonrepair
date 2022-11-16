@@ -6,7 +6,7 @@ Try it out in a minimal demo: https://josdejong.github.io/jsonrepair/
 
 Use it in a full-fledged application: https://jsoneditoronline.org
 
-Read the article ["How to fix JSON and validate it with ease"](https://jsoneditoronline.org/indepth/parse/fix-json/)
+Read the background article ["How to fix JSON and validate it with ease"](https://jsoneditoronline.org/indepth/parse/fix-json/)
 
 The following issues can be fixed:
 
