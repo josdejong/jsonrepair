@@ -362,9 +362,6 @@ describe('jsonRepair', () => {
   })
 })
 
-/**
- * @param {string} text
- */
-function assertRepair (text) {
+function assertRepair (text: string) {
   strictEqual(jsonrepair(text), text)
 }

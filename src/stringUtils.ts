@@ -1,5 +1,5 @@
 
-const SINGLE_QUOTES = {
+const SINGLE_QUOTES: { [key: string]: boolean } = {
   '\'': true, // quote
   '\u2018': true, // quote left
   '\u2019': true, // quote right
@@ -7,7 +7,7 @@ const SINGLE_QUOTES = {
   '\u00B4': true // acute accent
 }
 
-const DOUBLE_QUOTES = {
+const DOUBLE_QUOTES: { [key: string]: boolean } = {
   '"': true,
   '\u201C': true, // double quote left
   '\u201D': true // double quote right
@@ -15,10 +15,8 @@ const DOUBLE_QUOTES = {
 
 /**
  * Check if the given character contains an alpha character, a-z, A-Z, _
- * @param {string} c
- * @return {boolean}
  */
-export function isAlpha (c) {
+export function isAlpha (c: string) : boolean {
   return ALPHA_REGEX.test(c)
 }
 
@@ -26,10 +24,8 @@ const ALPHA_REGEX = /^[a-zA-Z_]$/
 
 /**
  * Check if the given character contains a hexadecimal character 0-9, a-f, A-F
- * @param {string} c
- * @return {boolean}
  */
-export function isHex (c) {
+export function isHex (c: string) : boolean {
   return HEX_REGEX.test(c)
 }
 
@@ -37,10 +33,8 @@ const HEX_REGEX = /^[0-9a-fA-F]$/
 
 /**
  * checks if the given char c is a digit
- * @param {string} c
- * @return {boolean}
  */
-export function isDigit (c) {
+export function isDigit (c: string) : boolean {
   return DIGIT_REGEX.test(c)
 }
 
@@ -49,20 +43,16 @@ const DIGIT_REGEX = /^[0-9]$/
 /**
  * Check if the given character is a whitespace character like space, tab, or
  * newline
- * @param {string} c
- * @return {boolean}
  */
-export function isWhitespace (c) {
+export function isWhitespace (c: string) : boolean {
   return c === ' ' || c === '\t' || c === '\n' || c === '\r'
 }
 
 /**
  * Check if the given character is a special whitespace character, some
  * unicode variant
- * @param {string} c
- * @return {boolean}
  */
-export function isSpecialWhitespace (c) {
+export function isSpecialWhitespace (c: string) : boolean {
   return (
     c === '\u00A0' ||
     (c >= '\u2000' && c <= '\u200A') ||
@@ -74,10 +64,8 @@ export function isSpecialWhitespace (c) {
 
 /**
  * Replace speical whitespace characters with regular spaces
- * @param {string} text
- * @returns {string}
  */
-export function normalizeWhitespace (text) {
+export function normalizeWhitespace (text: string) : string {
   let normalized = ''
 
   for (let i = 0; i < text.length; i++) {
@@ -93,58 +81,47 @@ export function normalizeWhitespace (text) {
 /**
  * Test whether the given character is a quote or double quote character.
  * Also tests for special variants of quotes.
- * @param {string} c
- * @returns {boolean}
  */
-export function isQuote (c) {
+export function isQuote (c: string) : boolean {
   return SINGLE_QUOTES[c] === true || DOUBLE_QUOTES[c] === true
 }
 
 /**
  * Test whether the given character is a single quote character.
  * Also tests for special variants of single quotes.
- * @param {string} c
- * @returns {boolean}
  */
-export function isSingleQuote (c) {
+export function isSingleQuote (c: string) : boolean {
   return SINGLE_QUOTES[c] === true
 }
 
 /**
  * Test whether the given character is a double quote character.
  * Also tests for special variants of double quotes.
- * @param {string} c
- * @returns {boolean}
  */
-export function isDoubleQuote (c) {
+export function isDoubleQuote (c: string) : boolean {
   return DOUBLE_QUOTES[c] === true
 }
 
 /**
  * Normalize special double or single quote characters to their regular
  * variant ' or "
- * @param {string} c
- * @returns {string}
  */
-export function normalizeQuote (c) {
+export function normalizeQuote (c: string) : string {
   if (SINGLE_QUOTES[c] === true) {
     return '\''
   }
 
-  if (DOUBLE_QUOTES[c] === true) {
+  if (DOUBLE_QUOTES[c] !== true) {
+    return c
+  } else {
     return '"'
   }
-
-  return c
 }
 
 /**
  * Strip last occurrence of textToStrip from text
- * @param {string} text
- * @param {string} textToStrip
- * @returns {string}
  */
-export function stripLastOccurrence (text, textToStrip) {
+export function stripLastOccurrence (text: string, textToStrip: string) : string {
   const index = text.lastIndexOf(textToStrip)
   return (index !== -1)
     ? text.substring(0, index) + text.substring(index + 1)
@@ -153,11 +130,8 @@ export function stripLastOccurrence (text, textToStrip) {
 
 /**
  * Insert textToInsert into text before the last whitespace in text
- * @param {string} text
- * @param {string} textToInsert
- * @returns {string}
  */
-export function insertBeforeLastWhitespace (text, textToInsert) {
+export function insertBeforeLastWhitespace (text: string, textToInsert: string) : string {
   let index = text.length
 
   if (!isWhitespace(text[index - 1])) {
@@ -174,11 +148,7 @@ export function insertBeforeLastWhitespace (text, textToInsert) {
 
 /**
  * Insert textToInsert at index in text
- * @param {string} text
- * @param {string} textToInsert
- * @param {number} index
- * @returns {string}
  */
-export function insertAtIndex (text, textToInsert, index) {
+export function insertAtIndex (text: string, textToInsert: string, index: number) : string {
   return text.substring(0, index) + textToInsert + text.substring(index)
 }

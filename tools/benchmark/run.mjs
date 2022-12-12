@@ -1,3 +1,4 @@
+import assert from 'assert'
 import Benchmark from 'benchmark'
 import { readFileSync } from 'fs'
 import { dirname } from 'path'
@@ -8,6 +9,8 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 const text = readFileSync(__dirname + '/largefile.json', 'utf-8')
+
+assert.strictEqual(text, jsonrepair(text))
 
 const suite = new Benchmark.Suite('jsonrepair benchmark')
 suite

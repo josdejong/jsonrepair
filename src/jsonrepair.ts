@@ -29,7 +29,7 @@ const UNKNOWN = 6
  */
 
 // map with all delimiters
-const DELIMITERS = {
+const DELIMITERS: { [key: string]: boolean } = {
   '': true,
   '{': true,
   '}': true,
@@ -48,7 +48,7 @@ const DELIMITERS = {
 }
 
 // map with all escape characters
-const ESCAPE_CHARACTERS = {
+const ESCAPE_CHARACTERS: { [key: string]: string } = {
   '"': '"',
   '\\': '\\',
   '/': '/',
@@ -61,7 +61,7 @@ const ESCAPE_CHARACTERS = {
 }
 
 // TODO: can we unify CONTROL_CHARACTERS and ESCAPE_CHARACTERS?
-const CONTROL_CHARACTERS = {
+const CONTROL_CHARACTERS: { [key: string]: string } = {
   '\b': '\\b',
   '\f': '\\f',
   '\n': '\\n',
@@ -69,13 +69,13 @@ const CONTROL_CHARACTERS = {
   '\t': '\\t'
 }
 
-const SYMBOLS = {
+const SYMBOLS: { [key: string]: string } = {
   null: 'null',
   true: 'true',
   false: 'false'
 }
 
-const PYTHON_SYMBOLS = {
+const PYTHON_SYMBOLS: { [key: string]: string } = {
   None: 'null',
   True: 'true',
   False: 'false'
@@ -96,10 +96,8 @@ let tokenType = UNKNOWN // type of current token
  *
  *     jsonrepair('{name: \'John\'}") // '{"name": "John"}'
  *
- * @param {string} text
- * @return {string}
  */
-export default function jsonrepair (text) {
+export default function jsonrepair (text: string) : string {
   // initialize
   input = text
   output = ''
@@ -283,6 +281,8 @@ function getTokenNumber () {
       token += c
       next()
 
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       if (c === '+' || c === '-') {
         token += c
         next()
@@ -316,7 +316,7 @@ function getTokenEscapedString () {
 }
 
 // get a token string like '"hello world"'
-function getTokenString (getNext) {
+function getTokenString (getNext: () => void) {
   if (isQuote(c)) {
     const quote = normalizeQuote(c)
     const isEndQuote = isSingleQuote(c) ? isSingleQuote : isDoubleQuote
@@ -335,6 +335,9 @@ function getTokenString (getNext) {
         if (unescaped !== undefined) {
           token += '\\' + c
           getNext()
+
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
         } else if (c === 'u') {
           // parse escaped unicode character, like '\\u260E'
           token += '\\u'
@@ -347,6 +350,9 @@ function getTokenString (getNext) {
             token += c
             getNext()
           }
+
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
         } else if (c === '\'') {
           // escaped single quote character -> remove the escape character
           token += '\''
@@ -419,6 +425,8 @@ function getTokenComment () {
   if (c === '/' && input[index + 1] === '*') {
     tokenType = COMMENT
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     while (c !== '' && (c !== '*' || (c === '*' && input[index + 1] !== '/'))) {
       token += c
       next()
@@ -439,6 +447,8 @@ function getTokenComment () {
   if (c === '/' && input[index + 1] === '/') {
     tokenType = COMMENT
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     while (c !== '' && c !== '\n') {
       token += c
       next()
@@ -471,6 +481,8 @@ function parseObject () {
     processNextToken()
 
     // TODO: can we make this redundant?
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     if (tokenType === DELIMITER && token === '}') {
       // empty object
       processNextToken()
@@ -480,6 +492,8 @@ function parseObject () {
     while (true) {
       // parse key
 
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       if (tokenType === SYMBOL || tokenType === NUMBER) {
         // unquoted key -> add quotes around it, change it into a string
         tokenType = STRING
@@ -493,6 +507,8 @@ function parseObject () {
       processNextToken()
 
       // parse colon (key/value separator)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       if (tokenType === DELIMITER && token === ':') {
         processNextToken()
       } else {
@@ -509,15 +525,21 @@ function parseObject () {
       parseObject()
 
       // parse comma (key/value pair separator)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       if (tokenType === DELIMITER && token === ',') {
         processNextToken()
 
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         if (tokenType === DELIMITER && token === '}') {
           // we've just passed a trailing comma -> remove the trailing comma
           output = stripLastOccurrence(output, ',')
           break
         }
 
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         if (token === '') {
           // end of json reached, but missing }
           // Strip the missing comma (the closing bracket will be added later)
@@ -535,6 +557,8 @@ function parseObject () {
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     if (tokenType === DELIMITER && token === '}') {
       processNextToken()
     } else {
@@ -555,6 +579,8 @@ function parseArray () {
   if (tokenType === DELIMITER && token === '[') {
     processNextToken()
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     if (tokenType === DELIMITER && token === ']') {
       // empty array
       processNextToken()
@@ -566,6 +592,8 @@ function parseArray () {
       parseObject()
 
       // parse comma (item separator)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       if (tokenType === DELIMITER && token === ',') {
         processNextToken()
 
@@ -592,6 +620,8 @@ function parseArray () {
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     if (tokenType === DELIMITER && token === ']') {
       processNextToken()
     } else {
@@ -611,6 +641,8 @@ function parseString () {
   if (tokenType === STRING) {
     processNextToken()
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     while (tokenType === DELIMITER && token === '+') {
       // string concatenation like "hello" + "world"
       token = '' // don't output the concatenation
@@ -667,7 +699,8 @@ function parseSymbol () {
     token = ''
     processNextToken()
 
-    // if (tokenType === DELIMITER && token === '(') {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     if (tokenType === DELIMITER && token === '(') {
       // a MongoDB function call or JSONP call
       // Can be a MongoDB data type like in {"_id": ObjectId("123")}
