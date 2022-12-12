@@ -1,10 +1,17 @@
 #!/usr/bin/env node
-const fs = require('fs')
-const path = require('path')
-const jsonrepair = require(path.join(__dirname, '..'))
+import { createReadStream, createWriteStream, readFileSync } from 'fs'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
+import jsonrepair from '../lib/esm/jsonrepair.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 function outputVersion () {
-  console.log(require('../package.json').version)
+  const file = join(__dirname, '../package.json')
+  const pkg = JSON.parse(String(readFileSync(file, 'utf-8')))
+
+  console.log(pkg.version)
 }
 
 function outputHelp () {
@@ -87,14 +94,14 @@ if (options.version) {
   outputHelp()
 } else if (options.inputFile != null) {
   if (options.overwrite) {
-    streamToString(fs.createReadStream(options.inputFile))
+    streamToString(createReadStream(options.inputFile))
       .then(text => {
-        const outputStream = fs.createWriteStream(options.inputFile)
+        const outputStream = createWriteStream(options.inputFile)
         outputStream.write(jsonrepair(text))
       })
       .catch(err => process.stderr.write(err.toString()))
   } else {
-    streamToString(fs.createReadStream(options.inputFile))
+    streamToString(createReadStream(options.inputFile))
       .then(text => process.stdout.write(jsonrepair(text)))
       .catch(err => process.stderr.write(err.toString()))
   }
