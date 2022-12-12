@@ -33,6 +33,7 @@
     "build:umd:min": "uglifyjs --compress --mangle --source-map --comments --output lib/umd/jsonrepair.min.js -- lib/umd/jsonrepair.js",
     "link": "npm run build",
     "lint": "eslint src/**/*.js",
+    "benchmark": "npm run benchmark",
     "build-and-test": "npm run lint && npm run build && npm run test:lib",
     "prepublishOnly": "npm run build-and-test"
   },
@@ -47,6 +48,7 @@
     "@babel/cli": "7.19.3",
     "@babel/core": "7.20.2",
     "@babel/preset-env": "7.20.2",
+    "benchmark": "2.1.4",
     "cpy-cli": "4.2.0",
     "del-cli": "5.0.0",
     "eslint": "8.27.0",
