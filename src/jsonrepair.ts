@@ -17,6 +17,7 @@ import {
   codeZero,
   endsWithCommaOrNewline,
   insertBeforeLastWhitespace,
+  isControlCharacter,
   isDelimiter,
   isDigit,
   isDoubleQuote,
@@ -399,17 +400,18 @@ export default function jsonrepair(text: string): string {
           }
         } else {
           const char = text[i]
+          const code = text.charCodeAt(i)
 
-          if (char === '"' && text[i - 1] !== '\\') {
+          if (code === codeDoubleQuote && text.charCodeAt(i - 1) !== codeBackslash) {
             // repair unescaped double quote
             output += '\\' + char
             i++
-          } else if (controlCharacters[char] !== undefined) {
+          } else if (isControlCharacter(code)) {
             // unescaped control character
             output += controlCharacters[char]
             i++
           } else {
-            if (!isValidStringCharacter(char)) {
+            if (!isValidStringCharacter(code)) {
               throwInvalidCharacter(char)
             }
             output += char

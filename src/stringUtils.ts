@@ -6,10 +6,12 @@ export const codeOpeningBrace = 0x7b // "{"
 export const codeClosingBrace = 0x7d // "}"
 export const codeOpeningBracket = 0x5b // "["
 export const codeClosingBracket = 0x5d // "]"
-export const codeSpace = 0x20 // space
-export const codeNewline = 0xa // \n
-export const codeTab = 0x9 // \t
-export const codeReturn = 0xd // \r
+export const codeSpace = 0x20 // " "
+export const codeNewline = 0xa // "\n"
+export const codeTab = 0x9 // "\t"
+export const codeReturn = 0xd // "\r"
+export const codeBackspace = 0x08 // "\b"
+export const codeFormFeed = 0x0c // "\f"
 export const codeDoubleQuote = 0x0022 // "
 export const codePlus = 0x2b // "+"
 export const codeMinus = 0x2d // "-"
@@ -47,13 +49,9 @@ export function isNonZeroDigit(code: number): boolean {
   return code >= codeOne && code <= codeNine
 }
 
-export function isValidStringCharacter(char: string): boolean {
-  // the regex testing all valid characters is relatively slow,
-  // therefore we first check all regular printable characters (which is fast)
-  return (char >= ' ' && char <= '~') || regexValidStringCharacter.test(char)
+export function isValidStringCharacter(code: number): boolean {
+  return code >= 0x20 && code <= 0x10ffff
 }
-
-const regexValidStringCharacter = /^[\u0020-\u{10FFFF}]$/u
 
 export function isDelimiter(c: string): boolean {
   return regexDelimiter.test(c)
@@ -66,6 +64,16 @@ export function isStartOfValue(char: string): boolean {
 }
 
 const regexStartOfValue = /^[[{\w"-_]$/
+
+export function isControlCharacter(code: number) {
+  return (
+    code === codeNewline ||
+    code === codeReturn ||
+    code === codeTab ||
+    code === codeBackspace ||
+    code === codeFormFeed
+  )
+}
 
 /**
  * Check if the given character is a whitespace character like space, tab, or
