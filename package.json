@@ -40,7 +40,7 @@
     "build:umd:min": "uglifyjs --compress --mangle --source-map --comments --output lib/umd/jsonrepair.min.js -- lib/umd/jsonrepair.js",
     "build:types": "tsc --project tsconfig-types.json",
     "lint": "eslint src/**/*.ts",
-    "benchmark": "node tools/benchmark/run.mjs",
+    "benchmark": "npm run build:esm && node tools/benchmark/run.mjs",
     "build-and-test": "npm run lint && npm run build && npm run test:lib",
     "prepublishOnly": "npm run build-and-test"
   },

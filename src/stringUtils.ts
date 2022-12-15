@@ -1,154 +1,155 @@
-
-const SINGLE_QUOTES: { [key: string]: boolean } = {
-  '\'': true, // quote
-  '\u2018': true, // quote left
-  '\u2019': true, // quote right
-  '\u0060': true, // grave accent
-  '\u00B4': true // acute accent
-}
-
-const DOUBLE_QUOTES: { [key: string]: boolean } = {
-  '"': true,
-  '\u201C': true, // double quote left
-  '\u201D': true // double quote right
-}
-
-/**
- * Check if the given character contains an alpha character, a-z, A-Z, _
- */
-export function isAlpha (c: string) : boolean {
-  return ALPHA_REGEX.test(c)
-}
-
-const ALPHA_REGEX = /^[a-zA-Z_]$/
-
 /**
  * Check if the given character contains a hexadecimal character 0-9, a-f, A-F
  */
-export function isHex (c: string) : boolean {
-  return HEX_REGEX.test(c)
+export function isHex(char: string): boolean {
+  return regexHex.test(char)
 }
 
-const HEX_REGEX = /^[0-9a-fA-F]$/
+const regexHex = /^[0-9a-fA-F]$/
 
-/**
- * checks if the given char c is a digit
- */
-export function isDigit (c: string) : boolean {
-  return DIGIT_REGEX.test(c)
+export function isDigit(code: number): boolean {
+  return code >= codeZero && code <= codeNine
 }
 
-const DIGIT_REGEX = /^[0-9]$/
+const codeZero = 0x30
+const codeOne = 0x31
+const codeNine = 0x39
+
+export function isNonZeroDigit(code: number): boolean {
+  return code >= codeOne && code <= codeNine
+}
+
+export function isValidStringCharacter(char: string): boolean {
+  // the regex testing all valid characters is relatively slow,
+  // therefore we first check all regular printable characters (which is fast)
+  return (char >= ' ' && char <= '~') || regexValidStringCharacter.test(char)
+}
+
+const regexValidStringCharacter = /^[\u0020-\u{10FFFF}]$/u
+
+export function isDelimiter(c: string): boolean {
+  return regexDelimiter.test(c)
+}
+
+const regexDelimiter = /^[,:[\]{}()\n"]$/
+
+export function isStartOfValue(c: string): boolean {
+  return regexStartOfValue.test(c)
+}
+
+const regexStartOfValue = /^[[{\w"-_]$/
 
 /**
  * Check if the given character is a whitespace character like space, tab, or
  * newline
  */
-export function isWhitespace (c: string) : boolean {
-  return c === ' ' || c === '\t' || c === '\n' || c === '\r'
+export function isWhitespace(code: number): boolean {
+  return code === codeSpace || code === codeNewline || code === codeTab || code === codeReturn
 }
+
+const codeSpace = 0x20 // space
+const codeNewline = 0xa // \n
+const codeTab = 0x9 // \t
+const codeReturn = 0xd // \r
 
 /**
  * Check if the given character is a special whitespace character, some
  * unicode variant
  */
-export function isSpecialWhitespace (c: string) : boolean {
+export function isSpecialWhitespace(code: number): boolean {
   return (
-    c === '\u00A0' ||
-    (c >= '\u2000' && c <= '\u200A') ||
-    c === '\u202F' ||
-    c === '\u205F' ||
-    c === '\u3000'
+    code === codeNonBreakingSpace ||
+    (code >= codeEnQuad && code <= codeHairSpace) ||
+    code === codeNarrowNoBreakSpace ||
+    code === codeMediumMathematicalSpace ||
+    code === codeIdeographicSpace
   )
 }
 
-/**
- * Replace speical whitespace characters with regular spaces
- */
-export function normalizeWhitespace (text: string) : string {
-  let normalized = ''
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i]
-    normalized += isSpecialWhitespace(char)
-      ? ' '
-      : char
-  }
-
-  return normalized
-}
+const codeNonBreakingSpace = 0xa0
+const codeEnQuad = 0x2000
+const codeHairSpace = 0x200a
+const codeNarrowNoBreakSpace = 0x202f
+const codeMediumMathematicalSpace = 0x205f
+const codeIdeographicSpace = 0x3000
 
 /**
  * Test whether the given character is a quote or double quote character.
  * Also tests for special variants of quotes.
  */
-export function isQuote (c: string) : boolean {
-  return SINGLE_QUOTES[c] === true || DOUBLE_QUOTES[c] === true
-}
-
-/**
- * Test whether the given character is a single quote character.
- * Also tests for special variants of single quotes.
- */
-export function isSingleQuote (c: string) : boolean {
-  return SINGLE_QUOTES[c] === true
+export function isQuote(code: number): boolean {
+  // the first check double quotes, since that is normally the case
+  return isDoubleQuote(code) || isSingleQuote(code)
 }
 
 /**
  * Test whether the given character is a double quote character.
  * Also tests for special variants of double quotes.
  */
-export function isDoubleQuote (c: string) : boolean {
-  return DOUBLE_QUOTES[c] === true
+export function isDoubleQuote(code: number): boolean {
+  return code === codeDoubleQuote || code === codeDoubleQuoteLeft || code === codeDoubleQuoteRight
 }
+
+const codeDoubleQuote = 0x0022 // "
+const codeDoubleQuoteLeft = 0x201c
+const codeDoubleQuoteRight = 0x201d
 
 /**
- * Normalize special double or single quote characters to their regular
- * variant ' or "
+ * Test whether the given character is a single quote character.
+ * Also tests for special variants of single quotes.
  */
-export function normalizeQuote (c: string) : string {
-  if (SINGLE_QUOTES[c] === true) {
-    return '\''
-  }
-
-  if (DOUBLE_QUOTES[c] !== true) {
-    return c
-  } else {
-    return '"'
-  }
+export function isSingleQuote(code: number): boolean {
+  return (
+    code === codeQuote ||
+    code === codeQuoteLeft ||
+    code === codeQuoteRight ||
+    code === codeGraveAccent ||
+    code === codeAcuteAccent
+  )
 }
+
+const codeQuote = 0x27 // '
+const codeQuoteLeft = 0x2018
+const codeQuoteRight = 0x2019
+const codeGraveAccent = 0x0060
+const codeAcuteAccent = 0x00b4
 
 /**
  * Strip last occurrence of textToStrip from text
  */
-export function stripLastOccurrence (text: string, textToStrip: string) : string {
+export function stripLastOccurrence(
+  text: string,
+  textToStrip: string,
+  stripWhitespace = false
+): string {
   const index = text.lastIndexOf(textToStrip)
-  return (index !== -1)
-    ? text.substring(0, index) + text.substring(index + 1)
+  return index !== -1
+    ? text.substring(0, index) + (stripWhitespace ? '' : text.substring(index + 1))
     : text
 }
 
-/**
- * Insert textToInsert into text before the last whitespace in text
- */
-export function insertBeforeLastWhitespace (text: string, textToInsert: string) : string {
+export function insertBeforeLastWhitespace(text: string, textToInsert: string): string {
   let index = text.length
 
-  if (!isWhitespace(text[index - 1])) {
+  if (!isWhitespace(text.charCodeAt(index - 1))) {
     // no trailing whitespaces
     return text + textToInsert
   }
 
-  while (isWhitespace(text[index - 1])) {
+  while (isWhitespace(text.charCodeAt(index - 1))) {
     index--
   }
 
   return text.substring(0, index) + textToInsert + text.substring(index)
 }
 
+export function removeAtIndex(text: string, start: number, count: number) {
+  return text.substring(0, start) + text.substring(start + count)
+}
+
 /**
- * Insert textToInsert at index in text
+ * Test whether a string ends with a newline or comma character and optional whitespace
  */
-export function insertAtIndex (text: string, textToInsert: string, index: number) : string {
-  return text.substring(0, index) + textToInsert + text.substring(index)
+export function endsWithCommaOrNewline(text: string): boolean {
+  return /[,\n][ \t\r]*$/.test(text)
 }

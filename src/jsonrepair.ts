@@ -1,54 +1,32 @@
-import JsonRepairError from './JsonRepairError.js'
+import JSONRepairError from './JSONRepairError'
 import {
-  insertAtIndex,
+  endsWithCommaOrNewline,
   insertBeforeLastWhitespace,
-  isAlpha,
+  isDelimiter,
   isDigit,
   isDoubleQuote,
   isHex,
+  isNonZeroDigit,
   isQuote,
   isSingleQuote,
   isSpecialWhitespace,
+  isStartOfValue,
+  isValidStringCharacter,
   isWhitespace,
-  normalizeQuote,
-  normalizeWhitespace,
+  removeAtIndex,
   stripLastOccurrence
 } from './stringUtils.js'
 
-// token types enumeration
-const DELIMITER = 0
-const NUMBER = 1
-const STRING = 2
-const SYMBOL = 3
-const WHITESPACE = 4
-const COMMENT = 5
-const UNKNOWN = 6
-
-/**
- * @typedef {DELIMITER | NUMBER | STRING | SYMBOL | WHITESPACE | COMMENT | UNKNOWN} TokenType
- */
-
-// map with all delimiters
-const DELIMITERS: { [key: string]: boolean } = {
-  '': true,
-  '{': true,
-  '}': true,
-  '[': true,
-  ']': true,
-  ':': true,
-  ',': true,
-
-  // for JSONP and MongoDB data type notation
-  '(': true,
-  ')': true,
-  ';': true,
-
-  // for string concatenation
-  '+': true
+const controlCharacters: { [key: string]: string } = {
+  '\b': '\\b',
+  '\f': '\\f',
+  '\n': '\\n',
+  '\r': '\\r',
+  '\t': '\\t'
 }
 
 // map with all escape characters
-const ESCAPE_CHARACTERS: { [key: string]: string } = {
+const escapeCharacters: { [key: string]: string } = {
   '"': '"',
   '\\': '\\',
   '/': '/',
@@ -57,24 +35,10 @@ const ESCAPE_CHARACTERS: { [key: string]: string } = {
   n: '\n',
   r: '\r',
   t: '\t'
-  // \u is handled by getToken()
+  // note that \u is handled separately in parseString()
 }
 
-const CONTROL_CHARACTERS: { [key: string]: string } = {
-  '\b': '\\b',
-  '\f': '\\f',
-  '\n': '\\n',
-  '\r': '\\r',
-  '\t': '\\t'
-}
-
-const SYMBOLS: { [key: string]: string } = {
-  null: 'null',
-  true: 'true',
-  false: 'false'
-}
-
-const PYTHON_SYMBOLS: { [key: string]: string } = {
+const pythonConstants: { [key: string]: string } = {
   None: 'null',
   True: 'true',
   False: 'false'
@@ -89,657 +53,568 @@ const PYTHON_SYMBOLS: { [key: string]: string } = {
  *     jsonrepair('{name: \'John\'}") // '{"name": "John"}'
  *
  */
-export default function jsonrepair (text: string) : string {
+export default function jsonrepair(text: string): string {
+  let i = 0 // current index in text
   let output = '' // generated output
-  let index = 0 // current index in text
-  let c = text.charAt(0) // current token character in text
-  let token = '' // current token
-  let tokenType = UNKNOWN // type of current token
 
-  // get first token
-  processNextToken()
+  const processed = parseValue()
+  if (!processed) {
+    throwUnexpectedEnd()
+  }
 
-  const rootLevelTokenType = tokenType
+  const processedComma = parseCharacter(',')
+  if (processedComma) {
+    parseWhitespaceAndSkipComments()
+  }
 
-  // parse everything
-  parseObject()
-
-  // ignore trailing comma
-  skipComma()
-
-  if (token === '') {
-    // reached the end of the document properly
-    return output
-  } else if (rootLevelTokenType === tokenType && tokenIsStartOfValue()) {
+  if (isStartOfValue(text[i]) && endsWithCommaOrNewline(output)) {
     // start of a new value after end of the root level object: looks like
     // newline delimited JSON -> turn into a root level array
-
-    let stashedOutput = ''
-
-    while (rootLevelTokenType === tokenType && tokenIsStartOfValue()) {
+    if (!processedComma) {
+      // repair missing comma
       output = insertBeforeLastWhitespace(output, ',')
-
-      stashedOutput += output
-      output = ''
-
-      // parse next newline delimited item
-      parseObject()
-
-      // ignore trailing comma
-      skipComma()
     }
 
-    // wrap the output in an array
-    return `[\n${stashedOutput}${output}\n]`
-  } else {
-    throw new JsonRepairError('Unexpected characters', index - token.length)
+    parseNewlineDelimitedJSON()
+  } else if (processedComma) {
+    // repair: remove trailing comma
+    output = stripLastOccurrence(output, ',')
   }
 
-  /**
-   * Get the next character from the expression.
-   * The character is stored into the char c. If the end of the expression is
-   * reached, the function puts an empty string in c.
-   */
-  function next () {
-    index++
-    c = text.charAt(index)
-    // Note: not using text[index] because that returns undefined when index is out of range
+  if (text[i] === undefined) {
+    // reached the end of the document properly
+    return output
   }
 
-  /**
-   * Special version of the function next, used to parse escaped strings
-   */
-  function nextSkipEscape () {
-    next()
-    if (c === '\\') {
-      next()
-    }
+  throwUnexpectedCharacter()
+
+  function parseValue(): boolean {
+    parseWhitespaceAndSkipComments()
+    const processed =
+      parseObject() ||
+      parseArray() ||
+      parseString() ||
+      parseNumber() ||
+      parseBooleanAndNull() ||
+      parseUnquotedString()
+    parseWhitespaceAndSkipComments()
+
+    return processed
   }
 
-  /**
-   * check whether the current token is the start of a value:
-   * object, array, number, string, or symbol
-   * @returns {boolean}
-   */
-  function tokenIsStartOfValue () {
-    return (tokenType === DELIMITER && (token === '[' || token === '{')) ||
-      tokenType === STRING ||
-      tokenType === NUMBER ||
-      tokenType === SYMBOL
+  function parseWhitespaceAndSkipComments(): boolean {
+    const start = i
+
+    let changed = parseWhitespace()
+    do {
+      changed = parseComment()
+      if (changed) {
+        changed = parseWhitespace()
+      }
+    } while (changed)
+
+    return i > start
   }
 
-  /**
-   * check whether the current token is the start of a key (or possible key):
-   * number, string, or symbol
-   * @returns {boolean}
-   */
-  function tokenIsStartOfKey () {
-    return tokenType === STRING ||
-      tokenType === NUMBER ||
-      tokenType === SYMBOL
-  }
-
-  /**
-   * Process the previous token, and get next token in the current text
-   */
-  function processNextToken () {
-    output += token
-
-    tokenType = UNKNOWN
-    token = ''
-
-    getTokenDelimiter()
-
-    if (tokenType === WHITESPACE) {
-      // we leave the whitespace as it is, except replacing special white
-      // space character
-      token = normalizeWhitespace(token)
-      processNextToken()
-    }
-
-    if (tokenType === COMMENT) {
-      // ignore comments
-      tokenType = UNKNOWN
-      token = ''
-
-      processNextToken()
-    }
-  }
-
-  function skipComma () {
-    if (token === ',') {
-      token = ''
-      tokenType = UNKNOWN
-      processNextToken()
-    }
-  }
-
-  // check for delimiters like ':', '{', ']'
-  function getTokenDelimiter () {
-    if (DELIMITERS[c]) {
-      tokenType = DELIMITER
-      token = c
-      next()
-      return
-    }
-
-    getTokenNumber()
-  }
-
-  // check for a number like "2.3e+5"
-  function getTokenNumber () {
-    if (isDigit(c) || c === '-') {
-      tokenType = NUMBER
-
-      if (c === '-') {
-        token += c
-        next()
-
-        if (!isDigit(c)) {
-          throw new JsonRepairError('Invalid number, digit expected', index)
-        }
-      } else if (c === '0') {
-        token += c
-        next()
+  function parseWhitespace(): boolean {
+    let whitespace = ''
+    let normal: boolean
+    while ((normal = isWhitespace(text.charCodeAt(i))) || isSpecialWhitespace(text.charCodeAt(i))) {
+      if (normal) {
+        whitespace += text[i]
       } else {
-        // digit 1-9, nothing extra to do
+        // repair special whitespace
+        whitespace += ' '
       }
 
-      while (isDigit(c)) {
-        token += c
-        next()
-      }
-
-      if (c === '.') {
-        token += c
-        next()
-
-        if (!isDigit(c)) {
-          throw new JsonRepairError('Invalid number, digit expected', index)
-        }
-
-        while (isDigit(c)) {
-          token += c
-          next()
-        }
-      }
-
-      if (c === 'e' || c === 'E') {
-        token += c
-        next()
-
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        if (c === '+' || c === '-') {
-          token += c
-          next()
-        }
-
-        if (!isDigit(c)) {
-          throw new JsonRepairError('Invalid number, digit expected', index)
-        }
-
-        while (isDigit(c)) {
-          token += c
-          next()
-        }
-      }
-
-      return
+      i++
     }
 
-    getTokenEscapedString()
-  }
-
-  // get a token string like '\"hello world\"'
-  function getTokenEscapedString () {
-    if (c === '\\' && text.charAt(index + 1) === '"') {
-      // an escaped piece of JSON
-      next()
-      getTokenString(nextSkipEscape)
-    } else {
-      getTokenString(next)
-    }
-  }
-
-  // get a token string like '"hello world"'
-  function getTokenString (getNext: () => void) {
-    if (isQuote(c)) {
-      const quote = normalizeQuote(c)
-      const isEndQuote = isSingleQuote(c) ? isSingleQuote : isDoubleQuote
-
-      token += '"' // output valid double quote
-      tokenType = STRING
-      getNext()
-
-      // eslint-disable-next-line no-unmodified-loop-condition
-      while (c !== '' && !isEndQuote(c)) {
-        if (c === '\\') {
-          // handle escape characters
-          getNext()
-
-          const unescaped = ESCAPE_CHARACTERS[c]
-          if (unescaped !== undefined) {
-            token += '\\' + c
-            getNext()
-
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-          } else if (c === 'u') {
-            // parse escaped unicode character, like '\\u260E'
-            token += '\\u'
-            getNext()
-
-            for (let u = 0; u < 4; u++) {
-              if (!isHex(c)) {
-                throw new JsonRepairError('Invalid unicode character', index - token.length)
-              }
-              token += c
-              getNext()
-            }
-
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-          } else if (c === '\'') {
-            // escaped single quote character -> remove the escape character
-            token += '\''
-            getNext()
-          } else {
-            throw new JsonRepairError('Invalid escape character "\\' + c + '"', index)
-          }
-        } else if (CONTROL_CHARACTERS[c]) {
-          // unescaped special character
-          // fix by adding an escape character
-          token += CONTROL_CHARACTERS[c]
-          getNext()
-        } else if (c === '"') {
-          // unescaped double quote -> escape it
-          token += '\\"'
-          getNext()
-        } else {
-          // a regular character
-          token += c
-          getNext()
-        }
-      }
-
-      if (normalizeQuote(c) !== quote) {
-        throw new JsonRepairError('End of string expected', index - token.length)
-      }
-      token += '"' // output valid double quote
-      getNext()
-
-      return
+    if (whitespace.length > 0) {
+      output += whitespace
+      return true
     }
 
-    getTokenAlpha()
+    return false
   }
 
-  // check for symbols (true, false, null)
-  function getTokenAlpha () {
-    if (isAlpha(c)) {
-      tokenType = SYMBOL
-
-      while (isAlpha(c) || isDigit(c) || c === '$') {
-        token += c
-        next()
-      }
-
-      return
-    }
-
-    getTokenWhitespace()
-  }
-
-  // get whitespaces: space, tab, newline, and carriage return
-  function getTokenWhitespace () {
-    if (isWhitespace(c) || isSpecialWhitespace(c)) {
-      tokenType = WHITESPACE
-
-      while (isWhitespace(c) || isSpecialWhitespace(c)) {
-        token += c
-        next()
-      }
-
-      return
-    }
-
-    getTokenComment()
-  }
-
-  function getTokenComment () {
+  function parseComment(): boolean {
     // find a block comment '/* ... */'
-    if (c === '/' && text.charAt(index + 1) === '*') {
-      tokenType = COMMENT
-
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      while (c !== '' && (c !== '*' || (c === '*' && text.charAt(index + 1) !== '/'))) {
-        token += c
-        next()
+    if (text[i] === '/' && text[i + 1] === '*') {
+      // repair block comment by skipping it
+      while (i < text.length && !atEndOfBlockComment(text, i)) {
+        i++
       }
+      i += 2
 
-      if (c === '*' && text.charAt(index + 1) === '/') {
-        token += c
-        next()
-
-        token += c
-        next()
-      }
-
-      return
+      return true
     }
 
-    // find a comment '// ...'
-    if (c === '/' && text.charAt(index + 1) === '/') {
-      tokenType = COMMENT
-
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      while (c !== '' && c !== '\n') {
-        token += c
-        next()
+    // find a line comment '// ...'
+    if (text[i] === '/' && text[i + 1] === '/') {
+      // repair line comment by skipping it
+      while (i < text.length && text[i] !== '\n') {
+        i++
       }
 
-      return
+      return true
     }
 
-    getTokenUnknown()
+    return false
   }
 
-  // something unknown is found, wrong characters -> a syntax error
-  function getTokenUnknown () {
-    tokenType = UNKNOWN
-
-    while (c !== '') {
-      token += c
-      next()
+  function parseCharacter(char: string): boolean {
+    if (text[i] === char) {
+      output += char
+      i++
+      return true
     }
 
-    throw new JsonRepairError('Syntax error in part "' + token + '"', index - token.length)
+    return false
+  }
+
+  function skipCharacter(char: string): boolean {
+    if (text[i] === char) {
+      i++
+      return true
+    }
+
+    return false
+  }
+
+  function skipEscapeCharacter(): boolean {
+    return skipCharacter('\\')
   }
 
   /**
    * Parse an object like '{"key": "value"}'
-   * @return {*}
    */
-  function parseObject () {
-    if (tokenType === DELIMITER && token === '{') {
-      processNextToken()
+  function parseObject(): boolean {
+    if (text[i] === '{') {
+      output += '{'
+      i++
+      parseWhitespaceAndSkipComments()
 
-      // TODO: can we make this redundant?
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      if (tokenType === DELIMITER && token === '}') {
-        // empty object
-        processNextToken()
-        return
-      }
-
-      while (true) {
-        // parse key
-
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        if (tokenType === SYMBOL || tokenType === NUMBER) {
-          // unquoted key -> add quotes around it, change it into a string
-          tokenType = STRING
-          token = `"${token}"`
-        }
-
-        if (tokenType !== STRING) {
-          // TODO: handle ambiguous cases like '[{"a":1,{"b":2}]' which could be an array with two objects or one
-          throw new JsonRepairError('Object key expected', index - token.length)
-        }
-        processNextToken()
-
-        // parse colon (key/value separator)
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        if (tokenType === DELIMITER && token === ':') {
-          processNextToken()
+      let initial = true
+      while (i < text.length && text[i] !== '}') {
+        let processedComma
+        if (!initial) {
+          processedComma = parseCharacter(',')
+          if (!processedComma) {
+            // repair missing comma
+            output = insertBeforeLastWhitespace(output, ',')
+          }
+          parseWhitespaceAndSkipComments()
         } else {
-          if (tokenIsStartOfValue()) {
-            // we expect a colon here, but got the start of a value
-            // -> insert a colon before any inserted whitespaces at the end of output
+          processedComma = true
+          initial = false
+        }
+
+        const processedKey = parseString() || parseUnquotedString()
+        if (!processedKey) {
+          if (
+            text[i] === '}' ||
+            text[i] === '{' ||
+            text[i] === ']' ||
+            text[i] === '[' ||
+            text[i] === undefined
+          ) {
+            // repair trailing comma
+            output = stripLastOccurrence(output, ',')
+          } else {
+            throwObjectKeyExpected()
+          }
+          break
+        }
+
+        parseWhitespaceAndSkipComments()
+        const processedColon = parseCharacter(':')
+        if (!processedColon) {
+          if (isStartOfValue(text[i])) {
+            // repair missing colon
             output = insertBeforeLastWhitespace(output, ':')
           } else {
-            throw new JsonRepairError('Colon expected', index - token.length)
+            throwColonExpected()
           }
         }
-
-        // parse value
-        parseObject()
-
-        // parse comma (key/value pair separator)
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        if (tokenType === DELIMITER && token === ',') {
-          processNextToken()
-
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          if (tokenType === DELIMITER && token === '}') {
-            // we've just passed a trailing comma -> remove the trailing comma
-            output = stripLastOccurrence(output, ',')
-            break
-          }
-
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          if (token === '') {
-            // end of json reached, but missing }
-            // Strip the missing comma (the closing bracket will be added later)
-            output = stripLastOccurrence(output, ',')
-            break
-          }
-        } else {
-          if (tokenIsStartOfKey()) {
-            // we expect a comma here, but got the start of a new key
-            // -> insert a comma before any inserted whitespaces at the end of output
-            output = insertBeforeLastWhitespace(output, ',')
+        const processedValue = parseValue()
+        if (!processedValue) {
+          if (processedColon) {
+            throwObjectValueExpected()
           } else {
-            break
+            throwColonExpected()
           }
         }
       }
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      if (tokenType === DELIMITER && token === '}') {
-        processNextToken()
+      if (text[i] === '}') {
+        output += '}'
+        i++
       } else {
-        // missing end bracket -> insert the missing bracket
+        // repair missing end bracket
         output = insertBeforeLastWhitespace(output, '}')
       }
 
-      return
+      return true
     }
 
-    parseArray()
+    return false
   }
 
   /**
-   * Parse an object like '["item1", "item2", ...]'
+   * Parse an array like '["item1", "item2", ...]'
    */
-  function parseArray () {
-    if (tokenType === DELIMITER && token === '[') {
-      processNextToken()
+  function parseArray(): boolean {
+    if (text[i] === '[') {
+      output += '['
+      i++
+      parseWhitespaceAndSkipComments()
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      if (tokenType === DELIMITER && token === ']') {
-        // empty array
-        processNextToken()
-        return
-      }
-
-      while (true) {
-        // parse item
-        parseObject()
-
-        // parse comma (item separator)
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        if (tokenType === DELIMITER && token === ',') {
-          processNextToken()
-
-          if (tokenType === DELIMITER && token === ']') {
-            // we've just passed a trailing comma -> remove the trailing comma
-            output = stripLastOccurrence(output, ',')
-            break
-          }
-
-          if (token === '') {
-            // end of json reached, but missing ]
-            // Strip the missing comma (the closing bracket will be added later)
-            output = stripLastOccurrence(output, ',')
-            break
+      let initial = true
+      while (i < text.length && text[i] !== ']') {
+        if (!initial) {
+          const processedComma = parseCharacter(',')
+          if (!processedComma) {
+            // repair missing comma
+            output = insertBeforeLastWhitespace(output, ',')
           }
         } else {
-          if (tokenIsStartOfValue()) {
-            // we expect a comma here, but got the start of a new item
-            // -> insert a comma before any inserted whitespaces at the end of output
-            output = insertBeforeLastWhitespace(output, ',')
-          } else {
-            break
-          }
+          initial = false
+        }
+
+        const processedValue = parseValue()
+        if (!processedValue) {
+          // repair trailing comma
+          output = stripLastOccurrence(output, ',')
+          break
         }
       }
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      if (tokenType === DELIMITER && token === ']') {
-        processNextToken()
+      if (text[i] === ']') {
+        output += ']'
+        i++
       } else {
-        // missing end bracket -> insert the missing bracket
+        // repair missing closing array bracket
         output = insertBeforeLastWhitespace(output, ']')
       }
-      return
+
+      return true
     }
 
-    parseString()
+    return false
+  }
+
+  /**
+   * Parse and repair Newline Delimited JSON (NDJSON):
+   * multiple JSON objects separated by a newline character
+   */
+  function parseNewlineDelimitedJSON() {
+    // repair NDJSON
+    let initial = true
+    let processedValue = true
+    while (processedValue) {
+      if (!initial) {
+        // parse optional comma, insert when missing
+        const processedComma = parseCharacter(',')
+        if (!processedComma) {
+          // repair: add missing comma
+          output = insertBeforeLastWhitespace(output, ',')
+        }
+      } else {
+        initial = false
+      }
+
+      processedValue = parseValue()
+    }
+
+    if (!processedValue) {
+      // repair: remove trailing comma
+      output = stripLastOccurrence(output, ',')
+    }
+
+    // repair: wrap the output inside array brackets
+    output = `[\n${output}\n]`
   }
 
   /**
    * Parse a string enclosed by double quotes "...". Can contain escaped quotes
+   * Repair strings enclosed in single quotes or special quotes
+   * Repair an escaped string
    */
-  function parseString () {
-    if (tokenType === STRING) {
-      processNextToken()
-
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      while (tokenType === DELIMITER && token === '+') {
-        // string concatenation like "hello" + "world"
-        token = '' // don't output the concatenation
-        processNextToken()
-
-        if (tokenType === STRING) {
-          // concatenate with the previous string
-          const endIndex = output.lastIndexOf('"')
-          output = output.substring(0, endIndex) + token.substring(1)
-          token = ''
-          processNextToken()
-        }
-      }
-
-      return
+  function parseString(): boolean {
+    let skipEscapeChars = text[i] === '\\'
+    if (skipEscapeChars) {
+      // repair: remove the first escape character
+      i++
+      skipEscapeChars = true
     }
 
-    parseNumber()
-  }
+    if (isQuote(text.charCodeAt(i))) {
+      const isEndQuote = isSingleQuote(text.charCodeAt(i)) ? isSingleQuote : isDoubleQuote
 
-  /**
-   * Parse a number
-   */
-  function parseNumber () {
-    if (tokenType === NUMBER) {
-      processNextToken()
-      return
-    }
-
-    parseSymbol()
-  }
-
-  /**
-   * Parse constants true, false, null
-   */
-  function parseSymbol () {
-    if (tokenType === SYMBOL) {
-      // a supported symbol: true, false, null
-      if (SYMBOLS[token]) {
-        processNextToken()
-        return
+      if (text[i] !== '"') {
+        // repair non-normalized quote
       }
+      output += '"'
+      i++
 
-      // for example replace None with null
-      if (PYTHON_SYMBOLS[token]) {
-        token = PYTHON_SYMBOLS[token]
-        processNextToken()
-        return
-      }
+      while (i < text.length && !isEndQuote(text.charCodeAt(i))) {
+        if (text[i] === '\\') {
+          const char = text[i + 1]
+          const escapeChar = escapeCharacters[char]
+          if (escapeChar !== undefined) {
+            output += text.slice(i, i + 2)
+            i += 2
+          } else if (char === 'u') {
+            if (
+              isHex(text[i + 2]) &&
+              isHex(text[i + 3]) &&
+              isHex(text[i + 4]) &&
+              isHex(text[i + 5])
+            ) {
+              output += text.slice(i, i + 6)
+              i += 6
+            } else {
+              throwInvalidUnicodeCharacter(i)
+            }
+          } else {
+            // repair invalid escape character: remove it
+            output += char
+            i += 2
+          }
+        } else {
+          const char = text[i]
 
-      // make a copy of the symbol, let's see what comes next
-      const symbol = token
-      const symbolIndex = output.length
-      token = ''
-      processNextToken()
-
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      if (tokenType === DELIMITER && token === '(') {
-        // a MongoDB function call or JSONP call
-        // Can be a MongoDB data type like in {"_id": ObjectId("123")}
-        // token = '' // do not output the function name
-        // processNextToken()
-
-        // next()
-        token = '' // do not output the ( character
-        processNextToken()
-
-        // process the part inside the brackets
-        parseObject()
-
-        // skip the closing bracket ")" and ");"
-        if (tokenType === DELIMITER && token === ')') {
-          token = '' // do not output the ) character
-          processNextToken()
-
-          if (tokenType === DELIMITER && token === ';') {
-            token = '' // do not output the semicolon character
-            processNextToken()
+          if (char === '"' && text[i - 1] !== '\\') {
+            // repair unescaped double quote
+            output += '\\' + char
+            i++
+          } else if (controlCharacters[char] !== undefined) {
+            // unescaped control character
+            output += controlCharacters[char]
+            i++
+          } else {
+            if (!isValidStringCharacter(char)) {
+              throwInvalidCharacter(char)
+            }
+            output += char
+            i++
           }
         }
 
-        return
+        if (skipEscapeChars) {
+          const processed = skipEscapeCharacter()
+          if (processed) {
+            // repair: skipped escape character (nothing to do)
+          }
+        }
       }
 
-      // unknown symbol => turn into in a string
-      // it is possible that by reading the next token we already inserted
-      // extra spaces in the output which should be inside the string,
-      // hence the symbolIndex
-      output = insertAtIndex(output, `"${symbol}`, symbolIndex)
-      while (tokenType === SYMBOL || tokenType === NUMBER) {
-        processNextToken()
+      if (isQuote(text.charCodeAt(i))) {
+        if (text[i] !== '"') {
+          // repair non-normalized quote
+        }
+        output += '"'
+        i++
+      } else {
+        // repair missing end quote
+        output += '"'
       }
-      output += '"'
 
-      return
+      parseConcatenatedString()
+
+      return true
     }
 
-    parseEnd()
+    return false
   }
 
   /**
-   * Evaluated when the expression is not yet ended but expected to end
+   * Repair concatenated strings like "hello" + "world", change this into "helloworld"
    */
-  function parseEnd () {
-    if (token === '') {
-      // syntax error or unexpected end of expression
-      throw new JsonRepairError('Unexpected end of json string', index - token.length)
-    } else {
-      throw new JsonRepairError('Value expected', index - token.length)
+  function parseConcatenatedString(): boolean {
+    let processed = false
+
+    parseWhitespaceAndSkipComments()
+    while (text[i] === '+') {
+      processed = true
+      i++
+      parseWhitespaceAndSkipComments()
+
+      // repair: remove the end quote of the first string
+      output = stripLastOccurrence(output, '"', true)
+      const start = output.length
+      parseString()
+
+      // repair: remove the start quote of the second string
+      output = removeAtIndex(output, start, 1)
+    }
+
+    return processed
+  }
+
+  /**
+   * Parse a number like 2.4 or 2.4e6
+   */
+  function parseNumber(): boolean {
+    const start = i
+    if (text[i] === '-') {
+      i++
+      expectDigit(start)
+    }
+
+    if (text[i] === '0') {
+      i++
+    } else if (isNonZeroDigit(text.charCodeAt(i))) {
+      i++
+      while (isDigit(text.charCodeAt(i))) {
+        i++
+      }
+    }
+
+    if (text[i] === '.') {
+      i++
+      expectDigit(start)
+      while (isDigit(text.charCodeAt(i))) {
+        i++
+      }
+    }
+
+    if (text[i] === 'e' || text[i] === 'E') {
+      i++
+      if (text[i] === '-' || text[i] === '+') {
+        i++
+      }
+      expectDigit(start)
+      while (isDigit(text.charCodeAt(i))) {
+        i++
+      }
+    }
+
+    if (i > start) {
+      output += text.slice(start, i)
+      return true
+    }
+
+    return false
+  }
+
+  /**
+   * Parse keywords true, false, null
+   * Repair Python keywords True, False, None
+   */
+  function parseBooleanAndNull(): boolean {
+    const keywords = ['true', 'false', 'null']
+
+    // TODO: is it faster to just first collect the symbol and then lookup SYMBOLS?
+    for (const keyword of keywords) {
+      if (text.slice(i, i + keyword.length) === keyword) {
+        output += keyword
+        i += keyword.length
+        return true
+      }
+    }
+
+    // repair python keywords True, False, None
+    for (const keyword in pythonConstants) {
+      if (Object.hasOwnProperty.call(pythonConstants, keyword)) {
+        if (text.slice(i, i + keyword.length) === keyword) {
+          output += pythonConstants[keyword]
+          i += keyword.length
+          return true
+        }
+      }
+    }
+
+    return false
+  }
+
+  /**
+   * Repair and unquoted string by adding quotes around it
+   * Repair a MongoDB function call like NumberLong("2")
+   * Repair a JSONP function call like callback({...});
+   */
+  function parseUnquotedString() {
+    // note that the symbol can end with whitespaces: we stop at the next delimiter
+    const start = i
+    while (i < text.length && !isDelimiter(text[i])) {
+      i++
+    }
+
+    if (i > start) {
+      const symbol = text.slice(start, i)
+
+      if (text[i] === '(') {
+        // repair a MongoDB function call like NumberLong("2")
+        // repair a JSONP function call like callback({...});
+        i++
+
+        parseValue()
+
+        if (text[i] === ')') {
+          // repair: skip close bracket of function call
+          i++
+          if (text[i] === ';') {
+            // repair: skip semicolon after JSONP call
+            i++
+          }
+        }
+
+        return true
+      } else {
+        // repair unquoted string
+        output += JSON.stringify(symbol)
+
+        return true
+      }
     }
   }
+
+  function expectDigit(start: number) {
+    if (!isDigit(text.charCodeAt(i))) {
+      const numSoFar = text.slice(start, i)
+      throw new JSONRepairError(`Invalid number '${numSoFar}', expecting a digit ${got()}`, 2)
+    }
+  }
+
+  function throwInvalidCharacter(char: string) {
+    throw new JSONRepairError('Invalid character ' + JSON.stringify(char), i)
+  }
+
+  function throwUnexpectedCharacter() {
+    throw new JSONRepairError('Unexpected character ' + JSON.stringify(text[i]), i)
+  }
+
+  function throwUnexpectedEnd() {
+    throw new JSONRepairError('Unexpected end of json string', text.length)
+  }
+
+  function throwObjectKeyExpected() {
+    throw new JSONRepairError('Object key expected', i)
+  }
+
+  function throwObjectValueExpected() {
+    throw new JSONRepairError('Object value expected', i)
+  }
+
+  function throwColonExpected() {
+    throw new JSONRepairError('Colon expected', i)
+  }
+
+  function throwInvalidUnicodeCharacter(start: number) {
+    let end = start + 2
+    while (/\w/.test(text[end])) {
+      end++
+    }
+    const chars = text.slice(start, end)
+    throw new JSONRepairError(`Invalid unicode character "${chars}"`, i)
+  }
+
+  function got(): string {
+    return text[i] ? `but got '${text[i]}'` : 'but reached end of input'
+  }
+}
+
+function atEndOfBlockComment(text: string, i: number) {
+  return text[i] === '*' && text[i + 1] === '/'
 }
