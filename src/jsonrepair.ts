@@ -1,4 +1,4 @@
-import JSONRepairError from './JSONRepairError'
+import JSONRepairError from './JSONRepairError.js'
 import {
   endsWithCommaOrNewline,
   insertBeforeLastWhitespace,
