@@ -1,6 +1,6 @@
 import { strictEqual, deepStrictEqual, throws } from 'assert'
 import jsonrepair from './jsonrepair.js'
-import JSONRepairError from './JSONRepairError'
+import JSONRepairError from './JSONRepairError.js'
 
 describe('jsonRepair', () => {
   describe('parse valid JSON', () => {
