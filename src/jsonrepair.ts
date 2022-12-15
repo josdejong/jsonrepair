@@ -2,8 +2,11 @@ import JSONRepairError from './JSONRepairError.js'
 import {
   codeAsterisk,
   codeBackslash,
+  codeCloseParenthesis,
   codeClosingBrace,
   codeClosingBracket,
+  codeColon,
+  codeComma,
   codeDot,
   codeDoubleQuote,
   codeLowercaseE,
@@ -11,7 +14,9 @@ import {
   codeNewline,
   codeOpeningBrace,
   codeOpeningBracket,
+  codeOpenParenthesis,
   codePlus,
+  codeSemicolon,
   codeSlash,
   codeUppercaseE,
   codeZero,
@@ -78,7 +83,7 @@ export default function jsonrepair(text: string): string {
     throwUnexpectedEnd()
   }
 
-  const processedComma = parseCharacter(',')
+  const processedComma = parseCharacter(codeComma)
   if (processedComma) {
     parseWhitespaceAndSkipComments()
   }
@@ -97,7 +102,7 @@ export default function jsonrepair(text: string): string {
     output = stripLastOccurrence(output, ',')
   }
 
-  if (text[i] === undefined) {
+  if (i >= text.length) {
     // reached the end of the document properly
     return output
   }
@@ -179,9 +184,9 @@ export default function jsonrepair(text: string): string {
     return false
   }
 
-  function parseCharacter(char: string): boolean {
-    if (text[i] === char) {
-      output += char
+  function parseCharacter(code: number): boolean {
+    if (text.charCodeAt(i) === code) {
+      output += text[i]
       i++
       return true
     }
@@ -189,8 +194,8 @@ export default function jsonrepair(text: string): string {
     return false
   }
 
-  function skipCharacter(char: string): boolean {
-    if (text[i] === char) {
+  function skipCharacter(code: number): boolean {
+    if (text.charCodeAt(i) === code) {
       i++
       return true
     }
@@ -199,7 +204,7 @@ export default function jsonrepair(text: string): string {
   }
 
   function skipEscapeCharacter(): boolean {
-    return skipCharacter('\\')
+    return skipCharacter(codeBackslash)
   }
 
   /**
@@ -215,7 +220,7 @@ export default function jsonrepair(text: string): string {
       while (i < text.length && text.charCodeAt(i) !== codeClosingBrace) {
         let processedComma
         if (!initial) {
-          processedComma = parseCharacter(',')
+          processedComma = parseCharacter(codeComma)
           if (!processedComma) {
             // repair missing comma
             output = insertBeforeLastWhitespace(output, ',')
@@ -244,7 +249,7 @@ export default function jsonrepair(text: string): string {
         }
 
         parseWhitespaceAndSkipComments()
-        const processedColon = parseCharacter(':')
+        const processedColon = parseCharacter(codeColon)
         if (!processedColon) {
           if (isStartOfValue(text[i])) {
             // repair missing colon
@@ -289,7 +294,7 @@ export default function jsonrepair(text: string): string {
       let initial = true
       while (i < text.length && text.charCodeAt(i) !== codeClosingBracket) {
         if (!initial) {
-          const processedComma = parseCharacter(',')
+          const processedComma = parseCharacter(codeComma)
           if (!processedComma) {
             // repair missing comma
             output = insertBeforeLastWhitespace(output, ',')
@@ -331,7 +336,7 @@ export default function jsonrepair(text: string): string {
     while (processedValue) {
       if (!initial) {
         // parse optional comma, insert when missing
-        const processedComma = parseCharacter(',')
+        const processedComma = parseCharacter(codeComma)
         if (!processedComma) {
           // repair: add missing comma
           output = insertBeforeLastWhitespace(output, ',')
@@ -383,10 +388,10 @@ export default function jsonrepair(text: string): string {
             i += 2
           } else if (char === 'u') {
             if (
-              isHex(text[i + 2]) &&
-              isHex(text[i + 3]) &&
-              isHex(text[i + 4]) &&
-              isHex(text[i + 5])
+              isHex(text.charCodeAt(i + 2)) &&
+              isHex(text.charCodeAt(i + 3)) &&
+              isHex(text.charCodeAt(i + 4)) &&
+              isHex(text.charCodeAt(i + 5))
             ) {
               output += text.slice(i, i + 6)
               i += 6
@@ -523,7 +528,6 @@ export default function jsonrepair(text: string): string {
   function parseBooleanAndNull(): boolean {
     const keywords = ['true', 'false', 'null']
 
-    // TODO: is it faster to just first collect the symbol and then lookup SYMBOLS?
     for (const keyword of keywords) {
       if (text.slice(i, i + keyword.length) === keyword) {
         output += keyword
@@ -561,17 +565,17 @@ export default function jsonrepair(text: string): string {
     if (i > start) {
       const symbol = text.slice(start, i)
 
-      if (text[i] === '(') {
+      if (text.charCodeAt(i) === codeOpenParenthesis) {
         // repair a MongoDB function call like NumberLong("2")
         // repair a JSONP function call like callback({...});
         i++
 
         parseValue()
 
-        if (text[i] === ')') {
+        if (text.charCodeAt(i) === codeCloseParenthesis) {
           // repair: skip close bracket of function call
           i++
-          if (text[i] === ';') {
+          if (text.charCodeAt(i) === codeSemicolon) {
             // repair: skip semicolon after JSONP call
             i++
           }

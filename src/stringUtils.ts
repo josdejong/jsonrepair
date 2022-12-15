@@ -6,6 +6,8 @@ export const codeOpeningBrace = 0x7b // "{"
 export const codeClosingBrace = 0x7d // "}"
 export const codeOpeningBracket = 0x5b // "["
 export const codeClosingBracket = 0x5d // "]"
+export const codeOpenParenthesis = 0x28 // "("
+export const codeCloseParenthesis = 0x29 // ")"
 export const codeSpace = 0x20 // " "
 export const codeNewline = 0xa // "\n"
 export const codeTab = 0x9 // "\t"
@@ -19,9 +21,16 @@ export const codeQuote = 0x27 // "'"
 export const codeZero = 0x30
 export const codeOne = 0x31
 export const codeNine = 0x39
+export const codeComma = 0x2c // ","
 export const codeDot = 0x2e // "." (dot, period)
-export const codeLowercaseE = 0x65 // "e"
+export const codeColon = 0x3a // ":"
+export const codeSemicolon = 0x3b // ";"
+export const codeUppercaseA = 0x41 // "A"
+export const codeLowercaseA = 0x61 // "a"
 export const codeUppercaseE = 0x45 // "E"
+export const codeLowercaseE = 0x65 // "e"
+export const codeUppercaseF = 0x46 // "F"
+export const codeLowercaseF = 0x66 // "f"
 const codeNonBreakingSpace = 0xa0
 const codeEnQuad = 0x2000
 const codeHairSpace = 0x200a
@@ -35,11 +44,13 @@ const codeQuoteRight = 0x2019
 const codeGraveAccent = 0x0060
 const codeAcuteAccent = 0x00b4
 
-export function isHex(char: string): boolean {
-  return regexHex.test(char)
+export function isHex(code: number): boolean {
+  return (
+    (code >= codeZero && code < codeNine) ||
+    (code >= codeUppercaseA && code <= codeUppercaseF) ||
+    (code >= codeLowercaseA && code <= codeLowercaseF)
+  )
 }
-
-const regexHex = /^[0-9a-fA-F]$/
 
 export function isDigit(code: number): boolean {
   return code >= codeZero && code <= codeNine
@@ -53,8 +64,8 @@ export function isValidStringCharacter(code: number): boolean {
   return code >= 0x20 && code <= 0x10ffff
 }
 
-export function isDelimiter(c: string): boolean {
-  return regexDelimiter.test(c)
+export function isDelimiter(char: string): boolean {
+  return regexDelimiter.test(char)
 }
 
 const regexDelimiter = /^[,:[\]{}()\n"]$/
@@ -102,7 +113,7 @@ export function isSpecialWhitespace(code: number): boolean {
  * Also tests for special variants of quotes.
  */
 export function isQuote(code: number): boolean {
-  // the first check double quotes, since that is normally the case
+  // the first check double quotes, since that occurs most often
   return isDoubleQuote(code) || isSingleQuote(code)
 }
 
@@ -111,6 +122,7 @@ export function isQuote(code: number): boolean {
  * Also tests for special variants of double quotes.
  */
 export function isDoubleQuote(code: number): boolean {
+  // the first check double quotes, since that occurs most often
   return code === codeDoubleQuote || code === codeDoubleQuoteLeft || code === codeDoubleQuoteRight
 }
 
