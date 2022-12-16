@@ -59,12 +59,6 @@ const escapeCharacters: { [key: string]: string } = {
   // note that \u is handled separately in parseString()
 }
 
-const pythonConstants: { [key: string]: string } = {
-  None: 'null',
-  True: 'true',
-  False: 'false'
-}
-
 /**
  * Repair a string containing an invalid JSON document.
  * For example changes JavaScript notation into JSON notation.
@@ -116,7 +110,7 @@ export default function jsonrepair(text: string): string {
       parseArray() ||
       parseString() ||
       parseNumber() ||
-      parseBooleanAndNull() ||
+      parseKeywords() ||
       parseUnquotedString()
     parseWhitespaceAndSkipComments()
 
@@ -525,26 +519,23 @@ export default function jsonrepair(text: string): string {
    * Parse keywords true, false, null
    * Repair Python keywords True, False, None
    */
-  function parseBooleanAndNull(): boolean {
-    const keywords = ['true', 'false', 'null']
+  function parseKeywords(): boolean {
+    return (
+      parseKeyword('true', 'true') ||
+      parseKeyword('false', 'false') ||
+      parseKeyword('null', 'null') ||
+      // repair Python keywords True, False, None
+      parseKeyword('True', 'true') ||
+      parseKeyword('False', 'false') ||
+      parseKeyword('None', 'null')
+    )
+  }
 
-    for (const keyword of keywords) {
-      if (text.slice(i, i + keyword.length) === keyword) {
-        output += keyword
-        i += keyword.length
-        return true
-      }
-    }
-
-    // repair python keywords True, False, None
-    for (const keyword in pythonConstants) {
-      if (Object.hasOwnProperty.call(pythonConstants, keyword)) {
-        if (text.slice(i, i + keyword.length) === keyword) {
-          output += pythonConstants[keyword]
-          i += keyword.length
-          return true
-        }
-      }
+  function parseKeyword(name: string, value: string): boolean {
+    if (text.slice(i, i + name.length) === name) {
+      output += value
+      i += name.length
+      return true
     }
 
     return false
