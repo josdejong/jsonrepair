@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "module": "es2020",
+    "lib": ["es2020", "dom"],
+    "target": "es2020",
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "allowJs": false,
+    "checkJs": false,
+    "noImplicitAny": true,
+    "declaration": true,
+    "declarationDir": "lib/types",
+    "declarationMap": true
+  },
+  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.ts"]
+}

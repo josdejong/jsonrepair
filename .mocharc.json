@@ -1,4 +1,6 @@
 {
   "extension": ["js"],
-  "spec": "src/**/*.test.js"
+  "loader": "ts-node/esm",
+  "spec": ["src/**/*.test.{js,ts}"],
+  "reporter": "spec"
 }

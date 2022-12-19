@@ -1,3 +1,3 @@
-import jsonrepair from '../../lib/esm/jsonrepair.js'
+import { jsonrepair } from '../../lib/esm/index.js'
 
 console.log(jsonrepair('{name: \'John\'}'))

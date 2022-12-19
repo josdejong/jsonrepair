@@ -7,13 +7,14 @@
 <body>
   <div class="app">
     <h1>jsonrepair test performance</h1>
+    <p>(check the developer console output)</p>
     <div class="info">
       <input id="loadFile" type="file">
     </div>
   </div>
 
   <script type="module">
-    import jsonrepair from '../lib/esm/jsonrepair.js'
+    import { jsonrepair } from '../lib/esm/jsonrepair.js'
 
     function repairIt (text) {
       console.time('repair')

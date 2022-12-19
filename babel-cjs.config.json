@@ -5,9 +5,10 @@
       {
         "targets": "> 0.25%, not dead"
       }
-    ]
+    ],
+    ["@babel/preset-typescript"]
   ],
   "ignore": [
-    "**/*.test.js"
+    "src/**/*.test.ts"
   ]
 }
