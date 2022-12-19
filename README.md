@@ -42,7 +42,7 @@ Note that in the `lib` folder, there are builds for ESM, UMD, and CommonJs.
 
 ## Use
 
-Use with an ES modules import:
+Use with an ES modules import (recommended):
 
 ```js
 import { jsonrepair } from 'jsonrepair'
@@ -61,7 +61,7 @@ try {
 }
 ```
 
-Use in CommonJS:
+Use in CommonJS (not recommended):
 
 ```js
 const { jsonrepair } = require('jsonrepair')
@@ -69,7 +69,7 @@ const json = "{name: 'John'}"
 console.log(jsonrepair(json)) // '{"name": "John"}'
 ```
 
-Use in the browser (UMD):
+Use with UMD in the browser (not recommended):
 
 ```html 
 <script src="/node_modules/jsonrepair/lib/umd/jsonrepair.js"></script>
