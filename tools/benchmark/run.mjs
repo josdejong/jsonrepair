@@ -1,6 +1,6 @@
 import assert from "assert"
 import Benchmark from "benchmark"
-import jsonrepair from "../../lib/esm/jsonrepair.js"
+import { jsonrepair } from "../../lib/esm/index.js"
 
 const text = generateText()
 console.log(`Document size: ${Math.round(text.length / 1024)} kB`)

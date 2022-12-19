@@ -1,3 +1,3 @@
-const jsonrepair = require('../..')
+const { jsonrepair } = require('../..')
 
 console.log(jsonrepair('{name: \'John\'}'))

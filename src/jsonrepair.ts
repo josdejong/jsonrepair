@@ -1,4 +1,4 @@
-import JSONRepairError from './JSONRepairError.js'
+import { JSONRepairError } from './JSONRepairError.js'
 import {
   codeAsterisk,
   codeBackslash,
@@ -65,10 +65,17 @@ const escapeCharacters: { [key: string]: string } = {
  *
  * Example:
  *
- *     jsonrepair('{name: \'John\'}") // '{"name": "John"}'
+ *     try {
+ *       const json = "{name: 'John'}"
+ *       const repaired = jsonrepair(json)
+ *       console.log(repaired)
+ *       // '{"name": "John"}'
+ *     } catch (err) {
+ *       console.error(err)
+ *     }
  *
  */
-export default function jsonrepair(text: string): string {
+export function jsonrepair(text: string): string {
   let i = 0 // current index in text
   let output = '' // generated output
 

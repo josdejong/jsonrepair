@@ -1,4 +1,4 @@
-export default class JSONRepairError extends Error {
+export class JSONRepairError extends Error {
   position: number
 
   constructor(message: string, position: number) {

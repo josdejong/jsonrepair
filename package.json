@@ -7,16 +7,16 @@
     "url": "https://github.com/josdejong/jsonrepair.git"
   },
   "type": "module",
-  "main": "lib/cjs/index-commonjs.js",
-  "module": "lib/esm/jsonrepair.js",
-  "browser": "lib/umd/jsonrepair.min.js",
-  "types": "lib/types/jsonrepair.d.ts",
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "browser": "lib/umd/index.min.js",
+  "types": "lib/types/index.d.ts",
   "sideEffects": false,
   "exports": {
     ".": {
-      "import": "./lib/esm/jsonrepair.js",
-      "require": "./lib/cjs/index-commonjs.js",
-      "types": "./lib/types/jsonrepair.d.ts"
+      "import": "./lib/esm/index.js",
+      "require": "./lib/cjs/index.js",
+      "types": "./lib/types/index.d.ts"
     }
   },
   "keywords": [
@@ -36,7 +36,7 @@
     "build:clean": "del-cli lib",
     "build:esm": "babel src --out-dir lib/esm --extensions \".ts\" --source-maps --config-file ./babel.config.json",
     "build:cjs": "babel src --out-dir lib/cjs --extensions \".ts\" --source-maps --config-file ./babel-cjs.config.json && cpy tools/cjs lib/cjs --flat",
-    "build:umd": "rollup lib/esm/jsonrepair.js --format umd --name jsonrepair --sourcemap --output.file lib/umd/jsonrepair.js && cpy tools/cjs/package.json lib/umd --flat",
+    "build:umd": "rollup lib/esm/index.js --format umd --name JSONRepair --sourcemap --output.file lib/umd/jsonrepair.js && cpy tools/cjs/package.json lib/umd --flat",
     "build:umd:min": "uglifyjs --compress --mangle --source-map --comments --output lib/umd/jsonrepair.min.js -- lib/umd/jsonrepair.js",
     "build:types": "tsc --project tsconfig-types.json",
     "lint": "eslint src/**/*.ts",

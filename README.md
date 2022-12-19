@@ -42,27 +42,53 @@ Note that in the `lib` folder, there are builds for ESM, UMD, and CommonJs.
 
 ## Use
 
+Use with an ES modules import:
+
 ```js
-import jsonrepair from 'jsonrepair'
+import { jsonrepair } from 'jsonrepair'
 
-// The following is invalid JSON: is consists of JSON contents copied from 
-// a JavaScript code base, where the keys are missing double quotes, 
-// and strings are using single quotes:
-const json = '{name: \'John\'}'
+try {
+  // The following is invalid JSON: is consists of JSON contents copied from 
+  // a JavaScript code base, where the keys are missing double quotes, 
+  // and strings are using single quotes:
+  const json = "{name: 'John'}"
+  
+  const repaired = jsonrepair(json)
+  
+  console.log(repaired) // '{"name": "John"}'
+} catch (err) {
+  console.error(err)
+}
+```
 
-const repaired = jsonrepair(json)
-console.log(repaired) // '{"name": "John"}'
+Use in CommonJS:
+
+```js
+const { jsonrepair } = require('jsonrepair')
+const json = "{name: 'John'}"
+console.log(jsonrepair(json)) // '{"name": "John"}'
+```
+
+Use in the browser (UMD):
+
+```html 
+<script src="/node_modules/jsonrepair/lib/umd/jsonrepair.js"></script>
+<script>
+  const { jsonrepair } = JSONRepair
+  const json = "{name: 'John'}"
+  console.log(jsonrepair(json)) // '{"name": "John"}'
+</script>
 ```
 
 
 ### API
 
 ```
+// @throws JSONRepairError 
 jsonrepair(json: string) : string
 ```
 
-The function `jsonrepair` throws an exception when an issue is encountered
-which could not be solved. When no error is thrown, the output will be valid JSON.
+The function `jsonrepair` throws an exception `JSONRepairError` when an issue is encountered which could not be solved. When no error is thrown, the output will be valid JSON.
 
 
 ### Command Line Interface (CLI)

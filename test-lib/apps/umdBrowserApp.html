@@ -10,7 +10,7 @@
   <div id="repaired"></div>
   <script>
     const invalidJson = '{name: \'John\'}'
-    const repairedJson = jsonrepair(invalidJson)
+    const repairedJson = JSONRepair.jsonrepair(invalidJson)
 
     document.getElementById('invalid').innerHTML = 'Invalid JSON:' + invalidJson
     document.getElementById('repaired').innerHTML = 'Repaired JSON:' + repairedJson

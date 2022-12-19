@@ -8,7 +8,7 @@
   <div id="invalid"></div>
   <div id="repaired"></div>
   <script type="module">
-    import jsonrepair from '../../lib/esm/jsonrepair.js'
+    import { jsonrepair } from '../../lib/esm/index.js'
 
     const invalidJson = '{name: \'John\'}'
     const repairedJson = jsonrepair(invalidJson)
