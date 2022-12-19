@@ -83,7 +83,7 @@ Use with UMD in the browser (not recommended):
 
 ### API
 
-```
+```js
 // @throws JSONRepairError 
 jsonrepair(json: string) : string
 ```
