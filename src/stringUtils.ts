@@ -37,12 +37,12 @@ const codeHairSpace = 0x200a
 const codeNarrowNoBreakSpace = 0x202f
 const codeMediumMathematicalSpace = 0x205f
 const codeIdeographicSpace = 0x3000
-const codeDoubleQuoteLeft = 0x201c
-const codeDoubleQuoteRight = 0x201d
-const codeQuoteLeft = 0x2018
-const codeQuoteRight = 0x2019
-const codeGraveAccent = 0x0060
-const codeAcuteAccent = 0x00b4
+const codeDoubleQuoteLeft = 0x201c // “
+const codeDoubleQuoteRight = 0x201d // ”
+const codeQuoteLeft = 0x2018 // ‘
+const codeQuoteRight = 0x2019 // ’
+const codeGraveAccent = 0x0060 // `
+const codeAcuteAccent = 0x00b4 // ´
 
 export function isHex(code: number): boolean {
   return (
@@ -65,16 +65,17 @@ export function isValidStringCharacter(code: number): boolean {
 }
 
 export function isDelimiter(char: string): boolean {
-  return regexDelimiter.test(char)
+  return regexDelimiter.test(char) || (char && isQuote(char.charCodeAt(0)))
 }
 
-const regexDelimiter = /^[,:[\]{}()\n"]$/
+const regexDelimiter = /^[,:[\]{}()\n]$/
 
 export function isStartOfValue(char: string): boolean {
-  return regexStartOfValue.test(char)
+  return regexStartOfValue.test(char) || (char && isQuote(char.charCodeAt(0)))
 }
 
-const regexStartOfValue = /^[[{\w"-_]$/
+// alpha, number, minus, or opening bracket or brace
+const regexStartOfValue = /^[[{\w-]$/
 
 export function isControlCharacter(code: number) {
   return (
@@ -146,11 +147,11 @@ export function isSingleQuote(code: number): boolean {
 export function stripLastOccurrence(
   text: string,
   textToStrip: string,
-  stripWhitespace = false
+  stripRemainingText = false
 ): string {
   const index = text.lastIndexOf(textToStrip)
   return index !== -1
-    ? text.substring(0, index) + (stripWhitespace ? '' : text.substring(index + 1))
+    ? text.substring(0, index) + (stripRemainingText ? '' : text.substring(index + 1))
     : text
 }
 

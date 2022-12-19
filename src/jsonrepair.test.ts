@@ -107,6 +107,12 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair("{a:'foo',b:'bar'}"), '{"a":"foo","b":"bar"}')
     })
 
+    it('should replace special quotes with double quotes', () => {
+      strictEqual(jsonrepair('{“a”:“b”}'), '{"a":"b"}')
+      strictEqual(jsonrepair('{‘a’:‘b’}'), '{"a":"b"}')
+      strictEqual(jsonrepair('{`a´:`b´}'), '{"a":"b"}')
+    })
+
     it('should leave string content untouched', () => {
       strictEqual(jsonrepair('"{a:b}"'), '"{a:b}"')
     })
@@ -341,7 +347,13 @@ describe('jsonRepair', () => {
 
     it('should repair missing colon between object key and value', () => {
       strictEqual(jsonrepair('{"a" "b"}'), '{"a": "b"}')
+      strictEqual(jsonrepair('{"a" 2}'), '{"a": 2}')
       strictEqual(jsonrepair('{\n"a" "b"\n}'), '{\n"a": "b"\n}')
+      strictEqual(jsonrepair('{"a" \'b\'}'), '{"a": "b"}')
+      strictEqual(jsonrepair("{'a' 'b'}"), '{"a": "b"}')
+      strictEqual(jsonrepair('{“a” “b”}'), '{"a": "b"}')
+      strictEqual(jsonrepair("{a 'b'}"), '{"a": "b"}')
+      strictEqual(jsonrepair('{a “b”}'), '{"a": "b"}')
     })
 
     it('should repair missing a combination of comma, quotes and brackets', () => {

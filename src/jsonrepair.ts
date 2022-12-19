@@ -561,8 +561,6 @@ export function jsonrepair(text: string): string {
     }
 
     if (i > start) {
-      const symbol = text.slice(start, i)
-
       if (text.charCodeAt(i) === codeOpenParenthesis) {
         // repair a MongoDB function call like NumberLong("2")
         // repair a JSONP function call like callback({...});
@@ -582,6 +580,13 @@ export function jsonrepair(text: string): string {
         return true
       } else {
         // repair unquoted string
+
+        // first, go back to prevent getting trailing whitespaces in the string
+        while (isWhitespace(text.charCodeAt(i - 1)) && i > 0) {
+          i--
+        }
+
+        const symbol = text.slice(start, i)
         output += JSON.stringify(symbol)
 
         return true
