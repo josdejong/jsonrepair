@@ -149,6 +149,12 @@ To run the linter (eslint):
 $ npm run lint
 ```
 
+To automatically fix linter issues:
+
+```
+$ npm run format
+```
+
 To run the linter, build all, and run unit tests and integration tests:
 
 ```
