@@ -1,5 +1,17 @@
 # Changelog
 
+## 2021-12-19, version 3.0.0
+
+- Complete rewrite of the parser in TypeScript, with improved performance.
+- Can repair some additional cases of broken JSON.
+
+⚠ BREAKING CHANGES
+
+- Changed the API from default export `import jsonrepair from 'jsonrepair'` to named export `import { jsonrepair} from 'jsonrepair'`
+- Changed in UMD export from `jsonrepair` to `JSONRepair.jsonrepair`
+- Changed the error class to `JSONRepairError` with a property `.position`
+
+
 ## 2021-06-09, version 2.2.1
 
 - Improved handling of trailing commas.
