@@ -1,5 +1,16 @@
 # Changelog
 
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [3.0.1](https://github.com/josdejong/jsonrepair/compare/v3.0.0...v3.0.1) (2022-12-20)
+
+
+### Bug Fixes
+
+* improve resolving unquoted strings and missing colon ([45cd4e4](https://github.com/josdejong/jsonrepair/commit/45cd4e45c6c10fac148cf6a037752586ed4fb2d5))
+
+# Changelog
+
 ## 2021-12-19, version 3.0.0
 
 - Complete rewrite of the parser in TypeScript, with improved performance.
