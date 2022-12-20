@@ -169,7 +169,14 @@ To publish:
 $ npm publish
 ```
 
-This will list, test, and build the project. Then it will up the version number (using `standard-version`), push the changes to git, add a git version tag, and then publish the npm package. 
+This will:
+
+- lint 
+- test
+- build
+- increment the version number
+- push the changes to git, add a git version tag
+- publish the npm package 
 
 To try the build and see the change list without actually publishing:
 

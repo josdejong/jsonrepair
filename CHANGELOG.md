@@ -9,7 +9,6 @@ All notable changes to this project will be documented in this file. See [standa
 
 * improve resolving unquoted strings and missing colon ([45cd4e4](https://github.com/josdejong/jsonrepair/commit/45cd4e45c6c10fac148cf6a037752586ed4fb2d5))
 
-# Changelog
 
 ## 2021-12-19, version 3.0.0
 
