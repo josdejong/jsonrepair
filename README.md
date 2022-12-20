@@ -83,7 +83,7 @@ Use with UMD in the browser (not recommended):
 
 ### API
 
-```js
+```ts
 // @throws JSONRepairError 
 jsonrepair(json: string) : string
 ```
@@ -159,6 +159,22 @@ To run the linter, build all, and run unit tests and integration tests:
 
 ```
 $ npm run build-and-test
+```
+
+### Publish
+
+To publish:
+
+```
+$ npm publish
+```
+
+This will list, test, and build the project. Then it will up the version number (using `standard-version`), push the changes to git, add a git version tag, and then publish the npm package. 
+
+To try the build and see the change list without actually publishing:
+
+```
+$ npm publish-dry-run
 ```
 
 
