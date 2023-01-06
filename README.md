@@ -166,7 +166,7 @@ $ npm run build-and-test
 To publish:
 
 ```
-$ npm publish
+$ npm run publish
 ```
 
 This will:
@@ -181,7 +181,7 @@ This will:
 To try the build and see the change list without actually publishing:
 
 ```
-$ npm publish-dry-run
+$ npm run publish-dry-run
 ```
 
 
