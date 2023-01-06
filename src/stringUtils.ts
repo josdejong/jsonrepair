@@ -46,7 +46,7 @@ const codeAcuteAccent = 0x00b4 // ´
 
 export function isHex(code: number): boolean {
   return (
-    (code >= codeZero && code < codeNine) ||
+    (code >= codeZero && code <= codeNine) ||
     (code >= codeUppercaseA && code <= codeUppercaseF) ||
     (code >= codeLowercaseA && code <= codeLowercaseF)
   )

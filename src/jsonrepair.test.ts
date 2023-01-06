@@ -71,6 +71,16 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('"\u2605"'), '"\u2605"')
       strictEqual(jsonrepair('"😀"'), '"😀"')
       strictEqual(jsonrepair('"\ud83d\ude00"'), '"\ud83d\ude00"')
+      strictEqual(jsonrepair('"йнформация"'), '"йнформация"')
+    })
+
+    it('supports escaped unicode characters in a string', () => {
+      strictEqual(jsonrepair('"\\u2605"'), '"\\u2605"')
+      strictEqual(jsonrepair('"\\ud83d\\ude00"'), '"\\ud83d\\ude00"')
+      strictEqual(
+        jsonrepair('"\\u0439\\u043d\\u0444\\u043e\\u0440\\u043c\\u0430\\u0446\\u0438\\u044f"'),
+        '"\\u0439\\u043d\\u0444\\u043e\\u0440\\u043c\\u0430\\u0446\\u0438\\u044f"'
+      )
     })
 
     it('supports unicode characters in a key', () => {
