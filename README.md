@@ -166,7 +166,7 @@ $ npm run build-and-test
 To publish:
 
 ```
-$ npm run publish
+$ npm publish
 ```
 
 This will:
