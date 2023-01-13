@@ -161,12 +161,12 @@ To run the linter, build all, and run unit tests and integration tests:
 $ npm run build-and-test
 ```
 
-### Publish
+### Release
 
-To publish:
+To release a new version:
 
 ```
-$ npm publish
+$ npm run release
 ```
 
 This will:
@@ -181,7 +181,7 @@ This will:
 To try the build and see the change list without actually publishing:
 
 ```
-$ npm run publish-dry-run
+$ npm run release-dry-run
 ```
 
 
