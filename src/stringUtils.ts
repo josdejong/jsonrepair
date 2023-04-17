@@ -115,23 +115,31 @@ export function isSpecialWhitespace(code: number): boolean {
  */
 export function isQuote(code: number): boolean {
   // the first check double quotes, since that occurs most often
-  return isDoubleQuote(code) || isSingleQuote(code)
+  return isDoubleQuoteLike(code) || isSingleQuoteLike(code)
 }
 
 /**
  * Test whether the given character is a double quote character.
  * Also tests for special variants of double quotes.
  */
-export function isDoubleQuote(code: number): boolean {
+export function isDoubleQuoteLike(code: number): boolean {
   // the first check double quotes, since that occurs most often
   return code === codeDoubleQuote || code === codeDoubleQuoteLeft || code === codeDoubleQuoteRight
+}
+
+/**
+ * Test whether the given character is a double quote character.
+ * Does NOT test for special variants of double quotes.
+ */
+export function isDoubleQuote(code: number): boolean {
+  return code === codeDoubleQuote
 }
 
 /**
  * Test whether the given character is a single quote character.
  * Also tests for special variants of single quotes.
  */
-export function isSingleQuote(code: number): boolean {
+export function isSingleQuoteLike(code: number): boolean {
   return (
     code === codeQuote ||
     code === codeQuoteLeft ||

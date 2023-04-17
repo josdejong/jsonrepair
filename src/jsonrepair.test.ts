@@ -123,6 +123,10 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('{`a´:`b´}'), '{"a":"b"}')
     })
 
+    it('should not replace special quotes inside a normal string', () => {
+      strictEqual(jsonrepair('"Rounded “ quote"'), '"Rounded “ quote"')
+    })
+
     it('should leave string content untouched', () => {
       strictEqual(jsonrepair('"{a:b}"'), '"{a:b}"')
     })

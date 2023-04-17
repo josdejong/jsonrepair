@@ -26,10 +26,11 @@ import {
   isDelimiter,
   isDigit,
   isDoubleQuote,
+  isDoubleQuoteLike,
   isHex,
   isNonZeroDigit,
   isQuote,
-  isSingleQuote,
+  isSingleQuoteLike,
   isSpecialWhitespace,
   isStartOfValue,
   isValidStringCharacter,
@@ -372,11 +373,12 @@ export function jsonrepair(text: string): string {
     }
 
     if (isQuote(text.charCodeAt(i))) {
-      const isEndQuote = isSingleQuote(text.charCodeAt(i)) ? isSingleQuote : isDoubleQuote
+      const isEndQuote = isSingleQuoteLike(text.charCodeAt(i))
+        ? isSingleQuoteLike
+        : isDoubleQuote(text.charCodeAt(i))
+        ? isDoubleQuote // eslint-disable-line indent
+        : isDoubleQuoteLike // eslint-disable-line indent
 
-      if (text.charCodeAt(i) !== codeDoubleQuote) {
-        // repair non-normalized quote
-      }
       output += '"'
       i++
 
