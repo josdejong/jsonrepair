@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.0.3](https://github.com/josdejong/jsonrepair/compare/v3.0.2...v3.0.3) (2023-04-17)
+
+
+### Bug Fixes
+
+* [#89](https://github.com/josdejong/jsonrepair/issues/89) wrongly parsing strings that contain a double quote left or right ([4023ece](https://github.com/josdejong/jsonrepair/commit/4023ece4442a85bc615e936fbb1de8683e821e91))
+
 ### [3.0.2](https://github.com/josdejong/jsonrepair/compare/v3.0.1...v3.0.2) (2023-01-06)
 
 
