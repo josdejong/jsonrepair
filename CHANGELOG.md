@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0](https://github.com/josdejong/jsonrepair/compare/v3.0.3...v3.1.0) (2023-05-04)
+
+
+### Features
+
+* fix broken numbers at the end of the string ([c42d9dd](https://github.com/josdejong/jsonrepair/commit/c42d9dd9ac6c60f2ebef8292d0485409f90d2ab9))
+* fix broken numbers at the end of the string ([#91](https://github.com/josdejong/jsonrepair/issues/91)) ([9ad00fd](https://github.com/josdejong/jsonrepair/commit/9ad00fd09b600ac191bda9dec4469aa553e97645))
+
 ### [3.0.3](https://github.com/josdejong/jsonrepair/compare/v3.0.2...v3.0.3) (2023-04-17)
 
 
