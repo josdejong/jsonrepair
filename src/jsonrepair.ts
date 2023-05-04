@@ -485,7 +485,7 @@ export function jsonrepair(text: string): string {
     const start = i
     if (text.charCodeAt(i) === codeMinus) {
       i++
-      if (expectDigitOrAppendToEnd(start)) {
+      if (expectDigitOrRepair(start)) {
         return true
       }
     }
@@ -501,7 +501,7 @@ export function jsonrepair(text: string): string {
 
     if (text.charCodeAt(i) === codeDot) {
       i++
-      if (expectDigitOrAppendToEnd(start)) {
+      if (expectDigitOrRepair(start)) {
         return true
       }
       while (isDigit(text.charCodeAt(i))) {
@@ -514,7 +514,7 @@ export function jsonrepair(text: string): string {
       if (text.charCodeAt(i) === codeMinus || text.charCodeAt(i) === codePlus) {
         i++
       }
-      if (expectDigitOrAppendToEnd(start)) {
+      if (expectDigitOrRepair(start)) {
         return true
       }
       while (isDigit(text.charCodeAt(i))) {
@@ -609,10 +609,12 @@ export function jsonrepair(text: string): string {
     }
   }
 
-  function expectDigitOrAppendToEnd(start: number, appendix = '0') {
+  function expectDigitOrRepair(start: number) {
     if (i >= text.length) {
       // repair numbers cut off at the end
-      output += text.slice(start, i) + appendix
+      // this will only be called when we end after a '.', '-', or 'e' and does not
+      // change the number more than it needs to make it valid JSON
+      output += text.slice(start, i) + '0'
       return true
     } else {
       expectDigit(start)
