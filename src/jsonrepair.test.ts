@@ -359,6 +359,13 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('{"a":2\n"b":3\nc:4}'), '{"a":2,\n"b":3,\n"c":4}')
     })
 
+    it('should repair numbers at the end', () => {
+      strictEqual(jsonrepair('{"a":2.'), '{"a":2.0}')
+      strictEqual(jsonrepair('{"a":2e'), '{"a":2e0}')
+      strictEqual(jsonrepair('{"a":2e-'), '{"a":2e-0}')
+      strictEqual(jsonrepair('{"a":-'), '{"a":-0}')
+    })
+
     it('should repair missing colon between object key and value', () => {
       strictEqual(jsonrepair('{"a" "b"}'), '{"a": "b"}')
       strictEqual(jsonrepair('{"a" 2}'), '{"a": 2}')
@@ -451,12 +458,12 @@ describe('jsonRepair', () => {
     }, new JSONRepairError('Unexpected character "."', 3))
 
     throws(function () {
-      console.log({ output: jsonrepair('2e') })
-    }, new JSONRepairError("Invalid number '2e', expecting a digit but reached end of input", 2))
+      console.log({ output: jsonrepair('[2e,') })
+    }, new JSONRepairError("Invalid number '2e', expecting a digit but got ','", 2))
 
     throws(function () {
-      console.log({ output: jsonrepair('-') })
-    }, new JSONRepairError("Invalid number '-', expecting a digit but reached end of input", 2))
+      console.log({ output: jsonrepair('[-,') })
+    }, new JSONRepairError("Invalid number '-', expecting a digit but got ','", 2))
 
     throws(function () {
       console.log({ output: jsonrepair('foo [') })
