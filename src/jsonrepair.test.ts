@@ -142,6 +142,8 @@ describe('jsonRepair', () => {
 
     it('should repair a missing object value', () => {
       strictEqual(jsonrepair('{"a":}'), '{"a":null}')
+      strictEqual(jsonrepair('{"a":,"b":2}'), '{"a":null,"b":2}')
+      strictEqual(jsonrepair('{"a":'), '{"a":null}')
     })
 
     it('should escape unescaped control characters', () => {
@@ -480,10 +482,6 @@ describe('jsonRepair', () => {
     throws(function () {
       console.log({ output: jsonrepair('"\\uZ000"') })
     }, new JSONRepairError('Invalid unicode character "\\uZ000"', 1))
-
-    throws(function () {
-      console.log({ output: jsonrepair('{"a":}') })
-    }, new JSONRepairError('Object value expected', 5))
   })
 })
 
