@@ -476,6 +476,10 @@ describe('jsonRepair', () => {
     throws(function () {
       console.log({ output: jsonrepair('"\\uZ000"') })
     }, new JSONRepairError('Invalid unicode character "\\uZ000"', 1))
+
+    throws(function () {
+      console.log({ output: jsonrepair('{"a":}') })
+    }, new JSONRepairError('Object value expected', 5))
   })
 })
 
