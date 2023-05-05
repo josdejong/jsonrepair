@@ -263,7 +263,8 @@ export function jsonrepair(text: string): string {
         const processedValue = parseValue()
         if (!processedValue) {
           if (processedColon) {
-            throwObjectValueExpected()
+            // repair missing object value
+            output += 'null'
           } else {
             throwColonExpected()
           }
@@ -636,10 +637,6 @@ export function jsonrepair(text: string): string {
 
   function throwObjectKeyExpected() {
     throw new JSONRepairError('Object key expected', i)
-  }
-
-  function throwObjectValueExpected() {
-    throw new JSONRepairError('Object value expected', i)
   }
 
   function throwColonExpected() {

@@ -140,6 +140,10 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('"\\a"'), '"a"')
     })
 
+    it('should repair a missing object value', () => {
+      strictEqual(jsonrepair('{"a":}'), '{"a":null}')
+    })
+
     it('should escape unescaped control characters', () => {
       strictEqual(jsonrepair('"hello\bworld"'), '"hello\\bworld"')
       strictEqual(jsonrepair('"hello\fworld"'), '"hello\\fworld"')
