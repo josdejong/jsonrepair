@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0](https://github.com/josdejong/jsonrepair/compare/v3.1.0...v3.2.0) (2023-06-13)
+
+
+### Features
+
+* repair a missing object value ([2cd756f](https://github.com/josdejong/jsonrepair/commit/2cd756f7806320003551b1fea63e2495dba39080))
+
+
+### Bug Fixes
+
+* [#93](https://github.com/josdejong/jsonrepair/issues/93) repair `undefined` values by replacing them with `null` ([af348d7](https://github.com/josdejong/jsonrepair/commit/af348d723586bc06f93a510d30154bd484052165))
+
 ## [3.1.0](https://github.com/josdejong/jsonrepair/compare/v3.0.3...v3.1.0) (2023-05-04)
 
 
