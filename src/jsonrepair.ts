@@ -596,7 +596,7 @@ export function jsonrepair(text: string): string {
         }
 
         const symbol = text.slice(start, i)
-        output += JSON.stringify(symbol)
+        output += symbol === 'undefined' ? 'null' : JSON.stringify(symbol)
 
         return true
       }

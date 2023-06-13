@@ -146,6 +146,12 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('{"a":'), '{"a":null}')
     })
 
+    it('should repair undefined values', () => {
+      strictEqual(jsonrepair('{"a":undefined}'), '{"a":null}')
+      strictEqual(jsonrepair('[undefined]'), '[null]')
+      strictEqual(jsonrepair('undefined'), 'null')
+    })
+
     it('should escape unescaped control characters', () => {
       strictEqual(jsonrepair('"hello\bworld"'), '"hello\\bworld"')
       strictEqual(jsonrepair('"hello\fworld"'), '"hello\\fworld"')
