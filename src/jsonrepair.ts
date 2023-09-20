@@ -493,6 +493,7 @@ export function jsonrepair(text: string): string {
 
     if (text.charCodeAt(i) === codeZero) {
       i++
+      expectNoDigit(i - 1) // check against leading zeros
     } else if (isNonZeroDigit(text.charCodeAt(i))) {
       i++
       while (isDigit(text.charCodeAt(i))) {
@@ -607,6 +608,12 @@ export function jsonrepair(text: string): string {
     if (!isDigit(text.charCodeAt(i))) {
       const numSoFar = text.slice(start, i)
       throw new JSONRepairError(`Invalid number '${numSoFar}', expecting a digit ${got()}`, i)
+    }
+  }
+
+  function expectNoDigit(start: number) {
+    if (isDigit(text.charCodeAt(i))) {
+      throw new JSONRepairError('Invalid number, unexpected leading zero', start)
     }
   }
 

@@ -44,6 +44,18 @@ describe('jsonRepair', () => {
       assertRepair('2.3e-3')
     })
 
+    it('should not repair an invalid number inside an array', () => {
+      throws(function () {
+        console.log({ output: jsonrepair('[0789]') })
+      }, new JSONRepairError('Invalid number, unexpected leading zero', 1))
+    })
+
+    it('should not repair an invalid number inside an object', () => {
+      throws(function () {
+        console.log({ output: jsonrepair('{value:0789}') })
+      }, new JSONRepairError('Invalid number, unexpected leading zero', 7))
+    })
+
     it('parse string', function () {
       assertRepair('"str"')
       assertRepair('"\\"\\\\\\/\\b\\f\\n\\r\\t"')
@@ -460,6 +472,14 @@ describe('jsonRepair', () => {
     throws(function () {
       console.log({ output: jsonrepair('2.3.4') })
     }, new JSONRepairError('Unexpected character "."', 3))
+
+    throws(function () {
+      console.log({ output: jsonrepair('0789') })
+    }, new JSONRepairError('Invalid number, unexpected leading zero', 0))
+
+    throws(function () {
+      console.log({ output: jsonrepair('000789') })
+    }, new JSONRepairError('Invalid number, unexpected leading zero', 0))
 
     throws(function () {
       console.log({ output: jsonrepair('234..5') })
