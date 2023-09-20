@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.2.1](https://github.com/josdejong/jsonrepair/compare/v3.2.0...v3.2.1) (2023-09-20)
+
+
+### Bug Fixes
+
+* [#97](https://github.com/josdejong/jsonrepair/issues/97) improved handling of missing start and end quotes ([82df750](https://github.com/josdejong/jsonrepair/commit/82df75049ffd4aecc275bedb8f594a462027a834))
+* [#98](https://github.com/josdejong/jsonrepair/issues/98) wrong position reported in the error message of invalid numbers ([5093616](https://github.com/josdejong/jsonrepair/commit/5093616f91454cafa47d482e830017781155cd79))
+* throw an error on numbers with a leading zero instead of splitting them in two ([829d3ee](https://github.com/josdejong/jsonrepair/commit/829d3eebb02a1d5bbf395ba3fb7d5a4814fd1b3a))
+
 ## [3.2.0](https://github.com/josdejong/jsonrepair/compare/v3.1.0...v3.2.0) (2023-06-13)
 
 
