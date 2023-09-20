@@ -606,7 +606,7 @@ export function jsonrepair(text: string): string {
   function expectDigit(start: number) {
     if (!isDigit(text.charCodeAt(i))) {
       const numSoFar = text.slice(start, i)
-      throw new JSONRepairError(`Invalid number '${numSoFar}', expecting a digit ${got()}`, 2)
+      throw new JSONRepairError(`Invalid number '${numSoFar}', expecting a digit ${got()}`, i)
     }
   }
 

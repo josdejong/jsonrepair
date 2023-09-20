@@ -462,8 +462,8 @@ describe('jsonRepair', () => {
     }, new JSONRepairError('Unexpected character "."', 3))
 
     throws(function () {
-      console.log({ output: jsonrepair('2..3') })
-    }, new JSONRepairError("Invalid number '2.', expecting a digit but got '.'", 2))
+      console.log({ output: jsonrepair('234..5') })
+    }, new JSONRepairError("Invalid number '234.', expecting a digit but got '.'", 4))
 
     throws(function () {
       console.log({ output: jsonrepair('2e3.4') })
@@ -471,7 +471,7 @@ describe('jsonRepair', () => {
 
     throws(function () {
       console.log({ output: jsonrepair('[2e,') })
-    }, new JSONRepairError("Invalid number '2e', expecting a digit but got ','", 2))
+    }, new JSONRepairError("Invalid number '2e', expecting a digit but got ','", 3))
 
     throws(function () {
       console.log({ output: jsonrepair('[-,') })
