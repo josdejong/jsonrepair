@@ -122,6 +122,22 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('\u2018abc'), '"abc"')
     })
 
+    it('should add missing start quote', () => {
+      strictEqual(jsonrepair('abc"'), '"abc"')
+      strictEqual(jsonrepair('[a","b"]'), '["a","b"]')
+      strictEqual(jsonrepair('[a",b"]'), '["a","b"]')
+      strictEqual(jsonrepair('{"a":"foo","b":"bar"}'), '{"a":"foo","b":"bar"}')
+      strictEqual(jsonrepair('{a":"foo","b":"bar"}'), '{"a":"foo","b":"bar"}')
+      strictEqual(jsonrepair('{"a":"foo",b":"bar"}'), '{"a":"foo","b":"bar"}')
+      strictEqual(jsonrepair('{"a":foo","b":"bar"}'), '{"a":"foo","b":"bar"}')
+    })
+
+    it('should stop at the first next return when missing an end quote', () => {
+      strictEqual(jsonrepair('[\n"abc,\n"def"\n]'), '[\n"abc",\n"def"\n]')
+      strictEqual(jsonrepair('[\n"abc,  \n"def"\n]'), '[\n"abc",  \n"def"\n]')
+      strictEqual(jsonrepair('["abc]\n'), '["abc"]\n')
+    })
+
     it('should replace single quotes with double quotes', () => {
       strictEqual(jsonrepair("{'a':2}"), '{"a":2}')
       strictEqual(jsonrepair("{'a':'foo'}"), '{"a":"foo"}')
@@ -167,10 +183,15 @@ describe('jsonRepair', () => {
     it('should escape unescaped control characters', () => {
       strictEqual(jsonrepair('"hello\bworld"'), '"hello\\bworld"')
       strictEqual(jsonrepair('"hello\fworld"'), '"hello\\fworld"')
-      strictEqual(jsonrepair('"hello\nworld"'), '"hello\\nworld"')
+      strictEqual(jsonrepair('"hello\nworld"'), '[\n"hello",\n"world"\n]')
       strictEqual(jsonrepair('"hello\rworld"'), '"hello\\rworld"')
       strictEqual(jsonrepair('"hello\tworld"'), '"hello\\tworld"')
-      strictEqual(jsonrepair('{"value\n": "dc=hcm,dc=com"}'), '{"value\\n": "dc=hcm,dc=com"}')
+
+      // We cannot always restore an unescaped return when inside a key,
+      // since we stop reading the key at the return character
+      throws(() => {
+        console.log({ output: jsonrepair('{"key\nafter": "foo"}') })
+      }, new JSONRepairError('Object key expected', 12))
     })
 
     it('should replace special white space characters', () => {
@@ -242,8 +263,8 @@ describe('jsonRepair', () => {
         '{"stringified": "hello \\"world\\""}'
       )
 
-      // the following is weird but understandable
-      strictEqual(jsonrepair('[\\"hello\\, \\"world\\"]'), '["hello, ","world\\\\","]"]')
+      // the following is a bit weird but comes close to the most likely intention
+      strictEqual(jsonrepair('[\\"hello\\, \\"world\\"]'), '["hello, ","world\\\\"]')
 
       // the following is sort of invalid: the end quote should be escaped too,
       // but the fixed result is most likely what you want in the end

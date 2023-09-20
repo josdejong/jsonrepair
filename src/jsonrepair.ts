@@ -383,7 +383,11 @@ export function jsonrepair(text: string): string {
       output += '"'
       i++
 
-      while (i < text.length && !isEndQuote(text.charCodeAt(i))) {
+      while (
+        i < text.length &&
+        !isEndQuote(text.charCodeAt(i)) &&
+        text.charCodeAt(i) !== codeNewline
+      ) {
         if (text.charCodeAt(i) === codeBackslash) {
           const char = text[i + 1]
           const escapeChar = escapeCharacters[char]
@@ -444,7 +448,14 @@ export function jsonrepair(text: string): string {
         i++
       } else {
         // repair missing end quote
-        output += '"'
+        // walk back and insert the missing end quote before any
+        // trailing comma (or other delimiter) and whitespaces
+        let steps = 0
+        while (i > 0 && (isDelimiter(text[i - 1]) || isWhitespace(text.charCodeAt(i - 1)))) {
+          i--
+          steps++
+        }
+        output = output.substring(0, output.length - steps) + '"'
       }
 
       parseConcatenatedString()
@@ -590,6 +601,7 @@ export function jsonrepair(text: string): string {
         return true
       } else {
         // repair unquoted string
+        // also, repair undefined into null
 
         // first, go back to prevent getting trailing whitespaces in the string
         while (isWhitespace(text.charCodeAt(i - 1)) && i > 0) {
@@ -598,6 +610,11 @@ export function jsonrepair(text: string): string {
 
         const symbol = text.slice(start, i)
         output += symbol === 'undefined' ? 'null' : JSON.stringify(symbol)
+
+        if (text.charCodeAt(i) === codeDoubleQuote) {
+          // we had a missing start quote, but now we encountered the end quote, so we can skip that one
+          i++
+        }
 
         return true
       }
