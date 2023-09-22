@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.2.2](https://github.com/josdejong/jsonrepair/compare/v3.2.1...v3.2.2) (2023-09-22)
+
+
+### Bug Fixes
+
+* [#100](https://github.com/josdejong/jsonrepair/issues/100) jsonrepair sometimes crashing when repairing missing quotes (regression since v3.2.1) ([f573da2](https://github.com/josdejong/jsonrepair/commit/f573da2f0575c0434dface16fe906754dc47f124))
+
 ### [3.2.1](https://github.com/josdejong/jsonrepair/compare/v3.2.0...v3.2.1) (2023-09-20)
 
 
