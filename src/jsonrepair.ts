@@ -449,9 +449,13 @@ export function jsonrepair(text: string): string {
       } else {
         // repair missing end quote
         // walk back and insert the missing end quote before any
-        // trailing comma (or other delimiter) and whitespaces
+        // whitespaces and optionally a trailing comma or bracket
         let steps = 0
-        while (i > 0 && (isDelimiter(text[i - 1]) || isWhitespace(text.charCodeAt(i - 1)))) {
+        while (i > 0 && isWhitespace(text.charCodeAt(i - 1))) {
+          i--
+          steps++
+        }
+        if (i > 0 && ',:]}'.includes(text[i - 1])) {
           i--
           steps++
         }

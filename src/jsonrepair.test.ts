@@ -45,15 +45,21 @@ describe('jsonRepair', () => {
     })
 
     it('should not repair an invalid number inside an array', () => {
-      throws(function () {
-        console.log({ output: jsonrepair('[0789]') })
-      }, new JSONRepairError('Invalid number, unexpected leading zero', 1))
+      throws(
+        function () {
+          console.log({ output: jsonrepair('[0789]') })
+        },
+        new JSONRepairError('Invalid number, unexpected leading zero', 1)
+      )
     })
 
     it('should not repair an invalid number inside an object', () => {
-      throws(function () {
-        console.log({ output: jsonrepair('{value:0789}') })
-      }, new JSONRepairError('Invalid number, unexpected leading zero', 7))
+      throws(
+        function () {
+          console.log({ output: jsonrepair('{value:0789}') })
+        },
+        new JSONRepairError('Invalid number, unexpected leading zero', 7)
+      )
     })
 
     it('parse string', function () {
@@ -155,6 +161,16 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('"Rounded “ quote"'), '"Rounded “ quote"')
     })
 
+    it('should not crash when repairing quotes', () => {
+      // FIXME: should actually support repairing this case, see https://github.com/josdejong/jsonrepair/issues/99
+      throws(
+        () => {
+          strictEqual(jsonrepair("{pattern: '’'}"), '{"pattern": ""’"}')
+        },
+        new JSONRepairError('Colon expected', 13)
+      )
+    })
+
     it('should leave string content untouched', () => {
       strictEqual(jsonrepair('"{a:b}"'), '"{a:b}"')
     })
@@ -189,9 +205,12 @@ describe('jsonRepair', () => {
 
       // We cannot always restore an unescaped return when inside a key,
       // since we stop reading the key at the return character
-      throws(() => {
-        console.log({ output: jsonrepair('{"key\nafter": "foo"}') })
-      }, new JSONRepairError('Object key expected', 12))
+      throws(
+        () => {
+          console.log({ output: jsonrepair('{"key\nafter": "foo"}') })
+        },
+        new JSONRepairError('Object key expected', 12)
+      )
     })
 
     it('should replace special white space characters', () => {
@@ -462,73 +481,124 @@ describe('jsonRepair', () => {
   })
 
   it('should throw an exception in case of non-repairable issues', function () {
-    throws(function () {
-      console.log({ output: jsonrepair('') })
-    }, new JSONRepairError('Unexpected end of json string', 0))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('') })
+      },
+      new JSONRepairError('Unexpected end of json string', 0)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('{"a",') })
-    }, new JSONRepairError('Colon expected', 4))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('{"a",') })
+      },
+      new JSONRepairError('Colon expected', 4)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('{:2}') })
-    }, new JSONRepairError('Object key expected', 1))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('{:2}') })
+      },
+      new JSONRepairError('Object key expected', 1)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('{"a":2,]') })
-    }, new JSONRepairError('Unexpected character "]"', 7))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('{"a":2,]') })
+      },
+      new JSONRepairError('Unexpected character "]"', 7)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('{"a" ]') })
-    }, new JSONRepairError('Colon expected', 5))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('{"a" ]') })
+      },
+      new JSONRepairError('Colon expected', 5)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('{}}') })
-    }, new JSONRepairError('Unexpected character "}"', 2))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('{}}') })
+      },
+      new JSONRepairError('Unexpected character "}"', 2)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('[2,}') })
-    }, new JSONRepairError('Unexpected character "}"', 3))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('[2,}') })
+      },
+      new JSONRepairError('Unexpected character "}"', 3)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('2.3.4') })
-    }, new JSONRepairError('Unexpected character "."', 3))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('2.3.4') })
+      },
+      new JSONRepairError('Unexpected character "."', 3)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('0789') })
-    }, new JSONRepairError('Invalid number, unexpected leading zero', 0))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('0789') })
+      },
+      new JSONRepairError('Invalid number, unexpected leading zero', 0)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('000789') })
-    }, new JSONRepairError('Invalid number, unexpected leading zero', 0))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('000789') })
+      },
+      new JSONRepairError('Invalid number, unexpected leading zero', 0)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('234..5') })
-    }, new JSONRepairError("Invalid number '234.', expecting a digit but got '.'", 4))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('234..5') })
+      },
+      new JSONRepairError("Invalid number '234.', expecting a digit but got '.'", 4)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('2e3.4') })
-    }, new JSONRepairError('Unexpected character "."', 3))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('2e3.4') })
+      },
+      new JSONRepairError('Unexpected character "."', 3)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('[2e,') })
-    }, new JSONRepairError("Invalid number '2e', expecting a digit but got ','", 3))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('[2e,') })
+      },
+      new JSONRepairError("Invalid number '2e', expecting a digit but got ','", 3)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('[-,') })
-    }, new JSONRepairError("Invalid number '-', expecting a digit but got ','", 2))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('[-,') })
+      },
+      new JSONRepairError("Invalid number '-', expecting a digit but got ','", 2)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('foo [') })
-    }, new JSONRepairError('Unexpected character "["', 4))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('foo [') })
+      },
+      new JSONRepairError('Unexpected character "["', 4)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('"\\u26"') })
-    }, new JSONRepairError('Invalid unicode character "\\u26"', 1))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('"\\u26"') })
+      },
+      new JSONRepairError('Invalid unicode character "\\u26"', 1)
+    )
 
-    throws(function () {
-      console.log({ output: jsonrepair('"\\uZ000"') })
-    }, new JSONRepairError('Invalid unicode character "\\uZ000"', 1))
+    throws(
+      function () {
+        console.log({ output: jsonrepair('"\\uZ000"') })
+      },
+      new JSONRepairError('Invalid unicode character "\\uZ000"', 1)
+    )
   })
 })
 
