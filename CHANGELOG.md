@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.2.3](https://github.com/josdejong/jsonrepair/compare/v3.2.2...v3.2.3) (2023-09-27)
+
+
+### Bug Fixes
+
+* [#99](https://github.com/josdejong/jsonrepair/issues/99) fix repairing single quoted strings containing quotes such as backtick ([b4b9180](https://github.com/josdejong/jsonrepair/commit/b4b918017991f783d98ed376792ec97df74c678d))
+* repair numeric values with trailing zeros like `00789` by changing them into a string ([399f593](https://github.com/josdejong/jsonrepair/commit/399f593d110c06172b7eddf5b7d4cc9f0cd6969e))
+
 ### [3.2.2](https://github.com/josdejong/jsonrepair/compare/v3.2.1...v3.2.2) (2023-09-22)
 
 
