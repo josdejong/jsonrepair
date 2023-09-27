@@ -19,7 +19,6 @@ export const codePlus = 0x2b // "+"
 export const codeMinus = 0x2d // "-"
 export const codeQuote = 0x27 // "'"
 export const codeZero = 0x30
-export const codeOne = 0x31
 export const codeNine = 0x39
 export const codeComma = 0x2c // ","
 export const codeDot = 0x2e // "." (dot, period)
@@ -54,10 +53,6 @@ export function isHex(code: number): boolean {
 
 export function isDigit(code: number): boolean {
   return code >= codeZero && code <= codeNine
-}
-
-export function isNonZeroDigit(code: number): boolean {
-  return code >= codeOne && code <= codeNine
 }
 
 export function isValidStringCharacter(code: number): boolean {

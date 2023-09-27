@@ -19,7 +19,6 @@ import {
   codeSemicolon,
   codeSlash,
   codeUppercaseE,
-  codeZero,
   endsWithCommaOrNewline,
   insertBeforeLastWhitespace,
   isControlCharacter,
@@ -28,7 +27,6 @@ import {
   isDoubleQuote,
   isDoubleQuoteLike,
   isHex,
-  isNonZeroDigit,
   isQuote,
   isSingleQuoteLike,
   isSpecialWhitespace,
@@ -506,14 +504,12 @@ export function jsonrepair(text: string): string {
       }
     }
 
-    if (text.charCodeAt(i) === codeZero) {
+    // Note that in JSON leading zeros like "00789" are not allowed.
+    // We will allow all leading zeros here though and at the end of parseNumber
+    // check against trailing zeros and repair that if needed.
+    // Leading zeros can have meaning, so we should not clear them.
+    while (isDigit(text.charCodeAt(i))) {
       i++
-      expectNoDigit(i - 1) // check against leading zeros
-    } else if (isNonZeroDigit(text.charCodeAt(i))) {
-      i++
-      while (isDigit(text.charCodeAt(i))) {
-        i++
-      }
     }
 
     if (text.charCodeAt(i) === codeDot) {
@@ -540,7 +536,11 @@ export function jsonrepair(text: string): string {
     }
 
     if (i > start) {
-      output += text.slice(start, i)
+      // repair a number with leading zeros like "00789"
+      const num = text.slice(start, i)
+      const hasInvalidLeadingZero = /^0\d/.test(num)
+
+      output += hasInvalidLeadingZero ? `"${num}"` : num
       return true
     }
 
@@ -629,12 +629,6 @@ export function jsonrepair(text: string): string {
     if (!isDigit(text.charCodeAt(i))) {
       const numSoFar = text.slice(start, i)
       throw new JSONRepairError(`Invalid number '${numSoFar}', expecting a digit ${got()}`, i)
-    }
-  }
-
-  function expectNoDigit(start: number) {
-    if (isDigit(text.charCodeAt(i))) {
-      throw new JSONRepairError('Invalid number, unexpected leading zero', start)
     }
   }
 

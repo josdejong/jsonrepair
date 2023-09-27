@@ -44,24 +44,6 @@ describe('jsonRepair', () => {
       assertRepair('2.3e-3')
     })
 
-    it('should not repair an invalid number inside an array', () => {
-      throws(
-        function () {
-          console.log({ output: jsonrepair('[0789]') })
-        },
-        new JSONRepairError('Invalid number, unexpected leading zero', 1)
-      )
-    })
-
-    it('should not repair an invalid number inside an object', () => {
-      throws(
-        function () {
-          console.log({ output: jsonrepair('{value:0789}') })
-        },
-        new JSONRepairError('Invalid number, unexpected leading zero', 7)
-      )
-    })
-
     it('parse string', function () {
       assertRepair('"str"')
       assertRepair('"\\"\\\\\\/\\b\\f\\n\\r\\t"')
@@ -478,6 +460,15 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('a\nb'), '[\n"a",\n"b"\n]')
       strictEqual(jsonrepair('a,b'), '[\n"a","b"\n]')
     })
+
+    it('should repair a number with leading zero', () => {
+      strictEqual(jsonrepair('0789'), '"0789"')
+      strictEqual(jsonrepair('000789'), '"000789"')
+      strictEqual(jsonrepair('001.2'), '"001.2"')
+      strictEqual(jsonrepair('002e3'), '"002e3"')
+      strictEqual(jsonrepair('[0789]'), '["0789"]')
+      strictEqual(jsonrepair('{value:0789}'), '{"value":"0789"}')
+    })
   })
 
   it('should throw an exception in case of non-repairable issues', function () {
@@ -535,20 +526,6 @@ describe('jsonRepair', () => {
         console.log({ output: jsonrepair('2.3.4') })
       },
       new JSONRepairError('Unexpected character "."', 3)
-    )
-
-    throws(
-      function () {
-        console.log({ output: jsonrepair('0789') })
-      },
-      new JSONRepairError('Invalid number, unexpected leading zero', 0)
-    )
-
-    throws(
-      function () {
-        console.log({ output: jsonrepair('000789') })
-      },
-      new JSONRepairError('Invalid number, unexpected leading zero', 0)
     )
 
     throws(
