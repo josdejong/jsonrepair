@@ -28,6 +28,7 @@ import {
   isDoubleQuoteLike,
   isHex,
   isQuote,
+  isSingleQuote,
   isSingleQuoteLike,
   isSpecialWhitespace,
   isStartOfValue,
@@ -372,10 +373,16 @@ export function jsonrepair(text: string): string {
     }
 
     if (isQuote(text.charCodeAt(i))) {
-      const isEndQuote = isSingleQuoteLike(text.charCodeAt(i))
-        ? isSingleQuoteLike
-        : isDoubleQuote(text.charCodeAt(i))
-        ? isDoubleQuote // eslint-disable-line indent
+      // double quotes are correct JSON,
+      // single quotes come from JavaScript for example, we assume it will have a correct single end quote too
+      // otherwise, we will match any double-quote-like start with a double-quote-like end,
+      // or any single-quote-like start with a single-quote-like end
+      const isEndQuote = isDoubleQuote(text.charCodeAt(i))
+        ? isDoubleQuote
+        : isSingleQuote(text.charCodeAt(i))
+        ? isSingleQuote // eslint-disable-line indent
+        : isSingleQuoteLike(text.charCodeAt(i)) // eslint-disable-line indent
+        ? isSingleQuoteLike // eslint-disable-line indent
         : isDoubleQuoteLike // eslint-disable-line indent
 
       output += '"'

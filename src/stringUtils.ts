@@ -145,6 +145,13 @@ export function isSingleQuoteLike(code: number): boolean {
 }
 
 /**
+ * Test whether the given character is a single quote character.
+ * Does NOT test for special variants of single quotes.
+ */
+export function isSingleQuote(code: number): boolean {
+  return code === codeQuote
+}
+/**
  * Strip last occurrence of textToStrip from text
  */
 export function stripLastOccurrence(

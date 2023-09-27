@@ -141,16 +141,14 @@ describe('jsonRepair', () => {
 
     it('should not replace special quotes inside a normal string', () => {
       strictEqual(jsonrepair('"Rounded “ quote"'), '"Rounded “ quote"')
+      strictEqual(jsonrepair("'Rounded “ quote'"), '"Rounded “ quote"')
+      strictEqual(jsonrepair('"Rounded ’ quote"'), '"Rounded ’ quote"')
+      strictEqual(jsonrepair("'Rounded ’ quote'"), '"Rounded ’ quote"')
+      strictEqual(jsonrepair("'Double \" quote'"), '"Double \\" quote"')
     })
 
     it('should not crash when repairing quotes', () => {
-      // FIXME: should actually support repairing this case, see https://github.com/josdejong/jsonrepair/issues/99
-      throws(
-        () => {
-          strictEqual(jsonrepair("{pattern: '’'}"), '{"pattern": ""’"}')
-        },
-        new JSONRepairError('Colon expected', 13)
-      )
+      strictEqual(jsonrepair("{pattern: '’'}"), '{"pattern": "’"}')
     })
 
     it('should leave string content untouched', () => {
