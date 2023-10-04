@@ -412,6 +412,7 @@ describe('jsonRepair', () => {
     it('should repair missing colon between object key and value', () => {
       strictEqual(jsonrepair('{"a" "b"}'), '{"a": "b"}')
       strictEqual(jsonrepair('{"a" 2}'), '{"a": 2}')
+      strictEqual(jsonrepair('{"a"2}'), '{"a":2}')
       strictEqual(jsonrepair('{\n"a" "b"\n}'), '{\n"a": "b"\n}')
       strictEqual(jsonrepair('{"a" \'b\'}'), '{"a": "b"}')
       strictEqual(jsonrepair("{'a' 'b'}"), '{"a": "b"}')
