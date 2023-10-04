@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.2.4](https://github.com/josdejong/jsonrepair/compare/v3.2.3...v3.2.4) (2023-10-04)
+
+
+### Bug Fixes
+
+* [#101](https://github.com/josdejong/jsonrepair/issues/101) implement a smarter way to fix both missing end quotes and unescaped newline characters ([51a4de9](https://github.com/josdejong/jsonrepair/commit/51a4de923d78d23d7fbd39be1810713a7db3eea9))
+
 ### [3.2.3](https://github.com/josdejong/jsonrepair/compare/v3.2.2...v3.2.3) (2023-09-27)
 
 
