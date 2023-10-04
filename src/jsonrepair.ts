@@ -34,6 +34,7 @@ import {
   isStartOfValue,
   isValidStringCharacter,
   isWhitespace,
+  nextNonWhiteSpaceCharacter,
   removeAtIndex,
   stripLastOccurrence
 } from './stringUtils.js'
@@ -363,8 +364,15 @@ export function jsonrepair(text: string): string {
    * Parse a string enclosed by double quotes "...". Can contain escaped quotes
    * Repair strings enclosed in single quotes or special quotes
    * Repair an escaped string
+   *
+   * The function can run in two stages:
+   * - First, it assumes the string has a valid end quote
+   * - If it turns out that the string does not have a valid end quote followed
+   *   by a delimiter (which should be the case), the function runs again in a
+   *   more conservative way, stopping the string at the first next delimiter
+   *   and fixing the string by inserting a quote there.
    */
-  function parseString(): boolean {
+  function parseString(stopAtDelimiter = false): boolean {
     let skipEscapeChars = text.charCodeAt(i) === codeBackslash
     if (skipEscapeChars) {
       // repair: remove the first escape character
@@ -385,16 +393,19 @@ export function jsonrepair(text: string): string {
         ? isSingleQuoteLike // eslint-disable-line indent
         : isDoubleQuoteLike // eslint-disable-line indent
 
+      const iBefore = i
+      const outputBefore = output // we may need to revert
+
       output += '"'
       i++
 
-      while (
-        i < text.length &&
-        !isEndQuote(text.charCodeAt(i)) &&
-        text.charCodeAt(i) !== codeNewline
-      ) {
+      const isEndOfString = stopAtDelimiter
+        ? (i: number) => isDelimiter(text[i])
+        : (i: number) => isEndQuote(text.charCodeAt(i))
+
+      while (i < text.length && !isEndOfString(i)) {
         if (text.charCodeAt(i) === codeBackslash) {
-          const char = text[i + 1]
+          const char = text.charAt(i + 1)
           const escapeChar = escapeCharacters[char]
           if (escapeChar !== undefined) {
             output += text.slice(i, i + 2)
@@ -417,7 +428,7 @@ export function jsonrepair(text: string): string {
             i += 2
           }
         } else {
-          const char = text[i]
+          const char = text.charAt(i)
           const code = text.charCodeAt(i)
 
           if (code === codeDoubleQuote && text.charCodeAt(i - 1) !== codeBackslash) {
@@ -445,26 +456,26 @@ export function jsonrepair(text: string): string {
         }
       }
 
-      if (isQuote(text.charCodeAt(i))) {
-        if (text.charCodeAt(i) !== codeDoubleQuote) {
-          // repair non-normalized quote
-        }
+      // see whether we have an end quote followed by a valid delimiter
+      const hasEndQuote = isQuote(text.charCodeAt(i))
+      const valid =
+        hasEndQuote &&
+        (i + 1 >= text.length || isDelimiter(nextNonWhiteSpaceCharacter(text, i + 1)))
+      if (!valid && !stopAtDelimiter) {
+        // we're dealing with a missing quote somewhere. Let's revert parsing
+        // this string and try again, running in a more conservative mode,
+        // stopping at the first next delimiter
+        i = iBefore
+        output = outputBefore
+        return parseString(true)
+      }
+
+      if (hasEndQuote) {
         output += '"'
         i++
       } else {
-        // repair missing end quote
-        // walk back and insert the missing end quote before any
-        // whitespaces and optionally a trailing comma or bracket
-        let steps = 0
-        while (i > 0 && isWhitespace(text.charCodeAt(i - 1))) {
-          i--
-          steps++
-        }
-        if (i > 0 && ',:]}'.includes(text[i - 1])) {
-          i--
-          steps++
-        }
-        output = output.substring(0, output.length - steps) + '"'
+        // repair missing quote
+        output = insertBeforeLastWhitespace(output, '"')
       }
 
       parseConcatenatedString()

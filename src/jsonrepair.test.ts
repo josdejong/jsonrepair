@@ -124,6 +124,7 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('[\n"abc,\n"def"\n]'), '[\n"abc",\n"def"\n]')
       strictEqual(jsonrepair('[\n"abc,  \n"def"\n]'), '[\n"abc",  \n"def"\n]')
       strictEqual(jsonrepair('["abc]\n'), '["abc"]\n')
+      strictEqual(jsonrepair('["abc  ]\n'), '["abc"  ]\n')
     })
 
     it('should replace single quotes with double quotes', () => {
@@ -179,18 +180,14 @@ describe('jsonRepair', () => {
     it('should escape unescaped control characters', () => {
       strictEqual(jsonrepair('"hello\bworld"'), '"hello\\bworld"')
       strictEqual(jsonrepair('"hello\fworld"'), '"hello\\fworld"')
-      strictEqual(jsonrepair('"hello\nworld"'), '[\n"hello",\n"world"\n]')
+      strictEqual(jsonrepair('"hello\nworld"'), '"hello\\nworld"')
       strictEqual(jsonrepair('"hello\rworld"'), '"hello\\rworld"')
       strictEqual(jsonrepair('"hello\tworld"'), '"hello\\tworld"')
+      strictEqual(jsonrepair('{"key\nafter": "foo"}'), '{"key\\nafter": "foo"}')
 
-      // We cannot always restore an unescaped return when inside a key,
-      // since we stop reading the key at the return character
-      throws(
-        () => {
-          console.log({ output: jsonrepair('{"key\nafter": "foo"}') })
-        },
-        new JSONRepairError('Object key expected', 12)
-      )
+      strictEqual(jsonrepair('["hello\nworld"]'), '["hello\\nworld"]')
+      strictEqual(jsonrepair('["hello\nworld"  ]'), '["hello\\nworld"  ]')
+      strictEqual(jsonrepair('["hello\nworld"\n]'), '["hello\\nworld"\n]')
     })
 
     it('should replace special white space characters', () => {
@@ -263,7 +260,7 @@ describe('jsonRepair', () => {
       )
 
       // the following is a bit weird but comes close to the most likely intention
-      strictEqual(jsonrepair('[\\"hello\\, \\"world\\"]'), '["hello, ","world\\\\"]')
+      strictEqual(jsonrepair('[\\"hello\\, \\"world\\"]'), '["hello, \\"world\\""]')
 
       // the following is sort of invalid: the end quote should be escaped too,
       // but the fixed result is most likely what you want in the end
@@ -384,6 +381,8 @@ describe('jsonRepair', () => {
         jsonrepair("{\n  \"greeting\": 'hello' +\n 'world'\n}"),
         '{\n  "greeting": "helloworld"\n}'
       )
+
+      strictEqual(jsonrepair('"hello +\n " world"'), '"hello world"')
     })
 
     it('should repair missing comma between array items', () => {
@@ -399,7 +398,7 @@ describe('jsonRepair', () => {
     })
 
     it('should repair missing comma between object properties', () => {
-      // strictEqual(jsonrepair('{"a":2\n"b":3\n}'), '{"a":2,\n"b":3\n}')
+      strictEqual(jsonrepair('{"a":2\n"b":3\n}'), '{"a":2,\n"b":3\n}')
       strictEqual(jsonrepair('{"a":2\n"b":3\nc:4}'), '{"a":2,\n"b":3,\n"c":4}')
     })
 

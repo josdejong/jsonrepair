@@ -63,7 +63,7 @@ export function isDelimiter(char: string): boolean {
   return regexDelimiter.test(char) || (char && isQuote(char.charCodeAt(0)))
 }
 
-const regexDelimiter = /^[,:[\]{}()\n]$/
+const regexDelimiter = /^[,:[\]{}()\n+]$/
 
 export function isStartOfValue(char: string): boolean {
   return regexStartOfValue.test(char) || (char && isQuote(char.charCodeAt(0)))
@@ -189,4 +189,14 @@ export function removeAtIndex(text: string, start: number, count: number) {
  */
 export function endsWithCommaOrNewline(text: string): boolean {
   return /[,\n][ \t\r]*$/.test(text)
+}
+
+export function nextNonWhiteSpaceCharacter(text: string, start: number): string {
+  let i = start
+
+  while (isWhitespace(text.charCodeAt(i))) {
+    i++
+  }
+
+  return text.charAt(i)
 }
