@@ -109,6 +109,14 @@ export function jsonrepair(text: string): string {
     return output
   }
 
+  if (['}', ']'].includes(output[output.length - 1])) {
+    // The ending should be a closing symbol such as `}` or `]`
+    try {
+      JSON.parse(output)
+      return output
+    } catch (err) {}
+  }
+
   throwUnexpectedCharacter()
 
   function parseValue(): boolean {

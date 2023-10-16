@@ -308,6 +308,15 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('[{"i":1,{"i":2}]'), '[{"i":1},{"i":2}]')
     })
 
+    it('should remove a redundant closing bracket for an object', () => {
+      strictEqual(jsonrepair('{"a": 1}}'), '{"a": 1}')
+      strictEqual(jsonrepair('{"a": 1}}]}'), '{"a": 1}')
+      strictEqual(jsonrepair('{"a":2]'), '{"a":2}')
+      strictEqual(jsonrepair('{"a":2,]'), '{"a":2}')
+      strictEqual(jsonrepair('{}}'), '{}')
+      strictEqual(jsonrepair('[2,}'), '[2]')
+    })
+
     it('should add a missing closing bracket for an array', () => {
       strictEqual(jsonrepair('['), '[]')
       strictEqual(jsonrepair('[1,2,3'), '[1,2,3]')
@@ -493,30 +502,9 @@ describe('jsonRepair', () => {
 
     throws(
       function () {
-        console.log({ output: jsonrepair('{"a":2,]') })
-      },
-      new JSONRepairError('Unexpected character "]"', 7)
-    )
-
-    throws(
-      function () {
         console.log({ output: jsonrepair('{"a" ]') })
       },
       new JSONRepairError('Colon expected', 5)
-    )
-
-    throws(
-      function () {
-        console.log({ output: jsonrepair('{}}') })
-      },
-      new JSONRepairError('Unexpected character "}"', 2)
-    )
-
-    throws(
-      function () {
-        console.log({ output: jsonrepair('[2,}') })
-      },
-      new JSONRepairError('Unexpected character "}"', 3)
     )
 
     throws(
