@@ -109,12 +109,14 @@ export function jsonrepair(text: string): string {
     return output
   }
 
-  if (['}', ']'].includes(output[output.length - 1])) {
-    // The ending should be a closing symbol such as `}` or `]`
+  // The output ending should be a closing brackets such as `}` or `]`
+  // and the remaining text should be white spaces or closing brackets
+  if (['}', ']'].includes(output[output.length - 1]) &&
+    /^[}\]\s]+$/.test(text.slice(i))) {
     try {
       JSON.parse(output)
       return output
-    } catch (err) {}
+    } catch (err) { }
   }
 
   throwUnexpectedCharacter()
@@ -396,10 +398,10 @@ export function jsonrepair(text: string): string {
       const isEndQuote = isDoubleQuote(text.charCodeAt(i))
         ? isDoubleQuote
         : isSingleQuote(text.charCodeAt(i))
-        ? isSingleQuote // eslint-disable-line indent
-        : isSingleQuoteLike(text.charCodeAt(i)) // eslint-disable-line indent
-        ? isSingleQuoteLike // eslint-disable-line indent
-        : isDoubleQuoteLike // eslint-disable-line indent
+          ? isSingleQuote // eslint-disable-line indent
+          : isSingleQuoteLike(text.charCodeAt(i)) // eslint-disable-line indent
+            ? isSingleQuoteLike // eslint-disable-line indent
+            : isDoubleQuoteLike // eslint-disable-line indent
 
       const iBefore = i
       const outputBefore = output // we may need to revert

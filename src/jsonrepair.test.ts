@@ -509,6 +509,20 @@ describe('jsonRepair', () => {
 
     throws(
       function () {
+        console.log({ output: jsonrepair('{"a":1}{"b":2}') })
+      },
+      new JSONRepairError('Unexpected character "{"', 7)
+    )
+
+    throws(
+      function () {
+        console.log({ output: jsonrepair('{"a":1}"b":2]') })
+      },
+      new JSONRepairError('Unexpected character "\\""', 7)
+    )
+
+    throws(
+      function () {
         console.log({ output: jsonrepair('2.3.4') })
       },
       new JSONRepairError('Unexpected character "."', 3)
