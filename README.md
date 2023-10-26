@@ -30,6 +30,7 @@ The following issues can be fixed:
     { "id": 2, "name": "Sarah" }
     ```
 
+Note that in practice, the `jsonrepair` library can handle file sizes up to 512 MB.
 
 ## Install
 
