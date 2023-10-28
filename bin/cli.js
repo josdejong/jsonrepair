@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { createReadStream, createWriteStream, readFileSync } from 'fs'
+import { createReadStream, createWriteStream, openSync, close, readFileSync, readSync } from 'fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
-import { jsonrepair } from '../lib/esm/jsonrepair.js'
+import { jsonrepair, jsonRepairStream } from '../lib/esm/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -106,6 +106,7 @@ if (options.version) {
   outputHelp()
 } else if (options.inputFile != null) {
   if (options.overwrite) {
+    // FIXME: make streaming, by writing to a temp file and in the end replacing the original file
     streamToString(createReadStream(options.inputFile))
       .then((text) => {
         const outputStream = createWriteStream(options.inputFile)
@@ -113,11 +114,40 @@ if (options.version) {
       })
       .catch((err) => process.stderr.write(err.toString()))
   } else {
-    streamToString(createReadStream(options.inputFile))
-      .then((text) => process.stdout.write(jsonrepair(text)))
-      .catch((err) => process.stderr.write(err.toString()))
+    const fd = openSync(options.inputFile, 'r')
+    try {
+      const bufferSize = 1024
+      const buffer = Buffer.alloc(bufferSize)
+      let position = 0
+
+      jsonRepairStream({
+        input: {
+          read: () => {
+            const bytesRead = readSync(fd, buffer, 0, bufferSize, position)
+            if (bytesRead === 0) {
+              return null
+            }
+
+            position += bytesRead
+
+            return buffer.toString('utf8', 0, bytesRead)
+          },
+          bufferSize
+        },
+        output: {
+          write: (chunk) => {
+            process.stdout.write(chunk)
+          }
+        }
+      })
+    } catch (err) {
+      process.stderr.write(err.toString())
+    } finally {
+      close(fd)
+    }
   }
 } else {
+  // FIXME: make streaming
   streamToString(process.stdin)
     .then((text) => process.stdout.write(jsonrepair(text)))
     .catch((err) => process.stderr.write(err.toString()))
