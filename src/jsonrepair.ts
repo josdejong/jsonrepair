@@ -1,4 +1,12 @@
+import {
+  createInputProxy,
+  createOutputProxy,
+  createTextInputProxy,
+  InputProxy,
+  OutputProxy
+} from './proxy.js'
 import { JSONRepairError } from './JSONRepairError.js'
+import { InputStream, OutputStream } from './stream'
 import {
   codeAsterisk,
   codeBackslash,
@@ -19,8 +27,6 @@ import {
   codeSemicolon,
   codeSlash,
   codeUppercaseE,
-  endsWithCommaOrNewline,
-  insertBeforeLastWhitespace,
   isControlCharacter,
   isDelimiter,
   isDigit,
@@ -33,10 +39,7 @@ import {
   isSpecialWhitespace,
   isStartOfValue,
   isValidStringCharacter,
-  isWhitespace,
-  nextNonWhiteSpaceCharacter,
-  removeAtIndex,
-  stripLastOccurrence
+  isWhitespace
 } from './stringUtils.js'
 
 const controlCharacters: { [key: string]: string } = {
@@ -77,8 +80,39 @@ const escapeCharacters: { [key: string]: string } = {
  *
  */
 export function jsonrepair(text: string): string {
+  let output = ''
+
+  jsonRepairProxy({
+    input: createTextInputProxy(text),
+    output: createOutputProxy({
+      write: (text) => {
+        output += text
+      },
+      chunkSize: text.length,
+      bufferSize: text.length + 1
+    })
+  })
+
+  return output
+}
+
+// TODO: move jsonRepairStream into a separate file
+// TODO: test
+export function jsonRepairStream({ input, output }: { input: InputStream; output: OutputStream }) {
+  jsonRepairProxy({
+    input: createInputProxy({
+      read: (count) => input.read(count)
+    }),
+    output: createOutputProxy({
+      write: (chunk) => output.write(chunk)
+    })
+  })
+}
+
+// TODO: move jsonRepairProxy into a separate file
+// TODO: test
+export function jsonRepairProxy({ input, output }: { input: InputProxy; output: OutputProxy }) {
   let i = 0 // current index in text
-  let output = '' // generated output
 
   const processed = parseValue()
   if (!processed) {
@@ -90,23 +124,24 @@ export function jsonrepair(text: string): string {
     parseWhitespaceAndSkipComments()
   }
 
-  if (isStartOfValue(text[i]) && endsWithCommaOrNewline(output)) {
+  if (isStartOfValue(input.charAt(i)) && output.endsWithCommaOrNewline()) {
     // start of a new value after end of the root level object: looks like
     // newline delimited JSON -> turn into a root level array
     if (!processedComma) {
       // repair missing comma
-      output = insertBeforeLastWhitespace(output, ',')
+      output.insertBeforeLastWhitespace(',')
     }
 
     parseNewlineDelimitedJSON()
   } else if (processedComma) {
     // repair: remove trailing comma
-    output = stripLastOccurrence(output, ',')
+    output.stripLastOccurrence(',')
   }
 
-  if (i >= text.length) {
+  if (input.isEnd(i)) {
     // reached the end of the document properly
-    return output
+    output.close()
+    return
   }
 
   throwUnexpectedCharacter()
@@ -142,9 +177,12 @@ export function jsonrepair(text: string): string {
   function parseWhitespace(): boolean {
     let whitespace = ''
     let normal: boolean
-    while ((normal = isWhitespace(text.charCodeAt(i))) || isSpecialWhitespace(text.charCodeAt(i))) {
+    while (
+      (normal = isWhitespace(input.charCodeAt(i))) ||
+      isSpecialWhitespace(input.charCodeAt(i))
+    ) {
       if (normal) {
-        whitespace += text[i]
+        whitespace += input.charAt(i)
       } else {
         // repair special whitespace
         whitespace += ' '
@@ -154,7 +192,7 @@ export function jsonrepair(text: string): string {
     }
 
     if (whitespace.length > 0) {
-      output += whitespace
+      output.push(whitespace)
       return true
     }
 
@@ -163,9 +201,9 @@ export function jsonrepair(text: string): string {
 
   function parseComment(): boolean {
     // find a block comment '/* ... */'
-    if (text.charCodeAt(i) === codeSlash && text.charCodeAt(i + 1) === codeAsterisk) {
+    if (input.charCodeAt(i) === codeSlash && input.charCodeAt(i + 1) === codeAsterisk) {
       // repair block comment by skipping it
-      while (i < text.length && !atEndOfBlockComment(text, i)) {
+      while (!input.isEnd(i) && !atEndOfBlockComment(i)) {
         i++
       }
       i += 2
@@ -174,9 +212,9 @@ export function jsonrepair(text: string): string {
     }
 
     // find a line comment '// ...'
-    if (text.charCodeAt(i) === codeSlash && text.charCodeAt(i + 1) === codeSlash) {
+    if (input.charCodeAt(i) === codeSlash && input.charCodeAt(i + 1) === codeSlash) {
       // repair line comment by skipping it
-      while (i < text.length && text.charCodeAt(i) !== codeNewline) {
+      while (!input.isEnd(i) && input.charCodeAt(i) !== codeNewline) {
         i++
       }
 
@@ -187,8 +225,8 @@ export function jsonrepair(text: string): string {
   }
 
   function parseCharacter(code: number): boolean {
-    if (text.charCodeAt(i) === code) {
-      output += text[i]
+    if (input.charCodeAt(i) === code) {
+      output.push(input.charAt(i))
       i++
       return true
     }
@@ -197,7 +235,7 @@ export function jsonrepair(text: string): string {
   }
 
   function skipCharacter(code: number): boolean {
-    if (text.charCodeAt(i) === code) {
+    if (input.charCodeAt(i) === code) {
       i++
       return true
     }
@@ -213,19 +251,19 @@ export function jsonrepair(text: string): string {
    * Parse an object like '{"key": "value"}'
    */
   function parseObject(): boolean {
-    if (text.charCodeAt(i) === codeOpeningBrace) {
-      output += '{'
+    if (input.charCodeAt(i) === codeOpeningBrace) {
+      output.push('{')
       i++
       parseWhitespaceAndSkipComments()
 
       let initial = true
-      while (i < text.length && text.charCodeAt(i) !== codeClosingBrace) {
+      while (!input.isEnd(i) && input.charCodeAt(i) !== codeClosingBrace) {
         let processedComma
         if (!initial) {
           processedComma = parseCharacter(codeComma)
           if (!processedComma) {
             // repair missing comma
-            output = insertBeforeLastWhitespace(output, ',')
+            output.insertBeforeLastWhitespace(',')
           }
           parseWhitespaceAndSkipComments()
         } else {
@@ -236,14 +274,14 @@ export function jsonrepair(text: string): string {
         const processedKey = parseString() || parseUnquotedString()
         if (!processedKey) {
           if (
-            text.charCodeAt(i) === codeClosingBrace ||
-            text.charCodeAt(i) === codeOpeningBrace ||
-            text.charCodeAt(i) === codeClosingBracket ||
-            text.charCodeAt(i) === codeOpeningBracket ||
-            text[i] === undefined
+            input.charCodeAt(i) === codeClosingBrace ||
+            input.charCodeAt(i) === codeOpeningBrace ||
+            input.charCodeAt(i) === codeClosingBracket ||
+            input.charCodeAt(i) === codeOpeningBracket ||
+            input.charAt(i) === ''
           ) {
             // repair trailing comma
-            output = stripLastOccurrence(output, ',')
+            output.stripLastOccurrence(',')
           } else {
             throwObjectKeyExpected()
           }
@@ -253,9 +291,9 @@ export function jsonrepair(text: string): string {
         parseWhitespaceAndSkipComments()
         const processedColon = parseCharacter(codeColon)
         if (!processedColon) {
-          if (isStartOfValue(text[i])) {
+          if (isStartOfValue(input.charAt(i))) {
             // repair missing colon
-            output = insertBeforeLastWhitespace(output, ':')
+            output.insertBeforeLastWhitespace(':')
           } else {
             throwColonExpected()
           }
@@ -264,19 +302,19 @@ export function jsonrepair(text: string): string {
         if (!processedValue) {
           if (processedColon) {
             // repair missing object value
-            output += 'null'
+            output.push('null')
           } else {
             throwColonExpected()
           }
         }
       }
 
-      if (text.charCodeAt(i) === codeClosingBrace) {
-        output += '}'
+      if (input.charCodeAt(i) === codeClosingBrace) {
+        output.push('}')
         i++
       } else {
         // repair missing end bracket
-        output = insertBeforeLastWhitespace(output, '}')
+        output.insertBeforeLastWhitespace('}')
       }
 
       return true
@@ -289,18 +327,18 @@ export function jsonrepair(text: string): string {
    * Parse an array like '["item1", "item2", ...]'
    */
   function parseArray(): boolean {
-    if (text.charCodeAt(i) === codeOpeningBracket) {
-      output += '['
+    if (input.charCodeAt(i) === codeOpeningBracket) {
+      output.push('[')
       i++
       parseWhitespaceAndSkipComments()
 
       let initial = true
-      while (i < text.length && text.charCodeAt(i) !== codeClosingBracket) {
+      while (!input.isEnd(i) && input.charCodeAt(i) !== codeClosingBracket) {
         if (!initial) {
           const processedComma = parseCharacter(codeComma)
           if (!processedComma) {
             // repair missing comma
-            output = insertBeforeLastWhitespace(output, ',')
+            output.insertBeforeLastWhitespace(',')
           }
         } else {
           initial = false
@@ -309,17 +347,17 @@ export function jsonrepair(text: string): string {
         const processedValue = parseValue()
         if (!processedValue) {
           // repair trailing comma
-          output = stripLastOccurrence(output, ',')
+          output.stripLastOccurrence(',')
           break
         }
       }
 
-      if (text.charCodeAt(i) === codeClosingBracket) {
-        output += ']'
+      if (input.charCodeAt(i) === codeClosingBracket) {
+        output.push(']')
         i++
       } else {
         // repair missing closing array bracket
-        output = insertBeforeLastWhitespace(output, ']')
+        output.insertBeforeLastWhitespace(']')
       }
 
       return true
@@ -334,6 +372,8 @@ export function jsonrepair(text: string): string {
    */
   function parseNewlineDelimitedJSON() {
     // repair NDJSON
+    output.unshift('[\n')
+
     let initial = true
     let processedValue = true
     while (processedValue) {
@@ -342,7 +382,7 @@ export function jsonrepair(text: string): string {
         const processedComma = parseCharacter(codeComma)
         if (!processedComma) {
           // repair: add missing comma
-          output = insertBeforeLastWhitespace(output, ',')
+          output.insertBeforeLastWhitespace(',')
         }
       } else {
         initial = false
@@ -353,11 +393,11 @@ export function jsonrepair(text: string): string {
 
     if (!processedValue) {
       // repair: remove trailing comma
-      output = stripLastOccurrence(output, ',')
+      output.stripLastOccurrence(',')
     }
 
     // repair: wrap the output inside array brackets
-    output = `[\n${output}\n]`
+    output.push('\n]')
   }
 
   /**
@@ -373,77 +413,76 @@ export function jsonrepair(text: string): string {
    *   and fixing the string by inserting a quote there.
    */
   function parseString(stopAtDelimiter = false): boolean {
-    let skipEscapeChars = text.charCodeAt(i) === codeBackslash
+    const iBefore = i // we may need to revert
+
+    let skipEscapeChars = input.charCodeAt(i) === codeBackslash
     if (skipEscapeChars) {
       // repair: remove the first escape character
       i++
       skipEscapeChars = true
     }
 
-    if (isQuote(text.charCodeAt(i))) {
+    if (isQuote(input.charCodeAt(i))) {
       // double quotes are correct JSON,
       // single quotes come from JavaScript for example, we assume it will have a correct single end quote too
       // otherwise, we will match any double-quote-like start with a double-quote-like end,
       // or any single-quote-like start with a single-quote-like end
-      const isEndQuote = isDoubleQuote(text.charCodeAt(i))
+      const isEndQuote = isDoubleQuote(input.charCodeAt(i))
         ? isDoubleQuote
-        : isSingleQuote(text.charCodeAt(i))
+        : isSingleQuote(input.charCodeAt(i))
         ? isSingleQuote // eslint-disable-line indent
-        : isSingleQuoteLike(text.charCodeAt(i)) // eslint-disable-line indent
+        : isSingleQuoteLike(input.charCodeAt(i)) // eslint-disable-line indent
         ? isSingleQuoteLike // eslint-disable-line indent
         : isDoubleQuoteLike // eslint-disable-line indent
 
-      const iBefore = i
-      const outputBefore = output // we may need to revert
-
-      output += '"'
+      output.push('"')
       i++
 
       const isEndOfString = stopAtDelimiter
-        ? (i: number) => isDelimiter(text[i])
-        : (i: number) => isEndQuote(text.charCodeAt(i))
+        ? (i: number) => isDelimiter(input.charAt(i))
+        : (i: number) => isEndQuote(input.charCodeAt(i))
 
-      while (i < text.length && !isEndOfString(i)) {
-        if (text.charCodeAt(i) === codeBackslash) {
-          const char = text.charAt(i + 1)
+      while (!input.isEnd(i) && !isEndOfString(i)) {
+        if (input.charCodeAt(i) === codeBackslash) {
+          const char = input.charAt(i + 1)
           const escapeChar = escapeCharacters[char]
           if (escapeChar !== undefined) {
-            output += text.slice(i, i + 2)
+            output.push(input.substring(i, i + 2))
             i += 2
           } else if (char === 'u') {
             if (
-              isHex(text.charCodeAt(i + 2)) &&
-              isHex(text.charCodeAt(i + 3)) &&
-              isHex(text.charCodeAt(i + 4)) &&
-              isHex(text.charCodeAt(i + 5))
+              isHex(input.charCodeAt(i + 2)) &&
+              isHex(input.charCodeAt(i + 3)) &&
+              isHex(input.charCodeAt(i + 4)) &&
+              isHex(input.charCodeAt(i + 5))
             ) {
-              output += text.slice(i, i + 6)
+              output.push(input.substring(i, i + 6))
               i += 6
             } else {
               throwInvalidUnicodeCharacter(i)
             }
           } else {
             // repair invalid escape character: remove it
-            output += char
+            output.push(char)
             i += 2
           }
         } else {
-          const char = text.charAt(i)
-          const code = text.charCodeAt(i)
+          const char = input.charAt(i)
+          const code = input.charCodeAt(i)
 
-          if (code === codeDoubleQuote && text.charCodeAt(i - 1) !== codeBackslash) {
+          if (code === codeDoubleQuote && input.charCodeAt(i - 1) !== codeBackslash) {
             // repair unescaped double quote
-            output += '\\' + char
+            output.push('\\' + char)
             i++
           } else if (isControlCharacter(code)) {
             // unescaped control character
-            output += controlCharacters[char]
+            output.push(controlCharacters[char])
             i++
           } else {
             if (!isValidStringCharacter(code)) {
               throwInvalidCharacter(char)
             }
-            output += char
+            output.push(char)
             i++
           }
         }
@@ -457,25 +496,25 @@ export function jsonrepair(text: string): string {
       }
 
       // see whether we have an end quote followed by a valid delimiter
-      const hasEndQuote = isQuote(text.charCodeAt(i))
+      const hasEndQuote = isQuote(input.charCodeAt(i))
       const valid =
-        hasEndQuote &&
-        (i + 1 >= text.length || isDelimiter(nextNonWhiteSpaceCharacter(text, i + 1)))
+        hasEndQuote && (input.isEnd(i + 1) || isDelimiter(nextNonWhiteSpaceCharacter(i + 1)))
+
       if (!valid && !stopAtDelimiter) {
         // we're dealing with a missing quote somewhere. Let's revert parsing
         // this string and try again, running in a more conservative mode,
         // stopping at the first next delimiter
         i = iBefore
-        output = outputBefore
+        output.remove(iBefore)
         return parseString(true)
       }
 
       if (hasEndQuote) {
-        output += '"'
+        output.push('"')
         i++
       } else {
         // repair missing quote
-        output = insertBeforeLastWhitespace(output, '"')
+        output.insertBeforeLastWhitespace('"')
       }
 
       parseConcatenatedString()
@@ -493,18 +532,18 @@ export function jsonrepair(text: string): string {
     let processed = false
 
     parseWhitespaceAndSkipComments()
-    while (text.charCodeAt(i) === codePlus) {
+    while (input.charCodeAt(i) === codePlus) {
       processed = true
       i++
       parseWhitespaceAndSkipComments()
 
       // repair: remove the end quote of the first string
-      output = stripLastOccurrence(output, '"', true)
-      const start = output.length
+      output.stripLastOccurrence('"', true)
+      const start = output.length()
       parseString()
 
       // repair: remove the start quote of the second string
-      output = removeAtIndex(output, start, 1)
+      output.remove(start, start + 1)
     }
 
     return processed
@@ -515,7 +554,7 @@ export function jsonrepair(text: string): string {
    */
   function parseNumber(): boolean {
     const start = i
-    if (text.charCodeAt(i) === codeMinus) {
+    if (input.charCodeAt(i) === codeMinus) {
       i++
       if (expectDigitOrRepair(start)) {
         return true
@@ -526,39 +565,39 @@ export function jsonrepair(text: string): string {
     // We will allow all leading zeros here though and at the end of parseNumber
     // check against trailing zeros and repair that if needed.
     // Leading zeros can have meaning, so we should not clear them.
-    while (isDigit(text.charCodeAt(i))) {
+    while (isDigit(input.charCodeAt(i))) {
       i++
     }
 
-    if (text.charCodeAt(i) === codeDot) {
+    if (input.charCodeAt(i) === codeDot) {
       i++
       if (expectDigitOrRepair(start)) {
         return true
       }
-      while (isDigit(text.charCodeAt(i))) {
+      while (isDigit(input.charCodeAt(i))) {
         i++
       }
     }
 
-    if (text.charCodeAt(i) === codeLowercaseE || text.charCodeAt(i) === codeUppercaseE) {
+    if (input.charCodeAt(i) === codeLowercaseE || input.charCodeAt(i) === codeUppercaseE) {
       i++
-      if (text.charCodeAt(i) === codeMinus || text.charCodeAt(i) === codePlus) {
+      if (input.charCodeAt(i) === codeMinus || input.charCodeAt(i) === codePlus) {
         i++
       }
       if (expectDigitOrRepair(start)) {
         return true
       }
-      while (isDigit(text.charCodeAt(i))) {
+      while (isDigit(input.charCodeAt(i))) {
         i++
       }
     }
 
     if (i > start) {
       // repair a number with leading zeros like "00789"
-      const num = text.slice(start, i)
+      const num = input.substring(start, i)
       const hasInvalidLeadingZero = /^0\d/.test(num)
 
-      output += hasInvalidLeadingZero ? `"${num}"` : num
+      output.push(hasInvalidLeadingZero ? `"${num}"` : num)
       return true
     }
 
@@ -582,8 +621,8 @@ export function jsonrepair(text: string): string {
   }
 
   function parseKeyword(name: string, value: string): boolean {
-    if (text.slice(i, i + name.length) === name) {
-      output += value
+    if (input.substring(i, i + name.length) === name) {
+      output.push(value)
       i += name.length
       return true
     }
@@ -599,22 +638,22 @@ export function jsonrepair(text: string): string {
   function parseUnquotedString() {
     // note that the symbol can end with whitespaces: we stop at the next delimiter
     const start = i
-    while (i < text.length && !isDelimiter(text[i])) {
+    while (!input.isEnd(i) && !isDelimiter(input.charAt(i))) {
       i++
     }
 
     if (i > start) {
-      if (text.charCodeAt(i) === codeOpenParenthesis) {
+      if (input.charCodeAt(i) === codeOpenParenthesis) {
         // repair a MongoDB function call like NumberLong("2")
         // repair a JSONP function call like callback({...});
         i++
 
         parseValue()
 
-        if (text.charCodeAt(i) === codeCloseParenthesis) {
+        if (input.charCodeAt(i) === codeCloseParenthesis) {
           // repair: skip close bracket of function call
           i++
-          if (text.charCodeAt(i) === codeSemicolon) {
+          if (input.charCodeAt(i) === codeSemicolon) {
             // repair: skip semicolon after JSONP call
             i++
           }
@@ -626,14 +665,14 @@ export function jsonrepair(text: string): string {
         // also, repair undefined into null
 
         // first, go back to prevent getting trailing whitespaces in the string
-        while (isWhitespace(text.charCodeAt(i - 1)) && i > 0) {
+        while (isWhitespace(input.charCodeAt(i - 1)) && i > 0) {
           i--
         }
 
-        const symbol = text.slice(start, i)
-        output += symbol === 'undefined' ? 'null' : JSON.stringify(symbol)
+        const symbol = input.substring(start, i)
+        output.push(symbol === 'undefined' ? 'null' : JSON.stringify(symbol))
 
-        if (text.charCodeAt(i) === codeDoubleQuote) {
+        if (input.charCodeAt(i) === codeDoubleQuote) {
           // we had a missing start quote, but now we encountered the end quote, so we can skip that one
           i++
         }
@@ -643,19 +682,29 @@ export function jsonrepair(text: string): string {
     }
   }
 
+  function nextNonWhiteSpaceCharacter(start: number): string {
+    let i = start
+
+    while (isWhitespace(input.charCodeAt(i))) {
+      i++
+    }
+
+    return input.charAt(i)
+  }
+
   function expectDigit(start: number) {
-    if (!isDigit(text.charCodeAt(i))) {
-      const numSoFar = text.slice(start, i)
+    if (!isDigit(input.charCodeAt(i))) {
+      const numSoFar = input.substring(start, i)
       throw new JSONRepairError(`Invalid number '${numSoFar}', expecting a digit ${got()}`, i)
     }
   }
 
   function expectDigitOrRepair(start: number) {
-    if (i >= text.length) {
+    if (input.isEnd(i)) {
       // repair numbers cut off at the end
       // this will only be called when we end after a '.', '-', or 'e' and does not
       // change the number more than it needs to make it valid JSON
-      output += text.slice(start, i) + '0'
+      output.push(input.substring(start, i) + '0')
       return true
     } else {
       expectDigit(start)
@@ -668,11 +717,11 @@ export function jsonrepair(text: string): string {
   }
 
   function throwUnexpectedCharacter() {
-    throw new JSONRepairError('Unexpected character ' + JSON.stringify(text[i]), i)
+    throw new JSONRepairError('Unexpected character ' + JSON.stringify(input.charAt(i)), i)
   }
 
   function throwUnexpectedEnd() {
-    throw new JSONRepairError('Unexpected end of json string', text.length)
+    throw new JSONRepairError('Unexpected end of json string', input.length())
   }
 
   function throwObjectKeyExpected() {
@@ -685,18 +734,19 @@ export function jsonrepair(text: string): string {
 
   function throwInvalidUnicodeCharacter(start: number) {
     let end = start + 2
-    while (/\w/.test(text[end])) {
+    while (/\w/.test(input.charAt(end))) {
       end++
     }
-    const chars = text.slice(start, end)
+    const chars = input.substring(start, end)
     throw new JSONRepairError(`Invalid unicode character "${chars}"`, i)
   }
 
   function got(): string {
-    return text[i] ? `but got '${text[i]}'` : 'but reached end of input'
+    const char = input.charAt(i)
+    return char ? `but got '${char}'` : 'but reached end of input'
   }
-}
 
-function atEndOfBlockComment(text: string, i: number) {
-  return text[i] === '*' && text[i + 1] === '/'
+  function atEndOfBlockComment(i: number) {
+    return input.charAt(i) === '*' && input.charAt(i + 1) === '/'
+  }
 }
