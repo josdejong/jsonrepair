@@ -1,12 +1,5 @@
-import {
-  createInputProxy,
-  createOutputProxy,
-  createTextInputProxy,
-  InputProxy,
-  OutputProxy
-} from './proxy.js'
 import { JSONRepairError } from './JSONRepairError.js'
-import { InputStream, OutputStream } from './stream'
+import { InputProxy, OutputProxy } from './proxy.js'
 import {
   codeAsterisk,
   codeBackslash,
@@ -63,53 +56,6 @@ const escapeCharacters: { [key: string]: string } = {
   // note that \u is handled separately in parseString()
 }
 
-/**
- * Repair a string containing an invalid JSON document.
- * For example changes JavaScript notation into JSON notation.
- *
- * Example:
- *
- *     try {
- *       const json = "{name: 'John'}"
- *       const repaired = jsonrepair(json)
- *       console.log(repaired)
- *       // '{"name": "John"}'
- *     } catch (err) {
- *       console.error(err)
- *     }
- *
- */
-export function jsonrepair(text: string): string {
-  let output = ''
-
-  jsonRepairProxy({
-    input: createTextInputProxy(text),
-    output: createOutputProxy({
-      write: (text) => {
-        output += text
-      },
-      chunkSize: text.length,
-      bufferSize: text.length + 1
-    })
-  })
-
-  return output
-}
-
-// TODO: move jsonRepairStream into a separate file
-// TODO: test
-export function jsonRepairStream({ input, output }: { input: InputStream; output: OutputStream }) {
-  jsonRepairProxy({
-    input: createInputProxy({
-      read: (count) => input.read(count)
-    }),
-    output: createOutputProxy({
-      write: (chunk) => output.write(chunk)
-    })
-  })
-}
-
-// TODO: move jsonRepairProxy into a separate file
 // TODO: test
 export function jsonRepairProxy({ input, output }: { input: InputProxy; output: OutputProxy }) {
   let i = 0 // current index in text

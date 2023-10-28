@@ -7,7 +7,6 @@ export interface OutputStream {
   close: () => void
 }
 
-// FIXME: cleanup if not used
 export function textToInputStream(text: string): InputStream {
   let i = 0
 
