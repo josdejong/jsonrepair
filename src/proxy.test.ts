@@ -26,9 +26,10 @@ describe('proxy', () => {
     })
 
     it('should read bytes via charCodeAt', () => {
-      const { buffer } = testOutputProxy('0123456789')
+      const { buffer } = testOutputProxy('0123456789', { chunkSize: 2, bufferSize: 4 })
 
       strictEqual(buffer.charCodeAt(3), '3'.charCodeAt(0))
+      strictEqual(buffer.charCodeAt(8), '8'.charCodeAt(0))
       strictEqual(buffer.charCodeAt(12), NaN)
     })
 

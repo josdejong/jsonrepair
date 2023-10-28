@@ -73,7 +73,7 @@ export function createInputProxy({
   function charCodeAt(index: number): number {
     ensure(index)
 
-    return buffer.charCodeAt(index)
+    return buffer.charCodeAt(index - offset)
   }
 
   function substring(start: number, end: number): string {
