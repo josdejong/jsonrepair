@@ -116,6 +116,7 @@ if (options.version) {
   } else {
     const fd = openSync(options.inputFile, 'r')
     try {
+      const bufferOffset = 0
       const bufferSize = 1024
       const buffer = Buffer.alloc(bufferSize)
       let position = 0
@@ -123,7 +124,7 @@ if (options.version) {
       jsonRepairStream({
         input: {
           read: () => {
-            const bytesRead = readSync(fd, buffer, 0, bufferSize, position)
+            const bytesRead = readSync(fd, buffer, bufferOffset, bufferSize, position)
             if (bytesRead === 0) {
               return null
             }
