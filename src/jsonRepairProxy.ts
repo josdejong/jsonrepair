@@ -84,6 +84,12 @@ export function jsonRepairProxy({ input, output }: { input: InputProxy; output: 
     output.stripLastOccurrence(',')
   }
 
+  // repair redundant end quotes
+  while (text.charCodeAt(i) === codeClosingBrace || text.charCodeAt(i) === codeClosingBracket) {
+    i++
+    parseWhitespaceAndSkipComments()
+  }
+
   if (input.isEnd(i)) {
     // reached the end of the document properly
     output.close()
@@ -236,8 +242,9 @@ export function jsonRepairProxy({ input, output }: { input: InputProxy; output: 
 
         parseWhitespaceAndSkipComments()
         const processedColon = parseCharacter(codeColon)
+        const truncatedText = i >= text.length
         if (!processedColon) {
-          if (isStartOfValue(input.charAt(i))) {
+          if (isStartOfValue(input.charAt(i)) || truncatedText) {
             // repair missing colon
             output.insertBeforeLastWhitespace(':')
           } else {
@@ -246,7 +253,7 @@ export function jsonRepairProxy({ input, output }: { input: InputProxy; output: 
         }
         const processedValue = parseValue()
         if (!processedValue) {
-          if (processedColon) {
+          if (processedColon || truncatedText) {
             // repair missing object value
             output.push('null')
           } else {
