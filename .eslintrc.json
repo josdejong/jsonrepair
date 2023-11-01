@@ -2,8 +2,7 @@
   "env": {
     "browser": true,
     "es2021": true,
-    "node": true,
-    "mocha": true
+    "node": true
   },
   "extends": ["standard", "plugin:@typescript-eslint/recommended"],
   "parser": "@typescript-eslint/parser",
