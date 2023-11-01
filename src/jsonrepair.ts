@@ -104,6 +104,12 @@ export function jsonrepair(text: string): string {
     output = stripLastOccurrence(output, ',')
   }
 
+  // repair redundant end quotes
+  while (text.charCodeAt(i) === codeClosingBrace || text.charCodeAt(i) === codeClosingBracket) {
+    i++
+    parseWhitespaceAndSkipComments()
+  }
+
   if (i >= text.length) {
     // reached the end of the document properly
     return output
