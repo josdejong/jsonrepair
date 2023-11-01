@@ -1,10 +1,11 @@
+import { describe, test } from 'vitest'
 import { deepStrictEqual, strictEqual, throws } from 'assert'
 import { createInputProxy, createOutputProxy } from './proxy.js'
 import { textToInputStream } from './stream.js'
 
 describe('proxy', () => {
   describe('createInputProxy', () => {
-    it('should read bytes via charAt', () => {
+    test('should read bytes via charAt', () => {
       const { chunks, buffer } = testOutputProxy('0123456789', { chunkSize: 2, bufferSize: 4 })
 
       strictEqual(buffer.charAt(3), '3') // buffer is '0123'
@@ -25,7 +26,7 @@ describe('proxy', () => {
       strictEqual(buffer.charAt(100), '')
     })
 
-    it('should read bytes via charCodeAt', () => {
+    test('should read bytes via charCodeAt', () => {
       const { buffer } = testOutputProxy('0123456789', { chunkSize: 2, bufferSize: 4 })
 
       strictEqual(buffer.charCodeAt(3), '3'.charCodeAt(0))
@@ -33,13 +34,13 @@ describe('proxy', () => {
       strictEqual(buffer.charCodeAt(12), NaN)
     })
 
-    it('should get a substring', () => {
+    test('should get a substring', () => {
       const { buffer } = testOutputProxy('0123456789')
 
       strictEqual(buffer.substring(3, 5), '34')
     })
 
-    it('should get a substring with limited buffer size', () => {
+    test('should get a substring with limited buffer size', () => {
       const { buffer } = testOutputProxy('0123456789', { chunkSize: 2, bufferSize: 4 })
 
       strictEqual(buffer.substring(3, 5), '34')
@@ -47,7 +48,7 @@ describe('proxy', () => {
       throws(() => buffer.substring(4, 9), /Error: Index out of range \(index: 4, offset: 6\)/)
     })
 
-    it('should get the current length', () => {
+    test('should get the current length', () => {
       const { buffer } = testOutputProxy('0123456789', { chunkSize: 2, bufferSize: 4 })
 
       strictEqual(buffer.length(), 0)
@@ -57,7 +58,7 @@ describe('proxy', () => {
       strictEqual(buffer.length(), 8) // TODO: Should this be 7?
     })
 
-    it('should check whether we have reached the end', () => {
+    test('should check whether we have reached the end', () => {
       const { buffer } = testOutputProxy('0123456789', { chunkSize: 2, bufferSize: 4 })
 
       strictEqual(buffer.isEnd(0), false)
@@ -70,7 +71,7 @@ describe('proxy', () => {
   })
 
   describe('createOutputProxy', () => {
-    it('should write chunks into an output buffer', () => {
+    test('should write chunks into an output buffer', () => {
       const { chunks, buffer } = testInputProxy({ chunkSize: 2, bufferSize: 4 })
 
       buffer.push('0')
@@ -87,7 +88,7 @@ describe('proxy', () => {
       deepStrictEqual(chunks, ['01', '23', '456'])
     })
 
-    it('should push to the output proxy', () => {
+    test('should push to the output proxy', () => {
       const { chunks, buffer } = testInputProxy()
 
       buffer.push('test')
@@ -95,7 +96,7 @@ describe('proxy', () => {
       deepStrictEqual(chunks, ['test'])
     })
 
-    it('should get current length', () => {
+    test('should get current length', () => {
       const { buffer } = testInputProxy({ chunkSize: 2, bufferSize: 4 })
 
       buffer.push(':) ')
@@ -105,7 +106,7 @@ describe('proxy', () => {
       deepStrictEqual(buffer.length(), 14)
     })
 
-    it('should unshift', () => {
+    test('should unshift', () => {
       const { chunks, buffer } = testInputProxy()
 
       buffer.push('hello world')
@@ -114,7 +115,7 @@ describe('proxy', () => {
       deepStrictEqual(chunks, [':) hello world'])
     })
 
-    it('should throw when it cannot unshift', () => {
+    test('should throw when it cannot unshift', () => {
       const { chunks, buffer } = testInputProxy({ chunkSize: 2, bufferSize: 4 })
 
       buffer.push('hello world')
@@ -126,7 +127,7 @@ describe('proxy', () => {
       deepStrictEqual(chunks, ['he', 'll', 'o ', 'wo', 'rld'])
     })
 
-    it('should remove without end', () => {
+    test('should remove without end', () => {
       const { chunks, buffer } = testInputProxy()
 
       buffer.push('hello world')
@@ -135,7 +136,7 @@ describe('proxy', () => {
       deepStrictEqual(chunks, ['hello'])
     })
 
-    it('should remove with end', () => {
+    test('should remove with end', () => {
       const { chunks, buffer } = testInputProxy()
 
       buffer.push('how are you doing?')

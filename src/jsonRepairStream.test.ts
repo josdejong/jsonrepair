@@ -1,10 +1,11 @@
+import { describe, test } from 'vitest'
 import { strictEqual } from 'assert'
 import { jsonRepairProxy } from './jsonRepairProxy.js'
 import { createInputProxy, createOutputProxy } from './proxy.js'
 import { textToInputStream } from './stream.js'
 
 describe('jsonRepairStream', () => {
-  it('', () => {
+  test('', () => {
     const inputText = '"Repair invalid JSON documents"'
     const stream = textToInputStream(inputText)
     let output = ''
