@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0](https://github.com/josdejong/jsonrepair/compare/v3.3.0...v3.4.0) (2023-11-01)
+
+
+### Features
+
+* [#78](https://github.com/josdejong/jsonrepair/issues/78) repair truncated JSON ([17a002a](https://github.com/josdejong/jsonrepair/commit/17a002a55c6f0fdeb6bf064d85d4ff6b03509963))
+
 ## [3.3.0](https://github.com/josdejong/jsonrepair/compare/v3.2.4...v3.3.0) (2023-11-01)
 
 
