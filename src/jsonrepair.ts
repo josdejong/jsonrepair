@@ -258,8 +258,9 @@ export function jsonrepair(text: string): string {
 
         parseWhitespaceAndSkipComments()
         const processedColon = parseCharacter(codeColon)
+        const truncatedText = i >= text.length
         if (!processedColon) {
-          if (isStartOfValue(text[i])) {
+          if (isStartOfValue(text[i]) || truncatedText) {
             // repair missing colon
             output = insertBeforeLastWhitespace(output, ':')
           } else {
@@ -268,7 +269,7 @@ export function jsonrepair(text: string): string {
         }
         const processedValue = parseValue()
         if (!processedValue) {
-          if (processedColon) {
+          if (processedColon || truncatedText) {
             // repair missing object value
             output += 'null'
           } else {

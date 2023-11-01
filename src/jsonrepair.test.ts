@@ -110,6 +110,24 @@ describe('jsonRepair', () => {
       strictEqual(jsonrepair('\u2018abc'), '"abc"')
     })
 
+    it('should repair truncated JSON', () => {
+      strictEqual(jsonrepair('"foo'), '"foo"')
+      strictEqual(jsonrepair('['), '[]')
+      strictEqual(jsonrepair('["foo'), '["foo"]')
+      strictEqual(jsonrepair('["foo"'), '["foo"]')
+      strictEqual(jsonrepair('["foo",'), '["foo"]')
+      strictEqual(jsonrepair('{"foo":"bar"'), '{"foo":"bar"}')
+      strictEqual(jsonrepair('{"foo":"bar'), '{"foo":"bar"}')
+      strictEqual(jsonrepair('{"foo":'), '{"foo":null}')
+      strictEqual(jsonrepair('{"foo"'), '{"foo":null}')
+      strictEqual(jsonrepair('{"foo'), '{"foo":null}')
+      strictEqual(jsonrepair('{'), '{}')
+      strictEqual(jsonrepair('2.'), '2.0')
+      strictEqual(jsonrepair('2e'), '2e0')
+      strictEqual(jsonrepair('2e+'), '2e+0')
+      strictEqual(jsonrepair('2e-'), '2e-0')
+    })
+
     it('should add missing start quote', () => {
       strictEqual(jsonrepair('abc"'), '"abc"')
       strictEqual(jsonrepair('[a","b"]'), '["a","b"]')
