@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { createReadStream, createWriteStream, readFileSync } from 'fs'
+import { createReadStream, createWriteStream, readFileSync, renameSync } from 'fs'
 import { dirname, join } from 'path'
 import { Transform } from 'stream'
 import { fileURLToPath } from 'url'
-import { jsonrepair, jsonrepairTransform } from '../lib/esm/index.js'
+import { jsonrepairTransform } from '../lib/esm/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -92,38 +92,32 @@ if (options.version) {
   outputHelp()
 } else if (options.inputFile != null) {
   if (options.overwrite) {
-    // FIXME: make streaming, by writing to a temp file and in the end replacing the original file
-    streamToString(createReadStream(options.inputFile))
-      .then((text) => {
-        const outputStream = createWriteStream(options.inputFile)
-        outputStream.write(jsonrepair(text))
-      })
-      .catch((err) => process.stderr.write(err.toString()))
+    const tempFileSuffix = '.repair-' + new Date().toISOString().replace(/\W/g, '-') + '.json'
+    const tempFile = options.inputFile + tempFileSuffix
+
+    streamIt({
+      readStream: createReadStream(options.inputFile),
+      writeStream: createWriteStream(tempFile),
+      onFinish: () => renameSync(tempFile, options.inputFile)
+    })
   } else {
-    try {
-      await streamIt({
-        readStream: createReadStream(options.inputFile, {
-          encoding: 'utf8',
-          autoClose: true
-        }),
-        writeStream: process.stdout
-      })
-    } catch (err) {
-      process.stderr.write(err.toString())
-    }
-  }
-} else {
-  try {
-    await streamIt({
-      readStream: process.stdin,
+    streamIt({
+      readStream: createReadStream(options.inputFile),
       writeStream: process.stdout
     })
-  } catch (err) {
-    process.stderr.write(err.toString())
   }
+} else {
+  streamIt({
+    readStream: process.stdin,
+    writeStream: process.stdout
+  })
 }
 
-function streamIt({ readStream, writeStream }) {
+function noop() {}
+
+// Warning: onFinish does not fire when using process.stdout,
+// see https://github.com/nodejs/node/issues/7606
+function streamIt({ readStream, writeStream, onFinish = noop }) {
   const repair = jsonrepairTransform({
     onData: (chunk) => transform.push(chunk)
   })
@@ -139,32 +133,9 @@ function streamIt({ readStream, writeStream }) {
     }
   })
 
-  return new Promise((resolve, reject) => {
-    console.log('START')
-    readStream
-      .on('error', reject)
-      .pipe(transform)
-      .on('error', reject)
-      .pipe(writeStream)
-      .on('error', reject)
-      .on('finish', () => {
-        console.log('FINISH!') // FIXME: the finish event doesn't fire
-        resolve()
-      })
-  })
-}
-
-function streamToString(readableStream) {
-  return new Promise((resolve, reject) => {
-    let text = ''
-
-    readableStream.on('data', (chunk) => {
-      text += String(chunk)
-    })
-    readableStream.on('end', () => {
-      readableStream.destroy()
-      resolve(text)
-    })
-    readableStream.on('error', (err) => reject(err))
-  })
+  readStream
+    .pipe(transform)
+    .pipe(writeStream)
+    .on('error', (err) => process.stderr.write(err.toString()))
+    .on('finish', onFinish)
 }

@@ -40,7 +40,7 @@ describe('command line interface', function () {
     expect(result).toBe('')
 
     const content = String(readFileSync(outputFile))
-    expect(content).toBe('{"hello":"world"}')
+    expect(stripNewlines(content)).toBe('{"hello":"world"}')
   })
 
   test('should replace a file', async () => {
