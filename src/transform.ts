@@ -53,9 +53,6 @@ enum Expect {
   value = 'value',
   commaOrEnd = 'commaOrEnd',
   objectKey = 'objectKey'
-  // colon = 'colon',
-  // objectKeySeparator = 'objectKeySeparator',
-  // objectSeparatorOrEnd = 'objectSeparatorOrEnd'
 }
 
 // TODO: change to numbers if faster?
@@ -63,7 +60,8 @@ enum Expect {
 enum StackType {
   root = 'root',
   object = 'object',
-  array = 'array'
+  array = 'array',
+  ndJson = 'ndJson'
 }
 
 type StackEntry = {
@@ -135,20 +133,6 @@ export function jsonrepairTransform({
 
   function process(): boolean {
     console.log('process', last(stack))
-    const state = last(stack)
-    // console.log('process', { i, state }) // TODO
-
-    if (!state) {
-      // end reached
-      // TODO: should have an explicit Expect.end in the state instead
-      // FIXME: verify whether something has been processed
-      // FIXME: parse Newline delimited JSON
-      // FIXME: repair redundant end quotes
-
-      throwUnexpectedEnd()
-
-      return false
-    }
 
     parseWhitespaceAndSkipComments()
 
@@ -200,6 +184,13 @@ export function jsonrepairTransform({
         }
 
         if (last(stack).type === StackType.array) {
+          // repair trailing comma
+          output.stripLastOccurrence(',')
+          last(stack).expect = Expect.commaOrEnd
+          return true
+        }
+
+        if (last(stack).type === StackType.ndJson) {
           // repair trailing comma
           output.stripLastOccurrence(',')
           last(stack).expect = Expect.commaOrEnd
@@ -271,21 +262,50 @@ export function jsonrepairTransform({
             return true
           }
 
+          case StackType.ndJson: {
+            if (parseCharacter(codeComma)) {
+              last(stack).expect = Expect.value
+              return true
+            }
+
+            if (parseArrayEnd()) {
+              stack.pop()
+              return true
+            }
+
+            // repair missing comma
+            if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
+              output.insertBeforeLastWhitespace(',')
+              last(stack).expect = Expect.value
+              return true
+            }
+
+            if (input.isEnd(i)) {
+              output.push('\n]')
+              stack.pop()
+              return true
+            }
+          }
+
           case StackType.root: {
             const processedComma = parseCharacter(codeComma)
             parseWhitespaceAndSkipComments()
 
-            // FIXME
-            // if (isStartOfValue(input.charAt(i)) && output.endsWithCommaOrNewline()) {
-            //   // start of a new value after end of the root level object: looks like
-            //   // newline delimited JSON -> turn into a root level array
-            //   if (!processedComma) {
-            //     // repair missing comma
-            //     output.insertBeforeLastWhitespace(',')
-            //   }
-            //
-            //   parseNewlineDelimitedJSON()
-            // }
+            if (isStartOfValue(input.charAt(i)) && output.endsWithCommaOrNewline()) {
+              // start of a new value after end of the root level object: looks like
+              // newline delimited JSON -> turn into a root level array
+              if (!processedComma) {
+                // repair missing comma
+                output.insertBeforeLastWhitespace(',')
+              }
+
+              output.unshift('[\n')
+              stack.push({
+                type: StackType.ndJson,
+                expect: Expect.value
+              })
+              return true
+            }
 
             if (processedComma) {
               // repair: remove trailing comma
@@ -301,6 +321,10 @@ export function jsonrepairTransform({
             ) {
               i++
               parseWhitespaceAndSkipComments()
+            }
+
+            if (!input.isEnd(i)) {
+              throwUnexpectedCharacter()
             }
 
             return false
@@ -331,6 +355,10 @@ export function jsonrepairTransform({
           }
 
           throwColonExpected()
+        }
+
+        if (input.charCodeAt(i) === codeColon) {
+          throwObjectKeyExpected()
         }
 
         // repair trailing comma
