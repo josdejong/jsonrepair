@@ -5,7 +5,7 @@ export interface OutputBuffer {
   unshift: (text: string) => void
   remove: (start: number, end?: number) => string
   length: () => number
-  close: () => void
+  flush: () => void
 
   // FIXME: extract the following three util functions from OutputBuffer
   stripLastOccurrence: (textToStrip: string, stripRemainingText?: boolean) => void
@@ -28,7 +28,7 @@ export function createOutputBuffer({
   let buffer = ''
   let offset = 0
 
-  function flush() {
+  function flushChunks() {
     while (buffer.length > bufferSize + chunkSize) {
       const chunk = buffer.substring(0, chunkSize)
       write(chunk)
@@ -37,9 +37,16 @@ export function createOutputBuffer({
     }
   }
 
+  function flush() {
+    if (buffer.length > 0) {
+      write(buffer)
+      buffer = ''
+    }
+  }
+
   function push(text: string) {
     buffer += text
-    flush()
+    flushChunks()
   }
 
   function unshift(text: string) {
@@ -48,7 +55,7 @@ export function createOutputBuffer({
     }
 
     buffer = text + buffer
-    flush()
+    flushChunks()
   }
 
   function remove(start: number, end?: number): string {
@@ -69,13 +76,6 @@ export function createOutputBuffer({
 
   function length(): number {
     return offset + buffer.length
-  }
-
-  function close() {
-    if (buffer.length > 0) {
-      write(buffer)
-      buffer = ''
-    }
   }
 
   /**
@@ -130,6 +130,6 @@ export function createOutputBuffer({
     insertBeforeLastWhitespace,
     endsWithCommaOrNewline,
     length,
-    close
+    flush
   }
 }

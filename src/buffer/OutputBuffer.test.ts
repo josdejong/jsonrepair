@@ -16,7 +16,7 @@ describe('createOutputProxy', () => {
     deepStrictEqual(chunks, ['01'])
     buffer.push('6')
     deepStrictEqual(chunks, ['01', '23'])
-    buffer.close()
+    buffer.flush()
     deepStrictEqual(chunks, ['01', '23', '456'])
   })
 
@@ -24,7 +24,7 @@ describe('createOutputProxy', () => {
     const { chunks, buffer } = testOutputBuffer()
 
     buffer.push('test')
-    buffer.close()
+    buffer.flush()
     deepStrictEqual(chunks, ['test'])
   })
 
@@ -43,7 +43,7 @@ describe('createOutputProxy', () => {
 
     buffer.push('hello world')
     buffer.unshift(':) ')
-    buffer.close()
+    buffer.flush()
     deepStrictEqual(chunks, [':) hello world'])
   })
 
@@ -55,7 +55,7 @@ describe('createOutputProxy', () => {
       () => buffer.unshift(':) '),
       /Error: Cannot unshift: start of the output is already flushed from the buffer/
     )
-    buffer.close()
+    buffer.flush()
     deepStrictEqual(chunks, ['he', 'll', 'o ', 'wo', 'rld'])
   })
 
@@ -64,7 +64,7 @@ describe('createOutputProxy', () => {
 
     buffer.push('hello world')
     buffer.remove(5)
-    buffer.close()
+    buffer.flush()
     deepStrictEqual(chunks, ['hello'])
   })
 
@@ -73,7 +73,7 @@ describe('createOutputProxy', () => {
 
     buffer.push('how are you doing?')
     buffer.remove(4, 8)
-    buffer.close()
+    buffer.flush()
     deepStrictEqual(chunks, ['how you doing?'])
   })
 

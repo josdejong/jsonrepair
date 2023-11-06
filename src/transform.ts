@@ -106,7 +106,6 @@ export function jsonrepairTransform({
   })
 
   let i = 0
-  let closed = false
   const stack: StackEntry[] = [{ type: StackType.root, expect: Expect.value }]
 
   // TODO: test flushInputBuffer
@@ -127,13 +126,11 @@ export function jsonrepairTransform({
   }
 
   function flush() {
-    closed = true
-
     while (process()) {
       // loop until there is nothing more to process
     }
 
-    output.close()
+    output.flush()
   }
 
   function process(): boolean {
