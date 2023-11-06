@@ -31,6 +31,7 @@ import {
   isSingleQuote,
   isSingleQuoteLike,
   isSpecialWhitespace,
+  isStartOfValue,
   isValidStringCharacter,
   isWhitespace
 } from './stringUtils.js'
@@ -50,7 +51,7 @@ export interface Transform {
 // TODO: change to a normal object so it is serializable?
 enum Expect {
   value = 'value',
-  comma = 'comma',
+  commaOrEnd = 'commaOrEnd',
   objectKey = 'objectKey'
   // colon = 'colon',
   // objectKeySeparator = 'objectKeySeparator',
@@ -118,7 +119,7 @@ export function jsonrepairTransform({
   function transform(chunk: string) {
     input.push(chunk)
 
-    while (input.currentBufferSize() > bufferSize && !input.isEnd(i) && process()) {
+    while (input.currentBufferSize() > bufferSize && process()) {
       // loop until there is nothing more to process
     }
 
@@ -128,7 +129,7 @@ export function jsonrepairTransform({
   function flush() {
     closed = true
 
-    while (!input.isEnd(i) && process()) {
+    while (process()) {
       // loop until there is nothing more to process
     }
 
@@ -136,6 +137,7 @@ export function jsonrepairTransform({
   }
 
   function process(): boolean {
+    console.log('process', last(stack))
     const state = last(stack)
     // console.log('process', { i, state }) // TODO
 
@@ -156,9 +158,10 @@ export function jsonrepairTransform({
     switch (last(stack).expect) {
       case Expect.value: {
         if (parseObjectStart()) {
+          last(stack).expect = Expect.commaOrEnd
+
           parseWhitespaceAndSkipComments()
           if (parseObjectEnd()) {
-            last(stack).expect = Expect.comma
             return true
           }
 
@@ -171,9 +174,10 @@ export function jsonrepairTransform({
         }
 
         if (parseArrayStart()) {
+          last(stack).expect = Expect.commaOrEnd
+
           parseWhitespaceAndSkipComments()
           if (parseArrayEnd()) {
-            last(stack).expect = Expect.comma
             return true
           }
 
@@ -187,7 +191,21 @@ export function jsonrepairTransform({
 
         const processed = parseString() || parseNumber() || parseKeywords() || parseUnquotedString()
         if (processed) {
-          last(stack).expect = Expect.comma
+          last(stack).expect = Expect.commaOrEnd
+          return true
+        }
+
+        if (last(stack).type === StackType.object) {
+          // repair missing object value
+          output.push('null')
+          last(stack).expect = Expect.commaOrEnd
+          return true
+        }
+
+        if (last(stack).type === StackType.array) {
+          // repair trailing comma
+          output.stripLastOccurrence(',')
+          last(stack).expect = Expect.commaOrEnd
           return true
         }
 
@@ -196,40 +214,134 @@ export function jsonrepairTransform({
         } else {
           throwUnexpectedCharacter()
         }
-
-        break
       }
 
-      case Expect.comma: {
-        if (parseCharacter(codeComma)) {
-          last(stack).expect =
-            last(stack).type === StackType.object ? Expect.objectKey : Expect.value
-          return true
-        }
+      case Expect.commaOrEnd: {
+        switch (last(stack).type) {
+          case StackType.object: {
+            if (parseCharacter(codeComma)) {
+              last(stack).expect = Expect.objectKey
+              return true
+            }
 
-        if (last(stack).type === StackType.object && parseObjectEnd()) {
-          stack.pop()
-          last(stack).expect = Expect.comma
-          return true
-        }
+            if (parseObjectEnd()) {
+              stack.pop()
+              return true
+            }
 
-        if (last(stack).type === StackType.array && parseArrayEnd()) {
-          stack.pop()
-          last(stack).expect = Expect.comma
-          return true
-        }
+            // repair missing object end and trailing comma
+            if (input.charAt(i) === '{') {
+              output.stripLastOccurrence(',')
+              output.insertBeforeLastWhitespace('}')
+              stack.pop()
+              return true
+            }
 
-        break
+            // repair missing comma
+            if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
+              output.insertBeforeLastWhitespace(',')
+              last(stack).expect = Expect.objectKey
+              return true
+            }
+
+            // repair missing closing brace
+            output.insertBeforeLastWhitespace('}')
+            stack.pop()
+            return true
+          }
+
+          case StackType.array: {
+            if (parseCharacter(codeComma)) {
+              last(stack).expect = Expect.value
+              return true
+            }
+
+            if (parseArrayEnd()) {
+              stack.pop()
+              return true
+            }
+
+            // repair missing comma
+            if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
+              output.insertBeforeLastWhitespace(',')
+              last(stack).expect = Expect.value
+              return true
+            }
+
+            // repair missing closing bracket
+            output.insertBeforeLastWhitespace(']')
+            stack.pop()
+            return true
+          }
+
+          case StackType.root: {
+            const processedComma = parseCharacter(codeComma)
+            parseWhitespaceAndSkipComments()
+
+            // FIXME
+            // if (isStartOfValue(input.charAt(i)) && output.endsWithCommaOrNewline()) {
+            //   // start of a new value after end of the root level object: looks like
+            //   // newline delimited JSON -> turn into a root level array
+            //   if (!processedComma) {
+            //     // repair missing comma
+            //     output.insertBeforeLastWhitespace(',')
+            //   }
+            //
+            //   parseNewlineDelimitedJSON()
+            // }
+
+            if (processedComma) {
+              // repair: remove trailing comma
+              output.stripLastOccurrence(',')
+
+              return true
+            }
+
+            // repair redundant end braces and brackets
+            while (
+              input.charCodeAt(i) === codeClosingBrace ||
+              input.charCodeAt(i) === codeClosingBracket
+            ) {
+              i++
+              parseWhitespaceAndSkipComments()
+            }
+
+            return false
+          }
+
+          default:
+            return false
+        }
       }
 
       case Expect.objectKey: {
-        parseObjectKey()
-        last(stack).expect = Expect.value
+        const processedKey = parseString() || parseUnquotedString()
+        if (processedKey) {
+          parseWhitespaceAndSkipComments()
+
+          if (parseCharacter(codeColon)) {
+            // expect a value after the :
+            last(stack).expect = Expect.value
+            return true
+          }
+
+          const truncatedText = input.isEnd(i)
+          if (isStartOfValue(input.charAt(i)) || truncatedText) {
+            // repair missing colon
+            output.insertBeforeLastWhitespace(':')
+            last(stack).expect = Expect.value
+            return true
+          }
+
+          throwColonExpected()
+        }
+
+        // repair trailing comma
+        output.stripLastOccurrence(',')
+        last(stack).expect = Expect.commaOrEnd
         return true
       }
     }
-
-    return false
   }
 
   function parseWhitespaceAndSkipComments(): boolean {
@@ -320,63 +432,19 @@ export function jsonrepairTransform({
   }
 
   function parseObjectStart(): boolean {
-    if (parseCharacter(codeOpeningBrace)) {
-      return true
-    }
-
-    return false
-  }
-
-  function parseObjectKey(): true {
-    const processedKey = parseString() || parseUnquotedString()
-    if (processedKey) {
-      parseWhitespaceAndSkipComments()
-
-      if (parseCharacter(codeColon)) {
-        // expect a value after the :
-        return true
-      }
-
-      throwColonExpected()
-    } else {
-      // FIXME: repair closing comma
-      // if (
-      //   input.charCodeAt(i) === codeClosingBrace ||
-      //   input.charCodeAt(i) === codeOpeningBrace ||
-      //   input.charCodeAt(i) === codeClosingBracket ||
-      //   input.charCodeAt(i) === codeOpeningBracket ||
-      //   input.charAt(i) === ''
-      // ) {
-      //   // repair trailing comma
-      //   output.stripLastOccurrence(',')
-      // }
-
-      throwObjectKeyExpected()
-    }
+    return parseCharacter(codeOpeningBrace)
   }
 
   function parseObjectEnd(): boolean {
-    if (parseCharacter(codeClosingBrace)) {
-      return true
-    }
-
-    return false
+    return parseCharacter(codeClosingBrace)
   }
 
   function parseArrayStart(): boolean {
-    if (parseCharacter(codeOpeningBracket)) {
-      return true
-    }
-
-    return false
+    return parseCharacter(codeOpeningBracket)
   }
 
   function parseArrayEnd(): boolean {
-    if (parseCharacter(codeClosingBracket)) {
-      return true
-    }
-
-    return false
+    return parseCharacter(codeClosingBracket)
   }
 
   /**
@@ -738,7 +806,7 @@ export function jsonrepairTransform({
   }
 
   function throwUnexpectedEnd() {
-    throw new JSONRepairError('Unexpected end of json string', input.length())
+    throw new JSONRepairError('Unexpected end of json string', i)
   }
 
   function throwObjectKeyExpected() {

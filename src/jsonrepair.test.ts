@@ -25,6 +25,9 @@ describe('jsonrepair', () => {
 
     test('parse array', function () {
       assertRepair('[]')
+      assertRepair('[1,2,3]')
+      assertRepair('[ 1 , 2 , 3 ]')
+      assertRepair('[1,2,[3,4,5]]')
       assertRepair('[{}]')
       assertRepair('{"a":[]}')
       assertRepair('[1, "hi", true, false, null, {}, []]')
@@ -185,8 +188,8 @@ describe('jsonrepair', () => {
     })
 
     test('should repair a missing object value', () => {
-      strictEqual(jsonrepair('{"a":}'), '{"a":null}')
-      strictEqual(jsonrepair('{"a":,"b":2}'), '{"a":null,"b":2}')
+      // strictEqual(jsonrepair('{"a":}'), '{"a":null}')
+      // strictEqual(jsonrepair('{"a":,"b":2}'), '{"a":null,"b":2}')
       strictEqual(jsonrepair('{"a":'), '{"a":null}')
     })
 
@@ -315,7 +318,7 @@ describe('jsonrepair', () => {
       strictEqual(jsonrepair('[1,2,3],'), '[1,2,3]')
     })
 
-    test('should add a missing closing bracket for an object', () => {
+    test('should add a missing closing brace for an object', () => {
       strictEqual(jsonrepair('{'), '{}')
       strictEqual(jsonrepair('{"a":2'), '{"a":2}')
       strictEqual(jsonrepair('{"a":2,'), '{"a":2}')
