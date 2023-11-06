@@ -19,7 +19,6 @@ export interface OutputBufferProps {
   bufferSize: number
 }
 
-// TODO: move into a separate file
 export function createOutputBuffer({
   write,
   chunkSize,
@@ -29,7 +28,7 @@ export function createOutputBuffer({
   let offset = 0
 
   function flushChunks() {
-    while (buffer.length > bufferSize + chunkSize) {
+    while (buffer.length >= bufferSize + chunkSize) {
       const chunk = buffer.substring(0, chunkSize)
       write(chunk)
       buffer = buffer.substring(chunkSize)
@@ -38,8 +37,16 @@ export function createOutputBuffer({
   }
 
   function flush() {
+    while (buffer.length >= chunkSize) {
+      const chunk = buffer.substring(0, chunkSize)
+      write(chunk)
+      buffer = buffer.substring(chunkSize)
+      offset += chunkSize
+    }
+
     if (buffer.length > 0) {
       write(buffer)
+      offset += buffer.length
       buffer = ''
     }
   }
@@ -113,6 +120,7 @@ export function createOutputBuffer({
     }
 
     buffer = buffer.substring(0, bufferIndex) + textToInsert + buffer.substring(bufferIndex)
+    flushChunks()
   }
 
   /**

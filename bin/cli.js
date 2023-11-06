@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { createReadStream, createWriteStream, openSync, close, readFileSync, readSync } from 'fs'
+import { createReadStream, createWriteStream, readFileSync } from 'fs'
 import { dirname, join } from 'path'
+import { Transform } from 'stream'
 import { fileURLToPath } from 'url'
-import { jsonrepair, jsonRepairStream } from '../lib/esm/index.js'
+import { jsonrepair, jsonrepairTransform } from '../lib/esm/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -44,21 +45,6 @@ function outputHelp() {
     '    cat broken.json | jsonrepair > repaired.json  # Repair data from an input stream, output to file'
   )
   console.log()
-}
-
-function streamToString(readableStream) {
-  return new Promise((resolve, reject) => {
-    let text = ''
-
-    readableStream.on('data', (chunk) => {
-      text += String(chunk)
-    })
-    readableStream.on('end', () => {
-      readableStream.destroy()
-      resolve(text)
-    })
-    readableStream.on('error', (err) => reject(err))
-  })
 }
 
 function processArgs(args) {
@@ -114,42 +100,71 @@ if (options.version) {
       })
       .catch((err) => process.stderr.write(err.toString()))
   } else {
-    const fd = openSync(options.inputFile, 'r')
     try {
-      const bufferOffset = 0
-      const bufferSize = 1024
-      const buffer = Buffer.alloc(bufferSize)
-      let position = 0
-
-      jsonRepairStream({
-        input: {
-          read: () => {
-            const bytesRead = readSync(fd, buffer, bufferOffset, bufferSize, position)
-            if (bytesRead === 0) {
-              return null
-            }
-
-            position += bytesRead
-
-            return buffer.toString('utf8', 0, bytesRead)
-          },
-          bufferSize
-        },
-        output: {
-          write: (chunk) => {
-            process.stdout.write(chunk)
-          }
-        }
+      await streamIt({
+        readStream: createReadStream(options.inputFile, {
+          encoding: 'utf8',
+          autoClose: true
+        }),
+        writeStream: process.stdout
       })
     } catch (err) {
       process.stderr.write(err.toString())
-    } finally {
-      close(fd)
     }
   }
 } else {
-  // FIXME: make streaming
-  streamToString(process.stdin)
-    .then((text) => process.stdout.write(jsonrepair(text)))
-    .catch((err) => process.stderr.write(err.toString()))
+  try {
+    await streamIt({
+      readStream: process.stdin,
+      writeStream: process.stdout
+    })
+  } catch (err) {
+    process.stderr.write(err.toString())
+  }
+}
+
+function streamIt({ readStream, writeStream }) {
+  const repair = jsonrepairTransform({
+    onData: (chunk) => transform.push(chunk)
+  })
+
+  const transform = new Transform({
+    transform(data, encoding, callback) {
+      repair.transform(data)
+      callback()
+    },
+    flush(callback) {
+      repair.flush()
+      callback()
+    }
+  })
+
+  return new Promise((resolve, reject) => {
+    console.log('START')
+    readStream
+      .on('error', reject)
+      .pipe(transform)
+      .on('error', reject)
+      .pipe(writeStream)
+      .on('error', reject)
+      .on('finish', () => {
+        console.log('FINISH!') // FIXME: the finish event doesn't fire
+        resolve()
+      })
+  })
+}
+
+function streamToString(readableStream) {
+  return new Promise((resolve, reject) => {
+    let text = ''
+
+    readableStream.on('data', (chunk) => {
+      text += String(chunk)
+    })
+    readableStream.on('end', () => {
+      readableStream.destroy()
+      resolve(text)
+    })
+    readableStream.on('error', (err) => reject(err))
+  })
 }

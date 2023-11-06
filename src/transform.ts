@@ -49,10 +49,10 @@ export interface Transform {
 
 // TODO: change to numbers if faster?
 // TODO: change to a normal object so it is serializable?
-enum Expect {
-  value = 'value', // FIXME: rename to beforeValue
-  commaOrEnd = 'commaOrEnd', // FIXME: rename to afterValue
-  objectKey = 'objectKey' // FIXME: rename to beforeKey
+enum Caret {
+  beforeValue = 'beforeValue',
+  afterValue = 'afterValue',
+  beforeKey = 'beforeKey'
 }
 
 // TODO: change to numbers if faster?
@@ -67,7 +67,7 @@ enum StackType {
 
 type StackEntry = {
   type: StackType
-  expect: Expect
+  caret: Caret
 }
 
 const controlCharacters: { [key: string]: string } = {
@@ -105,19 +105,20 @@ export function jsonrepairTransform({
   })
 
   let i = 0
-  const stack: StackEntry[] = [{ type: StackType.root, expect: Expect.value }] // FIXME: refactor stack
+  let iFlushed = 0
+  const stack: StackEntry[] = [{ type: StackType.root, caret: Caret.beforeValue }] // FIXME: refactor stack
 
-  // TODO: test flushInputBuffer
   function flushInputBuffer() {
-    while (input.currentBufferSize() > bufferSize + chunkSize) {
-      input.flush(chunkSize)
+    while (iFlushed < i - bufferSize - chunkSize) {
+      iFlushed += chunkSize
+      input.flush(iFlushed)
     }
   }
 
   function transform(chunk: string) {
     input.push(chunk)
 
-    while (input.currentBufferSize() > bufferSize && process()) {
+    while (i < input.currentLength() - bufferSize && process()) {
       // loop until there is nothing more to process
     }
 
@@ -137,10 +138,10 @@ export function jsonrepairTransform({
 
     parseWhitespaceAndSkipComments()
 
-    switch (last(stack).expect) {
-      case Expect.value: {
+    switch (last(stack).caret) {
+      case Caret.beforeValue: {
         if (parseObjectStart()) {
-          last(stack).expect = Expect.commaOrEnd
+          last(stack).caret = Caret.afterValue
 
           parseWhitespaceAndSkipComments()
           if (parseObjectEnd()) {
@@ -149,14 +150,14 @@ export function jsonrepairTransform({
 
           stack.push({
             type: StackType.object,
-            expect: Expect.objectKey
+            caret: Caret.beforeKey
           })
 
           return true
         }
 
         if (parseArrayStart()) {
-          last(stack).expect = Expect.commaOrEnd
+          last(stack).caret = Caret.afterValue
 
           parseWhitespaceAndSkipComments()
           if (parseArrayEnd()) {
@@ -165,7 +166,7 @@ export function jsonrepairTransform({
 
           stack.push({
             type: StackType.array,
-            expect: Expect.value
+            caret: Caret.beforeValue
           })
 
           return true
@@ -173,7 +174,7 @@ export function jsonrepairTransform({
 
         const processed = parseString() || parseNumber() || parseKeywords()
         if (processed) {
-          last(stack).expect = Expect.commaOrEnd
+          last(stack).caret = Caret.afterValue
           return true
         }
 
@@ -188,10 +189,10 @@ export function jsonrepairTransform({
             // Or a JSONP function call like callback({...});
             // we strip the function call
 
-            last(stack).expect = Expect.commaOrEnd
+            last(stack).caret = Caret.afterValue
             stack.push({
               type: StackType.dataType,
-              expect: Expect.value
+              caret: Caret.beforeValue
             })
             return true
           }
@@ -203,28 +204,28 @@ export function jsonrepairTransform({
             i++
           }
 
-          last(stack).expect = Expect.commaOrEnd
+          last(stack).caret = Caret.afterValue
           return true
         }
 
         if (last(stack).type === StackType.object) {
           // repair missing object value
           output.push('null')
-          last(stack).expect = Expect.commaOrEnd
+          last(stack).caret = Caret.afterValue
           return true
         }
 
         if (last(stack).type === StackType.array) {
           // repair trailing comma
           output.stripLastOccurrence(',')
-          last(stack).expect = Expect.commaOrEnd
+          last(stack).caret = Caret.afterValue
           return true
         }
 
         if (last(stack).type === StackType.ndJson) {
           // repair trailing comma
           output.stripLastOccurrence(',')
-          last(stack).expect = Expect.commaOrEnd
+          last(stack).caret = Caret.afterValue
           return true
         }
 
@@ -235,11 +236,12 @@ export function jsonrepairTransform({
         }
       }
 
-      case Expect.commaOrEnd: {
+      // eslint-disable-next-line no-fallthrough
+      case Caret.afterValue: {
         switch (last(stack).type) {
           case StackType.object: {
             if (parseCharacter(codeComma)) {
-              last(stack).expect = Expect.objectKey
+              last(stack).caret = Caret.beforeKey
               return true
             }
 
@@ -259,7 +261,7 @@ export function jsonrepairTransform({
             // repair missing comma
             if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
               output.insertBeforeLastWhitespace(',')
-              last(stack).expect = Expect.objectKey
+              last(stack).caret = Caret.beforeKey
               return true
             }
 
@@ -271,7 +273,7 @@ export function jsonrepairTransform({
 
           case StackType.array: {
             if (parseCharacter(codeComma)) {
-              last(stack).expect = Expect.value
+              last(stack).caret = Caret.beforeValue
               return true
             }
 
@@ -283,7 +285,7 @@ export function jsonrepairTransform({
             // repair missing comma
             if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
               output.insertBeforeLastWhitespace(',')
-              last(stack).expect = Expect.value
+              last(stack).caret = Caret.beforeValue
               return true
             }
 
@@ -295,7 +297,7 @@ export function jsonrepairTransform({
 
           case StackType.ndJson: {
             if (parseCharacter(codeComma)) {
-              last(stack).expect = Expect.value
+              last(stack).caret = Caret.beforeValue
               return true
             }
 
@@ -307,7 +309,7 @@ export function jsonrepairTransform({
             // repair missing comma
             if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
               output.insertBeforeLastWhitespace(',')
-              last(stack).expect = Expect.value
+              last(stack).caret = Caret.beforeValue
               return true
             }
 
@@ -318,6 +320,7 @@ export function jsonrepairTransform({
             }
           }
 
+          // eslint-disable-next-line no-fallthrough
           case StackType.dataType: {
             if (skipCharacter(codeCloseParenthesis)) {
               skipCharacter(codeSemicolon)
@@ -342,7 +345,7 @@ export function jsonrepairTransform({
               output.unshift('[\n')
               stack.push({
                 type: StackType.ndJson,
-                expect: Expect.value
+                caret: Caret.beforeValue
               })
               return true
             }
@@ -375,14 +378,14 @@ export function jsonrepairTransform({
         }
       }
 
-      case Expect.objectKey: {
+      case Caret.beforeKey: {
         const processedKey = parseString() || parseUnquotedKey()
         if (processedKey) {
           parseWhitespaceAndSkipComments()
 
           if (parseCharacter(codeColon)) {
             // expect a value after the :
-            last(stack).expect = Expect.value
+            last(stack).caret = Caret.beforeValue
             return true
           }
 
@@ -390,7 +393,7 @@ export function jsonrepairTransform({
           if (isStartOfValue(input.charAt(i)) || truncatedText) {
             // repair missing colon
             output.insertBeforeLastWhitespace(':')
-            last(stack).expect = Expect.value
+            last(stack).caret = Caret.beforeValue
             return true
           }
 
@@ -403,7 +406,7 @@ export function jsonrepairTransform({
 
         // repair trailing comma
         output.stripLastOccurrence(',')
-        last(stack).expect = Expect.commaOrEnd
+        last(stack).caret = Caret.afterValue
         return true
       }
     }

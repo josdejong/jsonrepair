@@ -1,7 +1,5 @@
-import { jsonRepairProxy as _jsonRepairProxy } from './jsonRepairProxy.js'
-import { createOutputProxy, createTextInputProxy } from './proxy.js'
-export { jsonRepairProxy } from './jsonRepairProxy.js'
-export { jsonRepairStream } from './jsonRepairStream.js'
+import { jsonrepairTransform } from './transform.js'
+export { jsonrepairTransform } from './transform.js'
 export { JSONRepairError } from './JSONRepairError.js'
 
 /**
@@ -23,16 +21,14 @@ export { JSONRepairError } from './JSONRepairError.js'
 export function jsonrepair(text: string): string {
   let output = ''
 
-  _jsonRepairProxy({
-    input: createTextInputProxy(text),
-    output: createOutputProxy({
-      write: (text) => {
-        output += text
-      },
-      chunkSize: text.length,
-      bufferSize: text.length + 1
-    })
+  const { transform, flush } = jsonrepairTransform({
+    onData: (chunk) => {
+      output += chunk
+    }
   })
+
+  transform(text)
+  flush()
 
   return output
 }

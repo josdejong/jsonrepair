@@ -1,10 +1,11 @@
 import { strictEqual, throws } from 'assert'
-import { describe, test } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import { createInputBuffer } from './InputBuffer'
 
-describe('createInputBuffer', () => {
+describe('InputBuffer', () => {
   test('should read bytes via charAt', () => {
     const { buffer } = testInputBuffer('0123456789')
+    buffer.close()
 
     strictEqual(buffer.charAt(3), '3')
     strictEqual(buffer.charAt(4), '4')
@@ -24,6 +25,7 @@ describe('createInputBuffer', () => {
 
   test('should read bytes via charCodeAt', () => {
     const { buffer } = testInputBuffer('0123456789')
+    buffer.close()
 
     strictEqual(buffer.charCodeAt(3), '3'.charCodeAt(0))
     strictEqual(buffer.charCodeAt(8), '8'.charCodeAt(0))
@@ -53,27 +55,28 @@ describe('createInputBuffer', () => {
     strictEqual(buffer.length(), 10)
   })
 
-  test('should get the currentBufferSize', () => {
+  test('should get the currentLength', () => {
     const { buffer } = testInputBuffer('')
-    strictEqual(buffer.currentBufferSize(), 0)
+    strictEqual(buffer.currentLength(), 0)
 
     buffer.push('0123456789')
-    strictEqual(buffer.currentBufferSize(), 10)
+    strictEqual(buffer.currentLength(), 10)
 
     buffer.flush(4)
-    strictEqual(buffer.currentBufferSize(), 6)
+    strictEqual(buffer.currentLength(), 10)
   })
 
   test('should flush', () => {
     const { buffer } = testInputBuffer('0123456789')
-    strictEqual(buffer.currentBufferSize(), 10)
+    expect(buffer.currentBufferSize()).toEqual(10)
 
     buffer.flush(3)
-    strictEqual(buffer.currentBufferSize(), 7)
+    expect(buffer.currentBufferSize()).toEqual(7)
   })
 
   test('should check whether we have reached the end', () => {
     const { buffer } = testInputBuffer('0123456789')
+    buffer.close()
 
     strictEqual(buffer.isEnd(0), false)
     strictEqual(buffer.isEnd(2), false)
@@ -85,9 +88,8 @@ describe('createInputBuffer', () => {
 })
 
 function testInputBuffer(text: string) {
-  const chunks: string[] = []
   const buffer = createInputBuffer()
   buffer.push(text)
 
-  return { chunks, buffer }
+  return { buffer }
 }

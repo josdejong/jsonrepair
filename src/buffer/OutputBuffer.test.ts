@@ -2,25 +2,25 @@ import { deepStrictEqual, throws } from 'assert'
 import { describe, test } from 'vitest'
 import { createOutputBuffer } from './OutputBuffer'
 
-describe('createOutputProxy', () => {
+describe('OutputBuffer', () => {
   test('should write chunks into an output buffer', () => {
     const { chunks, buffer } = testOutputBuffer({ chunkSize: 2, bufferSize: 2 })
 
     buffer.push('0')
     buffer.push('1')
     buffer.push('2')
-    buffer.push('3')
     deepStrictEqual(chunks, [])
+    buffer.push('3')
     buffer.push('4')
-    buffer.push('5')
     deepStrictEqual(chunks, ['01'])
-    buffer.push('6')
+    buffer.push('5')
     deepStrictEqual(chunks, ['01', '23'])
+    buffer.push('6')
     buffer.flush()
-    deepStrictEqual(chunks, ['01', '23', '456'])
+    deepStrictEqual(chunks, ['01', '23', '45', '6'])
   })
 
-  test('should push to the output proxy', () => {
+  test('should push to the output buffer', () => {
     const { chunks, buffer } = testOutputBuffer()
 
     buffer.push('test')
@@ -56,7 +56,7 @@ describe('createOutputProxy', () => {
       /Error: Cannot unshift: start of the output is already flushed from the buffer/
     )
     buffer.flush()
-    deepStrictEqual(chunks, ['he', 'll', 'o ', 'wo', 'rld'])
+    deepStrictEqual(chunks, ['he', 'll', 'o ', 'wo', 'rl', 'd'])
   })
 
   test('should remove without end', () => {

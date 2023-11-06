@@ -5,6 +5,7 @@ export interface InputBuffer {
   charCodeAt: (index: number) => number
   substring: (start: number, end: number) => string
   length: () => number
+  currentLength: () => number
   currentBufferSize: () => number
   isEnd: (index: number) => boolean
   close: () => void
@@ -19,22 +20,29 @@ export function createInputBuffer(): InputBuffer {
     if (index < offset) {
       throw new Error(`Index out of range (index: ${index}, offset: ${offset})`)
     }
+
+    // FIXME: throw exception when reading data that is not yet received
+    // if (!closed && index >= offset + buffer.length) {
+    //   throw new Error(
+    //     `Input data not yet received (index: ${index}, currentLength: ${offset + buffer.length})`
+    //   )
+    // }
   }
 
   function push(chunk: string) {
     buffer += chunk
   }
 
-  function flush(size: number) {
-    if (size > buffer.length) {
+  function flush(position: number) {
+    if (position > offset + buffer.length) {
       throw new Error(
-        'Cannot flush: size is larger than the actual data in the buffer' +
-          ` (size: ${size}, currentBufferSize: ${currentBufferSize()})`
+        'Cannot flush: position is larger than the actual data in the buffer' +
+          ` (position: ${position}, buffer length: ${buffer.length})`
       )
     }
 
-    buffer = buffer.substring(size)
-    offset += size
+    buffer = buffer.substring(position - offset)
+    offset = position
   }
 
   function charAt(index: number): string {
@@ -61,6 +69,10 @@ export function createInputBuffer(): InputBuffer {
       throw new Error('Cannot get length: input is not yet closed')
     }
 
+    return currentLength()
+  }
+
+  function currentLength(): number {
     return offset + buffer.length
   }
 
@@ -87,6 +99,7 @@ export function createInputBuffer(): InputBuffer {
     charCodeAt,
     substring,
     length,
+    currentLength,
     currentBufferSize,
     isEnd,
     close
