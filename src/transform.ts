@@ -50,9 +50,9 @@ export interface Transform {
 // TODO: change to numbers if faster?
 // TODO: change to a normal object so it is serializable?
 enum Expect {
-  value = 'value',
-  commaOrEnd = 'commaOrEnd',
-  objectKey = 'objectKey'
+  value = 'value', // FIXME: rename to beforeValue
+  commaOrEnd = 'commaOrEnd', // FIXME: rename to afterValue
+  objectKey = 'objectKey' // FIXME: rename to beforeKey
 }
 
 // TODO: change to numbers if faster?
@@ -61,7 +61,8 @@ enum StackType {
   root = 'root',
   object = 'object',
   array = 'array',
-  ndJson = 'ndJson'
+  ndJson = 'ndJson',
+  dataType = 'dataType'
 }
 
 type StackEntry = {
@@ -104,7 +105,7 @@ export function jsonrepairTransform({
   })
 
   let i = 0
-  const stack: StackEntry[] = [{ type: StackType.root, expect: Expect.value }]
+  const stack: StackEntry[] = [{ type: StackType.root, expect: Expect.value }] // FIXME: refactor stack
 
   // TODO: test flushInputBuffer
   function flushInputBuffer() {
@@ -132,7 +133,7 @@ export function jsonrepairTransform({
   }
 
   function process(): boolean {
-    console.log('process', last(stack))
+    // console.log('process', last(stack)) // FIXME: cleanup
 
     parseWhitespaceAndSkipComments()
 
@@ -170,8 +171,38 @@ export function jsonrepairTransform({
           return true
         }
 
-        const processed = parseString() || parseNumber() || parseKeywords() || parseUnquotedString()
+        const processed = parseString() || parseNumber() || parseKeywords()
         if (processed) {
+          last(stack).expect = Expect.commaOrEnd
+          return true
+        }
+
+        const unquotedStringEnd = findNextDelimiter()
+        if (unquotedStringEnd !== null) {
+          const symbol = input.substring(i, unquotedStringEnd)
+          i = unquotedStringEnd
+
+          // skipWhitespace()
+          if (skipCharacter(codeOpenParenthesis)) {
+            // A MongoDB function call like NumberLong("2")
+            // Or a JSONP function call like callback({...});
+            // we strip the function call
+
+            last(stack).expect = Expect.commaOrEnd
+            stack.push({
+              type: StackType.dataType,
+              expect: Expect.value
+            })
+            return true
+          }
+
+          output.push(symbol === 'undefined' ? 'null' : JSON.stringify(symbol))
+
+          if (input.charCodeAt(i) === codeDoubleQuote) {
+            // we had a missing start quote, but now we encountered the end quote, so we can skip that one
+            i++
+          }
+
           last(stack).expect = Expect.commaOrEnd
           return true
         }
@@ -287,6 +318,15 @@ export function jsonrepairTransform({
             }
           }
 
+          case StackType.dataType: {
+            if (skipCharacter(codeCloseParenthesis)) {
+              skipCharacter(codeSemicolon)
+            }
+
+            stack.pop()
+            return true
+          }
+
           case StackType.root: {
             const processedComma = parseCharacter(codeComma)
             parseWhitespaceAndSkipComments()
@@ -336,7 +376,7 @@ export function jsonrepairTransform({
       }
 
       case Expect.objectKey: {
-        const processedKey = parseString() || parseUnquotedString()
+        const processedKey = parseString() || parseUnquotedKey()
         if (processedKey) {
           parseWhitespaceAndSkipComments()
 
@@ -470,41 +510,6 @@ export function jsonrepairTransform({
 
   function parseArrayEnd(): boolean {
     return parseCharacter(codeClosingBracket)
-  }
-
-  /**
-   * Parse and repair Newline Delimited JSON (NDJSON):
-   * multiple JSON objects separated by a newline character
-   */
-  function parseNewlineDelimitedJSON() {
-    // repair NDJSON
-    output.unshift('[\n')
-
-    let initial = true
-    let processedValue = true
-    while (processedValue) {
-      if (!initial) {
-        // parse optional comma, insert when missing
-        const processedComma = parseCharacter(codeComma)
-        if (!processedComma) {
-          // repair: add missing comma
-          output.insertBeforeLastWhitespace(',')
-        }
-      } else {
-        initial = false
-      }
-
-      // FIXME
-      // processedValue = parseValue()
-    }
-
-    if (!processedValue) {
-      // repair: remove trailing comma
-      output.stripLastOccurrence(',')
-    }
-
-    // repair: wrap the output inside array brackets
-    output.push('\n]')
   }
 
   /**
@@ -737,59 +742,38 @@ export function jsonrepairTransform({
     return false
   }
 
-  /**
-   * Repair and unquoted string by adding quotes around it
-   * Repair a MongoDB function call like NumberLong("2")
-   * Repair a JSONP function call like callback({...});
-   */
-  function parseUnquotedString(): boolean {
-    // note that the symbol can end with whitespaces: we stop at the next delimiter
-    const start = i
-    while (!input.isEnd(i) && !isDelimiter(input.charAt(i))) {
-      i++
-    }
+  function parseUnquotedKey(): boolean {
+    let end = findNextDelimiter()
 
-    if (i > start) {
-      if (input.charCodeAt(i) === codeOpenParenthesis) {
-        // repair a MongoDB function call like NumberLong("2")
-        // repair a JSONP function call like callback({...});
-        i++
-
-        // FIXME
-        // parseValue()
-
-        if (input.charCodeAt(i) === codeCloseParenthesis) {
-          // repair: skip close bracket of function call
-          i++
-          if (input.charCodeAt(i) === codeSemicolon) {
-            // repair: skip semicolon after JSONP call
-            i++
-          }
-        }
-
-        return true
-      } else {
-        // repair unquoted string
-        // also, repair undefined into null
-
-        // first, go back to prevent getting trailing whitespaces in the string
-        while (isWhitespace(input.charCodeAt(i - 1)) && i > 0) {
-          i--
-        }
-
-        const symbol = input.substring(start, i)
-        output.push(symbol === 'undefined' ? 'null' : JSON.stringify(symbol))
-
-        if (input.charCodeAt(i) === codeDoubleQuote) {
-          // we had a missing start quote, but now we encountered the end quote, so we can skip that one
-          i++
-        }
-
-        return true
+    if (end !== null) {
+      // first, go back to prevent getting trailing whitespaces in the string
+      while (isWhitespace(input.charCodeAt(end - 1)) && end > i) {
+        end--
       }
+
+      const symbol = input.substring(i, end)
+      output.push(JSON.stringify(symbol))
+      i = end
+
+      if (input.charCodeAt(i) === codeDoubleQuote) {
+        // we had a missing start quote, but now we encountered the end quote, so we can skip that one
+        i++
+      }
+
+      return true
     }
 
     return false
+  }
+
+  function findNextDelimiter(): number | null {
+    // note that the symbol can end with whitespaces: we stop at the next delimiter
+    let j = i
+    while (!input.isEnd(j) && !isDelimiter(input.charAt(j))) {
+      j++
+    }
+
+    return j > i ? j : null
   }
 
   function nextNonWhiteSpaceCharacter(start: number): string {
