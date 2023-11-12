@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.4.1](https://github.com/josdejong/jsonrepair/compare/v3.4.0...v3.4.1) (2023-11-12)
+
+
+### Bug Fixes
+
+* [#109](https://github.com/josdejong/jsonrepair/issues/109) fix truncated unicode characters ([c9c8d80](https://github.com/josdejong/jsonrepair/commit/c9c8d80e6f3177442f8a0ddcb1856f206cb0459f))
+
 ## [3.4.0](https://github.com/josdejong/jsonrepair/compare/v3.3.0...v3.4.0) (2023-11-01)
 
 
