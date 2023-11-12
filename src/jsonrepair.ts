@@ -426,7 +426,7 @@ export function jsonrepair(text: string): string {
             if (j === 6) {
               output += text.slice(i, i + 6)
               i += 6
-            } else if (j < 6 && i + j >= text.length) {
+            } else if (i + j >= text.length) {
               // repair invalid or truncated unicode char at the end of the text
               // by removing the unicode char and ending the string here
               i = text.length
