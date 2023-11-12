@@ -418,14 +418,18 @@ export function jsonrepair(text: string): string {
             output += text.slice(i, i + 2)
             i += 2
           } else if (char === 'u') {
-            if (
-              isHex(text.charCodeAt(i + 2)) &&
-              isHex(text.charCodeAt(i + 3)) &&
-              isHex(text.charCodeAt(i + 4)) &&
-              isHex(text.charCodeAt(i + 5))
-            ) {
+            let j = 2
+            while (j < 6 && isHex(text.charCodeAt(i + j))) {
+              j++
+            }
+
+            if (j === 6) {
               output += text.slice(i, i + 6)
               i += 6
+            } else if (j < 6 && i + j >= text.length) {
+              // repair invalid or truncated unicode char at the end of the text
+              // by removing the unicode char and ending the string here
+              i = text.length
             } else {
               throwInvalidUnicodeCharacter(i)
             }
@@ -690,12 +694,8 @@ export function jsonrepair(text: string): string {
     throw new JSONRepairError('Colon expected', i)
   }
 
-  function throwInvalidUnicodeCharacter(start: number) {
-    let end = start + 2
-    while (/\w/.test(text[end])) {
-      end++
-    }
-    const chars = text.slice(start, end)
+  function throwInvalidUnicodeCharacter(i: number) {
+    const chars = text.slice(i, i + 6)
     throw new JSONRepairError(`Invalid unicode character "${chars}"`, i)
   }
 
