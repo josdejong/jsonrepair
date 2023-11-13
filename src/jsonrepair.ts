@@ -431,7 +431,7 @@ export function jsonrepair(text: string): string {
               // by removing the unicode char and ending the string here
               i = text.length
             } else {
-              throwInvalidUnicodeCharacter(i)
+              throwInvalidUnicodeCharacter()
             }
           } else {
             // repair invalid escape character: remove it
@@ -694,7 +694,7 @@ export function jsonrepair(text: string): string {
     throw new JSONRepairError('Colon expected', i)
   }
 
-  function throwInvalidUnicodeCharacter(i: number) {
+  function throwInvalidUnicodeCharacter() {
     const chars = text.slice(i, i + 6)
     throw new JSONRepairError(`Invalid unicode character "${chars}"`, i)
   }
