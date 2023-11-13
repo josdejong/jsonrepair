@@ -565,16 +565,20 @@ export function jsonrepairTransform({
             output.push(input.substring(i, i + 2))
             i += 2
           } else if (char === 'u') {
-            if (
-              isHex(input.charCodeAt(i + 2)) &&
-              isHex(input.charCodeAt(i + 3)) &&
-              isHex(input.charCodeAt(i + 4)) &&
-              isHex(input.charCodeAt(i + 5))
-            ) {
+            let j = 2
+            while (j < 6 && isHex(input.charCodeAt(i + j))) {
+              j++
+            }
+
+            if (j === 6) {
               output.push(input.substring(i, i + 6))
               i += 6
+            } else if (input.isEnd(i + j)) {
+              // repair invalid or truncated unicode char at the end of the text
+              // by removing the unicode char and ending the string here
+              i += j
             } else {
-              throwInvalidUnicodeCharacter(i)
+              throwInvalidUnicodeCharacter()
             }
           } else {
             // repair invalid escape character: remove it
@@ -829,12 +833,8 @@ export function jsonrepairTransform({
     throw new JSONRepairError('Colon expected', i)
   }
 
-  function throwInvalidUnicodeCharacter(start: number) {
-    let end = start + 2
-    while (/\w/.test(input.charAt(end))) {
-      end++
-    }
-    const chars = input.substring(start, end)
+  function throwInvalidUnicodeCharacter() {
+    const chars = input.substring(i, i + 6)
     throw new JSONRepairError(`Invalid unicode character "${chars}"`, i)
   }
 
