@@ -83,10 +83,12 @@ export function createOutputBuffer({
     const bufferIndex = buffer.lastIndexOf(textToStrip)
 
     if (bufferIndex !== -1) {
+      const index = offset + bufferIndex
+
       if (stripRemainingText) {
-        remove(offset + bufferIndex)
+        remove(index)
       } else {
-        remove(offset + bufferIndex, offset + bufferIndex + textToStrip.length)
+        remove(index, index + textToStrip.length)
       }
     }
   }
