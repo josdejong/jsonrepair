@@ -17,6 +17,11 @@
       "import": "./lib/esm/index.js",
       "require": "./lib/cjs/index.js",
       "types": "./lib/types/index.d.ts"
+    },
+    "./stream": {
+      "import": "./lib/esm/stream.js",
+      "require": "./lib/cjs/stream.js",
+      "types": "./lib/types/stream.d.ts"
     }
   },
   "keywords": [

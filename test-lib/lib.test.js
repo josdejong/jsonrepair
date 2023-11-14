@@ -13,10 +13,22 @@ describe('lib', () => {
     expect(result).toBe('{"name": "John"}\n')
   })
 
+  test('should load the library using CJS (streaming)', async () => {
+    const filename = join(__dirname, 'apps/cjsAppStreaming.cjs')
+    const result = await run(`node ${filename}`)
+    expect(result).toBe('{"name": "John"}')
+  })
+
   test('should load the library using ESM', async () => {
     const filename = join(__dirname, 'apps/esmApp.mjs')
     const result = await run(`node ${filename}`)
     expect(result).toBe('{"name": "John"}\n')
+  })
+
+  test('should load the library using ESM (streaming)', async () => {
+    const filename = join(__dirname, 'apps/esmAppStreaming.mjs')
+    const result = await run(`node ${filename}`)
+    expect(result).toBe('{"name": "John"}')
   })
 
   test('should load the library using UMD bundle', async () => {

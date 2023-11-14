@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 import { createReadStream, createWriteStream, readFileSync, renameSync } from 'fs'
 import { dirname, join } from 'path'
-import { Transform } from 'stream'
 import { fileURLToPath } from 'url'
-import { jsonrepairTransform } from '../lib/esm/index.js'
+import { jsonrepairTransform } from '../lib/esm/stream.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -118,23 +117,8 @@ function noop() {}
 // Warning: onFinish does not fire when using process.stdout,
 // see https://github.com/nodejs/node/issues/7606
 function streamIt({ readStream, writeStream, onFinish = noop }) {
-  const repair = jsonrepairTransform({
-    onData: (chunk) => transform.push(chunk)
-  })
-
-  const transform = new Transform({
-    transform(data, encoding, callback) {
-      repair.transform(data)
-      callback()
-    },
-    flush(callback) {
-      repair.flush()
-      callback()
-    }
-  })
-
   readStream
-    .pipe(transform)
+    .pipe(jsonrepairTransform())
     .pipe(writeStream)
     .on('error', (err) => process.stderr.write(err.toString()))
     .on('finish', onFinish)

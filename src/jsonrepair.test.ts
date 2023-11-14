@@ -1,6 +1,5 @@
-import { readFileSync } from 'fs'
+import { deepStrictEqual, strictEqual, throws } from 'assert'
 import { describe, test } from 'vitest'
-import { strictEqual, deepStrictEqual, throws } from 'assert'
 import { jsonrepair } from './index.js'
 import { JSONRepairError } from './JSONRepairError.js'
 

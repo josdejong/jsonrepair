@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'vitest'
-import { jsonrepairTransform } from './transform'
+import { jsonrepairCore } from './core'
 
-describe('transform', () => {
+describe('core', () => {
   test('it should transform input in chunks', () => {
-    const { chunks, transform } = createTransform({ bufferSize: 4, chunkSize: 2 })
+    const { chunks, transform } = createCore({ bufferSize: 4, chunkSize: 2 })
 
     transform.transform('[1')
     transform.transform('2,')
@@ -24,7 +24,7 @@ describe('transform', () => {
 
   test.skip('it should throw an error when having a too small input buffer', () => {
     // FIXME: test having a too small input buffer
-    const { transform } = createTransform({ bufferSize: 4, chunkSize: 2 })
+    const { transform } = createCore({ bufferSize: 4, chunkSize: 2 })
     transform.transform('1234')
 
     expect(() => {
@@ -37,9 +37,9 @@ describe('transform', () => {
   })
 })
 
-function createTransform(options?: { chunkSize: number; bufferSize: number }) {
+function createCore(options?: { chunkSize: number; bufferSize: number }) {
   const chunks: string[] = []
-  const transform = jsonrepairTransform({
+  const transform = jsonrepairCore({
     bufferSize: options.bufferSize,
     chunkSize: options.chunkSize,
     onData: (chunk) => {

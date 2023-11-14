@@ -36,17 +36,6 @@ import {
   isWhitespace
 } from './stringUtils.js'
 
-export interface TransformProps {
-  onData: (chunk: string) => void
-  chunkSize?: number
-  bufferSize?: number
-}
-
-export interface Transform {
-  transform: (chunk: string) => void
-  flush: () => void
-}
-
 const enum Caret {
   beforeValue = 'beforeValue',
   afterValue = 'afterValue',
@@ -87,11 +76,22 @@ const escapeCharacters: { [key: string]: string } = {
   // note that \u is handled separately in parseString()
 }
 
-export function jsonrepairTransform({
+export interface JsonRepairCoreProps {
+  onData: (chunk: string) => void
+  chunkSize?: number
+  bufferSize?: number
+}
+
+export interface JsonRepairCore {
+  transform: (chunk: string) => void
+  flush: () => void
+}
+
+export function jsonrepairCore({
   onData,
   bufferSize = 65536,
   chunkSize = 65536
-}: TransformProps): Transform {
+}: JsonRepairCoreProps): JsonRepairCore {
   const input = createInputBuffer()
 
   const output = createOutputBuffer({
