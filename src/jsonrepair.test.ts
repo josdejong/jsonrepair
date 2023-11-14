@@ -1,3 +1,4 @@
+import { readFileSync } from 'fs'
 import { describe, test } from 'vitest'
 import { strictEqual, deepStrictEqual, throws } from 'assert'
 import { jsonrepair } from './index.js'
@@ -345,6 +346,8 @@ describe('jsonrepair', () => {
       strictEqual(jsonrepair('{"a":2,]'), '{"a":2}')
       strictEqual(jsonrepair('{}}'), '{}')
       strictEqual(jsonrepair('[2,}'), '[2]')
+      strictEqual(jsonrepair('[}'), '[]')
+      strictEqual(jsonrepair('{]'), '{}')
     })
 
     test('should add a missing closing bracket for an array', () => {
@@ -613,6 +616,16 @@ describe('jsonrepair', () => {
       },
       new JSONRepairError('Invalid unicode character "\\uZ000"', 1)
     )
+  })
+
+  test('performance', () => {
+    const input = String(readFileSync('C:\\Users\\wjosd\\data\\json\\ships.json'))
+
+    console.time('repair')
+    jsonrepair(input)
+    console.timeEnd('repair')
+
+    console.log('done', { bytes: input.length })
   })
 })
 
