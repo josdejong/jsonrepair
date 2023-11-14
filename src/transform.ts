@@ -47,17 +47,13 @@ export interface Transform {
   flush: () => void
 }
 
-// TODO: change to numbers if faster?
-// TODO: change to a normal object so it is serializable?
-enum Caret {
+const enum Caret {
   beforeValue = 'beforeValue',
   afterValue = 'afterValue',
   beforeKey = 'beforeKey'
 }
 
-// TODO: change to numbers if faster?
-// TODO: change to a normal object so it is serializable?
-enum StackType {
+const enum StackType {
   root = 'root',
   object = 'object',
   array = 'array',
