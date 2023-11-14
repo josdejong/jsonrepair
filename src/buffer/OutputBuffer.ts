@@ -60,20 +60,14 @@ export function createOutputBuffer({
     flushChunks()
   }
 
-  function remove(start: number, end?: number): string {
+  function remove(start: number, end = offset + buffer.length): string {
     if (start < offset) {
       throw new Error(`Cannot remove: ${flushedMessage}`)
     }
 
-    if (end === undefined) {
-      const removed = buffer.substring(start - offset)
-      buffer = buffer.substring(0, start - offset)
-      return removed
-    } else {
-      const removed = buffer.substring(start - offset, end - offset)
-      buffer = buffer.substring(0, start - offset) + buffer.substring(end - offset)
-      return removed
-    }
+    const removed = buffer.substring(start - offset, end - offset)
+    buffer = buffer.substring(0, start - offset) + buffer.substring(end - offset)
+    return removed
   }
 
   function length(): number {
