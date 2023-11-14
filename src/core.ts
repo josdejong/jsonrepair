@@ -34,7 +34,7 @@ import {
   isStartOfValue,
   isValidStringCharacter,
   isWhitespace
-} from './utils/stringUtils'
+} from './utils/stringUtils.js'
 
 const enum Caret {
   beforeValue = 'beforeValue',
