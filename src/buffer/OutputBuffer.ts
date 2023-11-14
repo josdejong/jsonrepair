@@ -27,22 +27,17 @@ export function createOutputBuffer({
   let buffer = ''
   let offset = 0
 
-  function flushChunks() {
-    while (buffer.length >= bufferSize + chunkSize) {
+  function flushChunks(minSize = bufferSize) {
+    while (buffer.length >= minSize + chunkSize) {
       const chunk = buffer.substring(0, chunkSize)
       write(chunk)
-      buffer = buffer.substring(chunkSize)
       offset += chunkSize
+      buffer = buffer.substring(chunkSize)
     }
   }
 
   function flush() {
-    while (buffer.length >= chunkSize) {
-      const chunk = buffer.substring(0, chunkSize)
-      write(chunk)
-      buffer = buffer.substring(chunkSize)
-      offset += chunkSize
-    }
+    flushChunks(0)
 
     if (buffer.length > 0) {
       write(buffer)
