@@ -53,7 +53,7 @@ export function createOutputBuffer({
 
   function unshift(text: string) {
     if (offset > 0) {
-      throw new Error('Cannot unshift: start of the output is already flushed from the buffer')
+      throw new Error(`Cannot unshift: ${flushedMessage}`)
     }
 
     buffer = text + buffer
@@ -62,7 +62,7 @@ export function createOutputBuffer({
 
   function remove(start: number, end?: number): string {
     if (start < offset) {
-      throw new Error('Cannot remove: start of the output is already flushed from the buffer')
+      throw new Error(`Cannot remove: ${flushedMessage}`)
     }
 
     if (end === undefined) {
@@ -109,9 +109,7 @@ export function createOutputBuffer({
     }
 
     if (bufferIndex <= 0) {
-      throw new Error(
-        'Cannot insertBeforeLastWhitespace: start of the output is already flushed from the buffer'
-      )
+      throw new Error(`Cannot insertBeforeLastWhitespace: ${flushedMessage}`)
     }
 
     buffer = buffer.substring(0, bufferIndex) + textToInsert + buffer.substring(bufferIndex)
@@ -136,3 +134,5 @@ export function createOutputBuffer({
     flush
   }
 }
+
+const flushedMessage = 'start of the output is already flushed from the buffer'
