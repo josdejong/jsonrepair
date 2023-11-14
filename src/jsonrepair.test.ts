@@ -617,16 +617,6 @@ describe('jsonrepair', () => {
       new JSONRepairError('Invalid unicode character "\\uZ000"', 1)
     )
   })
-
-  test('performance', () => {
-    const input = String(readFileSync('C:\\Users\\wjosd\\data\\json\\ships.json'))
-
-    console.time('repair')
-    jsonrepair(input)
-    console.timeEnd('repair')
-
-    console.log('done', { bytes: input.length })
-  })
 })
 
 function assertRepair(text: string) {
