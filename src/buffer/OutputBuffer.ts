@@ -65,8 +65,10 @@ export function createOutputBuffer({
       throw new Error(`Cannot remove: ${flushedMessage}`)
     }
 
-    const removed = buffer.substring(start - offset, end - offset)
-    buffer = buffer.substring(0, start - offset) + buffer.substring(end - offset)
+    const s = start - offset
+    const e = end - offset
+    const removed = buffer.substring(s, e)
+    buffer = buffer.substring(0, s) + buffer.substring(e)
     return removed
   }
 
