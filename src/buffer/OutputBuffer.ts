@@ -1,4 +1,4 @@
-import { isWhitespace } from '../stringUtils.js'
+import { isWhitespace } from '../utils/stringUtils'
 
 export interface OutputBuffer {
   push: (text: string) => void

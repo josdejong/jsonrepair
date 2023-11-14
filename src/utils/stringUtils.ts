@@ -1,4 +1,3 @@
-// TODO: sort the codes
 export const codeBackslash = 0x5c // "\"
 export const codeSlash = 0x2f // "/"
 export const codeAsterisk = 0x2a // "*"
@@ -18,8 +17,8 @@ export const codeDoubleQuote = 0x0022 // "
 export const codePlus = 0x2b // "+"
 export const codeMinus = 0x2d // "-"
 export const codeQuote = 0x27 // "'"
-export const codeZero = 0x30
-export const codeNine = 0x39
+export const codeZero = 0x30 // "0"
+export const codeNine = 0x39 // "9"
 export const codeComma = 0x2c // ","
 export const codeDot = 0x2e // "." (dot, period)
 export const codeColon = 0x3a // ":"
