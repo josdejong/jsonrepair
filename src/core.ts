@@ -100,6 +100,29 @@ export function jsonrepairCore({
   const stack: StackType[] = [StackType.root]
   let caret = Caret.beforeValue
 
+  const processed = Symbol('processed')
+  type Processed = typeof processed
+
+  function popStack(): Processed {
+    stack.pop()
+    caret = Caret.afterValue
+
+    return processed
+  }
+
+  function pushStack(type: StackType, newCaret: Caret): Processed {
+    stack.push(type)
+    caret = newCaret
+
+    return processed
+  }
+
+  function updateCaret(newCaret: Caret): Processed {
+    caret = newCaret
+
+    return processed
+  }
+
   function flushInputBuffer() {
     while (iFlushed < i - bufferSize - chunkSize) {
       iFlushed += chunkSize
@@ -125,7 +148,7 @@ export function jsonrepairCore({
     output.flush()
   }
 
-  function process(): boolean {
+  function process(): Processed | null {
     // console.log('process', last(stack)) // FIXME: cleanup
 
     parseWhitespaceAndSkipComments()
@@ -135,33 +158,24 @@ export function jsonrepairCore({
         if (parseObjectStart()) {
           parseWhitespaceAndSkipComments()
           if (parseObjectEnd()) {
-            caret = Caret.afterValue
-            return true
+            return updateCaret(Caret.afterValue)
           }
 
-          stack.push(StackType.object)
-          caret = Caret.beforeKey
-
-          return true
+          return pushStack(StackType.object, Caret.beforeKey)
         }
 
         if (parseArrayStart()) {
           parseWhitespaceAndSkipComments()
           if (parseArrayEnd()) {
-            caret = Caret.afterValue
-            return true
+            return updateCaret(Caret.afterValue)
           }
 
-          stack.push(StackType.array)
-          caret = Caret.beforeValue
-
-          return true
+          return pushStack(StackType.array, Caret.beforeValue)
         }
 
         const processed = parseString() || parseNumber() || parseKeywords()
         if (processed) {
-          caret = Caret.afterValue
-          return true
+          return updateCaret(Caret.afterValue)
         }
 
         const unquotedStringEnd = findNextDelimiter()
@@ -175,9 +189,7 @@ export function jsonrepairCore({
             // Or a JSONP function call like callback({...});
             // we strip the function call
 
-            stack.push(StackType.dataType)
-            caret = Caret.beforeValue
-            return true
+            return pushStack(StackType.dataType, Caret.beforeValue)
           }
 
           output.push(symbol === 'undefined' ? 'null' : JSON.stringify(symbol))
@@ -187,29 +199,25 @@ export function jsonrepairCore({
             i++
           }
 
-          caret = Caret.afterValue
-          return true
+          return updateCaret(Caret.afterValue)
         }
 
         if (last(stack) === StackType.object) {
           // repair missing object value
           output.push('null')
-          caret = Caret.afterValue
-          return true
+          return updateCaret(Caret.afterValue)
         }
 
         if (last(stack) === StackType.array) {
           // repair trailing comma
           output.stripLastOccurrence(',')
-          caret = Caret.afterValue
-          return true
+          return updateCaret(Caret.afterValue)
         }
 
         if (last(stack) === StackType.ndJson) {
           // repair trailing comma
           output.stripLastOccurrence(',')
-          caret = Caret.afterValue
-          return true
+          return updateCaret(Caret.afterValue)
         }
 
         if (input.isEnd(i)) {
@@ -224,89 +232,70 @@ export function jsonrepairCore({
         switch (last(stack)) {
           case StackType.object: {
             if (parseCharacter(codeComma)) {
-              caret = Caret.beforeKey
-              return true
+              return updateCaret(Caret.beforeKey)
             }
 
             if (parseObjectEnd()) {
-              stack.pop()
-              caret = Caret.afterValue
-              return true
+              return popStack()
             }
 
             // repair missing object end and trailing comma
             if (input.charAt(i) === '{') {
               output.stripLastOccurrence(',')
               output.insertBeforeLastWhitespace('}')
-              stack.pop()
-              caret = Caret.afterValue
-              return true
+              return popStack()
             }
 
             // repair missing comma
             if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
               output.insertBeforeLastWhitespace(',')
-              caret = Caret.beforeKey
-              return true
+              return updateCaret(Caret.beforeKey)
             }
 
             // repair missing closing brace
             output.insertBeforeLastWhitespace('}')
-            stack.pop()
-            caret = Caret.afterValue
-            return true
+            return popStack()
           }
 
           case StackType.array: {
             if (parseCharacter(codeComma)) {
               caret = Caret.beforeValue
-              return true
+              return updateCaret(Caret.beforeValue)
             }
 
             if (parseArrayEnd()) {
-              stack.pop()
-              caret = Caret.afterValue
-              return true
+              return popStack()
             }
 
             // repair missing comma
             if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
               output.insertBeforeLastWhitespace(',')
-              caret = Caret.beforeValue
-              return true
+              return updateCaret(Caret.beforeValue)
             }
 
             // repair missing closing bracket
             output.insertBeforeLastWhitespace(']')
-            stack.pop()
-            caret = Caret.afterValue
-            return true
+            return popStack()
           }
 
           case StackType.ndJson: {
             if (parseCharacter(codeComma)) {
-              caret = Caret.beforeValue
-              return true
+              return updateCaret(Caret.beforeValue)
             }
 
             if (parseArrayEnd()) {
-              stack.pop()
-              caret = Caret.afterValue
-              return true
+              return popStack()
             }
 
             // repair missing comma
             if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
               output.insertBeforeLastWhitespace(',')
-              caret = Caret.beforeValue
-              return true
+              return updateCaret(Caret.beforeValue)
             }
 
             if (input.isEnd(i)) {
               output.push('\n]')
-              stack.pop()
-              caret = Caret.afterValue
-              return true
+              return popStack()
             }
           }
 
@@ -316,9 +305,7 @@ export function jsonrepairCore({
               skipCharacter(codeSemicolon)
             }
 
-            stack.pop()
-            caret = Caret.afterValue
-            return true
+            return popStack()
           }
 
           case StackType.root: {
@@ -334,16 +321,15 @@ export function jsonrepairCore({
               }
 
               output.unshift('[\n')
-              stack.push(StackType.ndJson)
-              caret = Caret.beforeValue
-              return true
+
+              return pushStack(StackType.ndJson, Caret.beforeValue)
             }
 
             if (processedComma) {
               // repair: remove trailing comma
               output.stripLastOccurrence(',')
 
-              return true
+              return updateCaret(Caret.afterValue)
             }
 
             // repair redundant end braces and brackets
@@ -359,11 +345,11 @@ export function jsonrepairCore({
               throwUnexpectedCharacter()
             }
 
-            return false
+            return null
           }
 
           default:
-            return false
+            return null
         }
       }
 
@@ -374,16 +360,14 @@ export function jsonrepairCore({
 
           if (parseCharacter(codeColon)) {
             // expect a value after the :
-            caret = Caret.beforeValue
-            return true
+            return updateCaret(Caret.beforeValue)
           }
 
           const truncatedText = input.isEnd(i)
           if (isStartOfValue(input.charAt(i)) || truncatedText) {
             // repair missing colon
             output.insertBeforeLastWhitespace(':')
-            caret = Caret.beforeValue
-            return true
+            return updateCaret(Caret.beforeValue)
           }
 
           throwColonExpected()
@@ -395,8 +379,7 @@ export function jsonrepairCore({
 
         // repair trailing comma
         output.stripLastOccurrence(',')
-        caret = Caret.afterValue
-        return true
+        return updateCaret(Caret.afterValue)
       }
     }
   }
