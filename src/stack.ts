@@ -9,7 +9,7 @@ export const enum StackType {
   object = 'object',
   array = 'array',
   ndJson = 'ndJson',
-  dataType = 'dataType'
+  functionCall = 'dataType'
 }
 
 export function createStack() {

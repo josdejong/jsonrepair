@@ -117,72 +117,76 @@ export function jsonrepairCore({
     switch (stack.type) {
       case StackType.object: {
         switch (stack.caret) {
-          case Caret.beforeKey: {
-            return processObjectKey() ||
-              processUnexpectedColon() ||
-              processRepairTrailingComma()
-          }
-          case Caret.beforeValue: {
-            return processValue()
-          }
-          case Caret.afterValue: {
-            return processObjectComma() ||
-              processObjectEnd() ||
-              processRepairObjectEndOrComma()
-          }
+          case Caret.beforeKey: return (
+            processObjectKey() ||
+            processUnexpectedColon() ||
+            processRepairTrailingComma()
+          )
+          case Caret.beforeValue: return (
+            processValue() ||
+            processRepairMissingObjectValue()
+          )
+          case Caret.afterValue: return (
+            processObjectComma() ||
+            processObjectEnd() ||
+            processRepairObjectEndOrComma()
+          )
           default: return false
         }
       }
 
       case StackType.array: {
         switch (stack.caret) {
-          case Caret.beforeValue: {
-            return processValue()
-          }
-          case Caret.afterValue: {
-            return processArrayComma() ||
-              processArrayEnd() ||
-              processRepairMissingArrayComma() ||
-              processRepairArrayEnd()
-          }
+          case Caret.beforeValue: return (
+            processValue() ||
+            processRepairTrailingComma()
+          )
+          case Caret.afterValue: return (
+            processArrayComma() ||
+            processArrayEnd() ||
+            processRepairMissingComma() ||
+            processRepairArrayEnd()
+          )
           default: return false
         }
       }
 
       case StackType.ndJson: {
         switch (stack.caret) {
-          case Caret.beforeValue: {
-            return processValue()
-          }
-          case Caret.afterValue: {
-            return processArrayComma() ||
-              processRepairMissingArrayComma() ||
-              processRepairNdJsonEnd()
-          }
+          case Caret.beforeValue: return (
+            processValue() ||
+            processRepairTrailingComma()
+          )
+          case Caret.afterValue: return (
+            processArrayComma() ||
+            processRepairMissingComma() ||
+            processRepairNdJsonEnd()
+          )
           default: return false
         }
       }
 
-      case StackType.dataType: {
+      case StackType.functionCall: {
         switch (stack.caret) {
-          case Caret.beforeValue: {
-            return processValue()
-          }
-          case Caret.afterValue: {
-            return processDataTypeEnd()
-          }
+          case Caret.beforeValue: return (
+            processValue()
+          )
+          case Caret.afterValue: return (
+            processFunctionCallEnd()
+          )
           default: return false
         }
       }
 
       case StackType.root: {
         switch (stack.caret) {
-          case Caret.beforeValue: {
-            return processValue()
-          }
-          case Caret.afterValue: {
-            return processRootEnd()
-          }
+          case Caret.beforeValue: return (
+            processValue() ||
+            processUnexpectedEnd()
+          )
+          case Caret.afterValue: return (
+            processRootEnd()
+          )
           default: return false
         }
       }
@@ -195,10 +199,7 @@ export function jsonrepairCore({
     return processObjectStart() ||
       processArrayStart() ||
       processPrimitiveValue() ||
-      processRepairUnquotedString() ||
-      processRepairMissingObjectValue() ||
-      processRepairTrailingCommaInArray() ||
-      processUnexpectedEnd()
+      processRepairUnquotedString()
   }
 
   function processObjectStart(): boolean {
@@ -247,7 +248,7 @@ export function jsonrepairCore({
         // Or a JSONP function call like callback({...});
         // we strip the function call
 
-        return stack.push(StackType.dataType, Caret.beforeValue)
+        return stack.push(StackType.functionCall, Caret.beforeValue)
       }
 
       output.push(symbol === 'undefined' ? 'null' : JSON.stringify(symbol))
@@ -273,19 +274,9 @@ export function jsonrepairCore({
     return false
   }
 
-  // FIXME: cleanup, replace with the next function
-  function processRepairTrailingCommaInArray(): boolean {
-    if (stack.type === StackType.array || stack.type === StackType.ndJson) {
-      // repair trailing comma
-      output.stripLastOccurrence(',')
-      return stack.update(Caret.afterValue)
-    }
-
-    return false
-  }
-
   function processRepairTrailingComma(): true {
     // repair trailing comma
+    // FIXME: should verify that there actually is a trailing comma before the last whitespace
     output.stripLastOccurrence(',')
     return stack.update(Caret.afterValue)
   }
@@ -382,7 +373,7 @@ export function jsonrepairCore({
     return false
   }
 
-  function processRepairMissingArrayComma(): boolean {
+  function processRepairMissingComma(): boolean {
     // repair missing comma
     if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
       output.insertBeforeLastWhitespace(',')
@@ -407,7 +398,7 @@ export function jsonrepairCore({
     }
   }
 
-  function processDataTypeEnd(): true {
+  function processFunctionCallEnd(): true {
     if (skipCharacter(codeCloseParenthesis)) {
       skipCharacter(codeSemicolon)
     }
