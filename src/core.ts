@@ -114,57 +114,91 @@ export function jsonrepairCore({
   function process(): boolean {
     parseWhitespaceAndSkipComments()
 
-    switch (stack.caret) {
-      case Caret.beforeValue: {
-        return processObjectStart() ||
-          processArrayStart() ||
-          processPrimitiveValue() ||
-          processRepairUnquotedString() ||
-          processRepairMissingObjectValue() ||
-          processRepairTrailingCommaInArray() ||
-          processUnexpectedEnd()
-      }
-
-      case Caret.afterValue: {
-        switch (stack.type) {
-          case StackType.object: {
+    switch (stack.type) {
+      case StackType.object: {
+        switch (stack.caret) {
+          case Caret.beforeKey: {
+            return processObjectKey() ||
+              processUnexpectedColon() ||
+              processRepairTrailingComma()
+          }
+          case Caret.beforeValue: {
+            return processValue()
+          }
+          case Caret.afterValue: {
             return processObjectComma() ||
               processObjectEnd() ||
               processRepairObjectEndOrComma()
           }
+          default: return false
+        }
+      }
 
-          case StackType.array: {
+      case StackType.array: {
+        switch (stack.caret) {
+          case Caret.beforeValue: {
+            return processValue()
+          }
+          case Caret.afterValue: {
             return processArrayComma() ||
               processArrayEnd() ||
               processRepairMissingArrayComma() ||
               processRepairArrayEnd()
           }
+          default: return false
+        }
+      }
 
-          case StackType.ndJson: {
+      case StackType.ndJson: {
+        switch (stack.caret) {
+          case Caret.beforeValue: {
+            return processValue()
+          }
+          case Caret.afterValue: {
             return processArrayComma() ||
               processRepairMissingArrayComma() ||
               processRepairNdJsonEnd()
           }
-
-          case StackType.dataType: {
-            return processDataTypeEnd()
-          }
-
-          case StackType.root: {
-            return processRoot()
-          }
-
-          default:
-            return false
+          default: return false
         }
       }
 
-      case Caret.beforeKey: {
-        return processObjectKey() ||
-          processUnexpectedColon() ||
-          processRepairTrailingComma()
+      case StackType.dataType: {
+        switch (stack.caret) {
+          case Caret.beforeValue: {
+            return processValue()
+          }
+          case Caret.afterValue: {
+            return processDataTypeEnd()
+          }
+          default: return false
+        }
       }
+
+      case StackType.root: {
+        switch (stack.caret) {
+          case Caret.beforeValue: {
+            return processValue()
+          }
+          case Caret.afterValue: {
+            return processRootEnd()
+          }
+          default: return false
+        }
+      }
+
+      default: return false
     }
+  }
+
+  function processValue(): boolean {
+    return processObjectStart() ||
+      processArrayStart() ||
+      processPrimitiveValue() ||
+      processRepairUnquotedString() ||
+      processRepairMissingObjectValue() ||
+      processRepairTrailingCommaInArray() ||
+      processUnexpectedEnd()
   }
 
   function processObjectStart(): boolean {
@@ -183,7 +217,7 @@ export function jsonrepairCore({
   function processArrayStart(): boolean {
     if (parseCharacter(codeOpeningBracket)) {
       parseWhitespaceAndSkipComments()
-      if (parseArrayEnd()) {
+      if (parseCharacter(codeClosingBracket)) {
         return stack.update(Caret.afterValue)
       }
 
@@ -191,10 +225,6 @@ export function jsonrepairCore({
     }
 
     return false
-  }
-
-  function parseArrayEnd(): boolean {
-    return parseCharacter(codeClosingBracket)
   }
 
   function processPrimitiveValue(): boolean {
@@ -385,7 +415,7 @@ export function jsonrepairCore({
     return stack.pop()
   }
 
-  function processRoot(): boolean {
+  function processRootEnd(): boolean {
     const processedComma = parseCharacter(codeComma)
     parseWhitespaceAndSkipComments()
 
