@@ -50,11 +50,6 @@ const enum StackType {
   dataType = 'dataType'
 }
 
-type StackEntry = {
-  type: StackType
-  caret: Caret
-}
-
 const controlCharacters: { [key: string]: string } = {
   '\b': '\\b',
   '\f': '\\f',
@@ -102,7 +97,8 @@ export function jsonrepairCore({
 
   let i = 0
   let iFlushed = 0
-  const stack: StackEntry[] = [{ type: StackType.root, caret: Caret.beforeValue }] // FIXME: refactor stack
+  const stack: StackType[] = [StackType.root]
+  let caret = Caret.beforeValue
 
   function flushInputBuffer() {
     while (iFlushed < i - bufferSize - chunkSize) {
@@ -134,43 +130,37 @@ export function jsonrepairCore({
 
     parseWhitespaceAndSkipComments()
 
-    switch (last(stack).caret) {
+    switch (caret) {
       case Caret.beforeValue: {
         if (parseObjectStart()) {
-          last(stack).caret = Caret.afterValue
-
           parseWhitespaceAndSkipComments()
           if (parseObjectEnd()) {
+            caret = Caret.afterValue
             return true
           }
 
-          stack.push({
-            type: StackType.object,
-            caret: Caret.beforeKey
-          })
+          stack.push(StackType.object)
+          caret = Caret.beforeKey
 
           return true
         }
 
         if (parseArrayStart()) {
-          last(stack).caret = Caret.afterValue
-
           parseWhitespaceAndSkipComments()
           if (parseArrayEnd()) {
+            caret = Caret.afterValue
             return true
           }
 
-          stack.push({
-            type: StackType.array,
-            caret: Caret.beforeValue
-          })
+          stack.push(StackType.array)
+          caret = Caret.beforeValue
 
           return true
         }
 
         const processed = parseString() || parseNumber() || parseKeywords()
         if (processed) {
-          last(stack).caret = Caret.afterValue
+          caret = Caret.afterValue
           return true
         }
 
@@ -185,11 +175,8 @@ export function jsonrepairCore({
             // Or a JSONP function call like callback({...});
             // we strip the function call
 
-            last(stack).caret = Caret.afterValue
-            stack.push({
-              type: StackType.dataType,
-              caret: Caret.beforeValue
-            })
+            stack.push(StackType.dataType)
+            caret = Caret.beforeValue
             return true
           }
 
@@ -200,28 +187,28 @@ export function jsonrepairCore({
             i++
           }
 
-          last(stack).caret = Caret.afterValue
+          caret = Caret.afterValue
           return true
         }
 
-        if (last(stack).type === StackType.object) {
+        if (last(stack) === StackType.object) {
           // repair missing object value
           output.push('null')
-          last(stack).caret = Caret.afterValue
+          caret = Caret.afterValue
           return true
         }
 
-        if (last(stack).type === StackType.array) {
+        if (last(stack) === StackType.array) {
           // repair trailing comma
           output.stripLastOccurrence(',')
-          last(stack).caret = Caret.afterValue
+          caret = Caret.afterValue
           return true
         }
 
-        if (last(stack).type === StackType.ndJson) {
+        if (last(stack) === StackType.ndJson) {
           // repair trailing comma
           output.stripLastOccurrence(',')
-          last(stack).caret = Caret.afterValue
+          caret = Caret.afterValue
           return true
         }
 
@@ -234,15 +221,16 @@ export function jsonrepairCore({
 
       // eslint-disable-next-line no-fallthrough
       case Caret.afterValue: {
-        switch (last(stack).type) {
+        switch (last(stack)) {
           case StackType.object: {
             if (parseCharacter(codeComma)) {
-              last(stack).caret = Caret.beforeKey
+              caret = Caret.beforeKey
               return true
             }
 
             if (parseObjectEnd()) {
               stack.pop()
+              caret = Caret.afterValue
               return true
             }
 
@@ -251,67 +239,73 @@ export function jsonrepairCore({
               output.stripLastOccurrence(',')
               output.insertBeforeLastWhitespace('}')
               stack.pop()
+              caret = Caret.afterValue
               return true
             }
 
             // repair missing comma
             if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
               output.insertBeforeLastWhitespace(',')
-              last(stack).caret = Caret.beforeKey
+              caret = Caret.beforeKey
               return true
             }
 
             // repair missing closing brace
             output.insertBeforeLastWhitespace('}')
             stack.pop()
+            caret = Caret.afterValue
             return true
           }
 
           case StackType.array: {
             if (parseCharacter(codeComma)) {
-              last(stack).caret = Caret.beforeValue
+              caret = Caret.beforeValue
               return true
             }
 
             if (parseArrayEnd()) {
               stack.pop()
+              caret = Caret.afterValue
               return true
             }
 
             // repair missing comma
             if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
               output.insertBeforeLastWhitespace(',')
-              last(stack).caret = Caret.beforeValue
+              caret = Caret.beforeValue
               return true
             }
 
             // repair missing closing bracket
             output.insertBeforeLastWhitespace(']')
             stack.pop()
+            caret = Caret.afterValue
             return true
           }
 
           case StackType.ndJson: {
             if (parseCharacter(codeComma)) {
-              last(stack).caret = Caret.beforeValue
+              caret = Caret.beforeValue
               return true
             }
 
             if (parseArrayEnd()) {
               stack.pop()
+              caret = Caret.afterValue
               return true
             }
 
             // repair missing comma
             if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
               output.insertBeforeLastWhitespace(',')
-              last(stack).caret = Caret.beforeValue
+              caret = Caret.beforeValue
               return true
             }
 
             if (input.isEnd(i)) {
               output.push('\n]')
               stack.pop()
+              caret = Caret.afterValue
               return true
             }
           }
@@ -323,6 +317,7 @@ export function jsonrepairCore({
             }
 
             stack.pop()
+            caret = Caret.afterValue
             return true
           }
 
@@ -339,10 +334,8 @@ export function jsonrepairCore({
               }
 
               output.unshift('[\n')
-              stack.push({
-                type: StackType.ndJson,
-                caret: Caret.beforeValue
-              })
+              stack.push(StackType.ndJson)
+              caret = Caret.beforeValue
               return true
             }
 
@@ -381,7 +374,7 @@ export function jsonrepairCore({
 
           if (parseCharacter(codeColon)) {
             // expect a value after the :
-            last(stack).caret = Caret.beforeValue
+            caret = Caret.beforeValue
             return true
           }
 
@@ -389,7 +382,7 @@ export function jsonrepairCore({
           if (isStartOfValue(input.charAt(i)) || truncatedText) {
             // repair missing colon
             output.insertBeforeLastWhitespace(':')
-            last(stack).caret = Caret.beforeValue
+            caret = Caret.beforeValue
             return true
           }
 
@@ -402,7 +395,7 @@ export function jsonrepairCore({
 
         // repair trailing comma
         output.stripLastOccurrence(',')
-        last(stack).caret = Caret.afterValue
+        caret = Caret.afterValue
         return true
       }
     }
@@ -541,10 +534,10 @@ export function jsonrepairCore({
       const isEndQuote = isDoubleQuote(input.charCodeAt(i))
         ? isDoubleQuote
         : isSingleQuote(input.charCodeAt(i))
-        ? isSingleQuote // eslint-disable-line indent
-        : isSingleQuoteLike(input.charCodeAt(i)) // eslint-disable-line indent
-        ? isSingleQuoteLike // eslint-disable-line indent
-        : isDoubleQuoteLike // eslint-disable-line indent
+          ? isSingleQuote // eslint-disable-line indent
+          : isSingleQuoteLike(input.charCodeAt(i)) // eslint-disable-line indent
+            ? isSingleQuoteLike // eslint-disable-line indent
+            : isDoubleQuoteLike // eslint-disable-line indent
 
       output.push('"')
       i++
