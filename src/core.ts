@@ -116,196 +116,42 @@ export function jsonrepairCore({
 
     switch (stack.caret) {
       case Caret.beforeValue: {
-        if (parseObjectStart()) {
-          parseWhitespaceAndSkipComments()
-          if (parseObjectEnd()) {
-            return stack.update(Caret.afterValue)
-          }
-
-          return stack.push(StackType.object, Caret.beforeKey)
-        }
-
-        if (parseArrayStart()) {
-          parseWhitespaceAndSkipComments()
-          if (parseArrayEnd()) {
-            return stack.update(Caret.afterValue)
-          }
-
-          return stack.push(StackType.array, Caret.beforeValue)
-        }
-
-        const processed = parseString() || parseNumber() || parseKeywords()
-        if (processed) {
-          return stack.update(Caret.afterValue)
-        }
-
-        const unquotedStringEnd = findNextDelimiter()
-        if (unquotedStringEnd !== null) {
-          const symbol = input.substring(i, unquotedStringEnd)
-          i = unquotedStringEnd
-
-          // skipWhitespace()
-          if (skipCharacter(codeOpenParenthesis)) {
-            // A MongoDB function call like NumberLong("2")
-            // Or a JSONP function call like callback({...});
-            // we strip the function call
-
-            return stack.push(StackType.dataType, Caret.beforeValue)
-          }
-
-          output.push(symbol === 'undefined' ? 'null' : JSON.stringify(symbol))
-
-          if (input.charCodeAt(i) === codeDoubleQuote) {
-            // we had a missing start quote, but now we encountered the end quote, so we can skip that one
-            i++
-          }
-
-          return stack.update(Caret.afterValue)
-        }
-
-        if (stack.type === StackType.object) {
-          // repair missing object value
-          output.push('null')
-          return stack.update(Caret.afterValue)
-        }
-
-        if (stack.type === StackType.array) {
-          // repair trailing comma
-          output.stripLastOccurrence(',')
-          return stack.update(Caret.afterValue)
-        }
-
-        if (stack.type === StackType.ndJson) {
-          // repair trailing comma
-          output.stripLastOccurrence(',')
-          return stack.update(Caret.afterValue)
-        }
-
-        if (input.isEnd(i)) {
-          throwUnexpectedEnd()
-        } else {
-          throwUnexpectedCharacter()
-        }
+        return processObjectStart() ||
+          processArrayStart() ||
+          processPrimitiveValue() ||
+          processRepairUnquotedString() ||
+          processRepairMissingObjectValue() ||
+          processRepairTrailingCommaInArray() ||
+          processUnexpectedEnd()
       }
 
-      // eslint-disable-next-line no-fallthrough
       case Caret.afterValue: {
         switch (stack.type) {
           case StackType.object: {
-            if (parseCharacter(codeComma)) {
-              return stack.update(Caret.beforeKey)
-            }
-
-            if (parseObjectEnd()) {
-              return stack.pop()
-            }
-
-            // repair missing object end and trailing comma
-            if (input.charAt(i) === '{') {
-              output.stripLastOccurrence(',')
-              output.insertBeforeLastWhitespace('}')
-              return stack.pop()
-            }
-
-            // repair missing comma
-            if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
-              output.insertBeforeLastWhitespace(',')
-              return stack.update(Caret.beforeKey)
-            }
-
-            // repair missing closing brace
-            output.insertBeforeLastWhitespace('}')
-            return stack.pop()
+            return processObjectComma() ||
+              processObjectEnd() ||
+              processRepairObjectEndOrComma()
           }
 
           case StackType.array: {
-            if (parseCharacter(codeComma)) {
-              return stack.update(Caret.beforeValue)
-            }
-
-            if (parseArrayEnd()) {
-              return stack.pop()
-            }
-
-            // repair missing comma
-            if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
-              output.insertBeforeLastWhitespace(',')
-              return stack.update(Caret.beforeValue)
-            }
-
-            // repair missing closing bracket
-            output.insertBeforeLastWhitespace(']')
-            return stack.pop()
+            return processArrayComma() ||
+              processArrayEnd() ||
+              processRepairMissingArrayComma() ||
+              processRepairArrayEnd()
           }
 
           case StackType.ndJson: {
-            if (parseCharacter(codeComma)) {
-              return stack.update(Caret.beforeValue)
-            }
-
-            if (parseArrayEnd()) {
-              return stack.pop()
-            }
-
-            // repair missing comma
-            if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
-              output.insertBeforeLastWhitespace(',')
-              return stack.update(Caret.beforeValue)
-            }
-
-            if (input.isEnd(i)) {
-              output.push('\n]')
-              return stack.pop()
-            }
+            return processArrayComma() ||
+              processRepairMissingArrayComma() ||
+              processRepairNdJsonEnd()
           }
 
-          // eslint-disable-next-line no-fallthrough
           case StackType.dataType: {
-            if (skipCharacter(codeCloseParenthesis)) {
-              skipCharacter(codeSemicolon)
-            }
-
-            return stack.pop()
+            return processDataTypeEnd()
           }
 
           case StackType.root: {
-            const processedComma = parseCharacter(codeComma)
-            parseWhitespaceAndSkipComments()
-
-            if (isStartOfValue(input.charAt(i)) && output.endsWithCommaOrNewline()) {
-              // start of a new value after end of the root level object: looks like
-              // newline delimited JSON -> turn into a root level array
-              if (!processedComma) {
-                // repair missing comma
-                output.insertBeforeLastWhitespace(',')
-              }
-
-              output.unshift('[\n')
-
-              return stack.push(StackType.ndJson, Caret.beforeValue)
-            }
-
-            if (processedComma) {
-              // repair: remove trailing comma
-              output.stripLastOccurrence(',')
-
-              return stack.update(Caret.afterValue)
-            }
-
-            // repair redundant end braces and brackets
-            while (
-              input.charCodeAt(i) === codeClosingBrace ||
-              input.charCodeAt(i) === codeClosingBracket
-            ) {
-              i++
-              parseWhitespaceAndSkipComments()
-            }
-
-            if (!input.isEnd(i)) {
-              throwUnexpectedCharacter()
-            }
-
-            return false
+            return processRoot()
           }
 
           default:
@@ -314,33 +160,266 @@ export function jsonrepairCore({
       }
 
       case Caret.beforeKey: {
-        const processedKey = parseString() || parseUnquotedKey()
-        if (processedKey) {
-          parseWhitespaceAndSkipComments()
+        return processObjectKey() ||
+          processUnexpectedColon() ||
+          processRepairTrailingComma()
+      }
+    }
+  }
 
-          if (parseCharacter(codeColon)) {
-            // expect a value after the :
-            return stack.update(Caret.beforeValue)
-          }
-
-          const truncatedText = input.isEnd(i)
-          if (isStartOfValue(input.charAt(i)) || truncatedText) {
-            // repair missing colon
-            output.insertBeforeLastWhitespace(':')
-            return stack.update(Caret.beforeValue)
-          }
-
-          throwColonExpected()
-        }
-
-        if (input.charCodeAt(i) === codeColon) {
-          throwObjectKeyExpected()
-        }
-
-        // repair trailing comma
-        output.stripLastOccurrence(',')
+  function processObjectStart(): boolean {
+    if (parseCharacter(codeOpeningBrace)) {
+      parseWhitespaceAndSkipComments()
+      if (parseCharacter(codeClosingBrace)) {
         return stack.update(Caret.afterValue)
       }
+
+      return stack.push(StackType.object, Caret.beforeKey)
+    }
+
+    return false
+  }
+
+  function processArrayStart(): boolean {
+    if (parseCharacter(codeOpeningBracket)) {
+      parseWhitespaceAndSkipComments()
+      if (parseArrayEnd()) {
+        return stack.update(Caret.afterValue)
+      }
+
+      return stack.push(StackType.array, Caret.beforeValue)
+    }
+
+    return false
+  }
+
+  function parseArrayEnd(): boolean {
+    return parseCharacter(codeClosingBracket)
+  }
+
+  function processPrimitiveValue(): boolean {
+    const processed = parseString() || parseNumber() || parseKeywords()
+    if (processed) {
+      return stack.update(Caret.afterValue)
+    }
+
+    return false
+  }
+
+  function processRepairUnquotedString(): boolean {
+    const unquotedStringEnd = findNextDelimiter()
+    if (unquotedStringEnd !== null) {
+      const symbol = input.substring(i, unquotedStringEnd)
+      i = unquotedStringEnd
+
+      if (skipCharacter(codeOpenParenthesis)) {
+        // A MongoDB function call like NumberLong("2")
+        // Or a JSONP function call like callback({...});
+        // we strip the function call
+
+        return stack.push(StackType.dataType, Caret.beforeValue)
+      }
+
+      output.push(symbol === 'undefined' ? 'null' : JSON.stringify(symbol))
+
+      if (input.charCodeAt(i) === codeDoubleQuote) {
+        // we had a missing start quote, but now we encountered the end quote, so we can skip that one
+        i++
+      }
+
+      return stack.update(Caret.afterValue)
+    }
+
+    return false
+  }
+
+  function processRepairMissingObjectValue(): boolean {
+    if (stack.type === StackType.object) {
+      // repair missing object value
+      output.push('null')
+      return stack.update(Caret.afterValue)
+    }
+
+    return false
+  }
+
+  // FIXME: cleanup, replace with the next function
+  function processRepairTrailingCommaInArray(): boolean {
+    if (stack.type === StackType.array || stack.type === StackType.ndJson) {
+      // repair trailing comma
+      output.stripLastOccurrence(',')
+      return stack.update(Caret.afterValue)
+    }
+
+    return false
+  }
+
+  function processRepairTrailingComma(): true {
+    // repair trailing comma
+    output.stripLastOccurrence(',')
+    return stack.update(Caret.afterValue)
+  }
+
+  function processUnexpectedColon(): boolean {
+    if (input.charCodeAt(i) === codeColon) {
+      throwObjectKeyExpected()
+    }
+
+    return false
+  }
+
+  function processUnexpectedEnd(): boolean {
+    if (input.isEnd(i)) {
+      throwUnexpectedEnd()
+    } else {
+      throwUnexpectedCharacter()
+    }
+
+    return false
+  }
+
+  function processObjectKey(): boolean {
+    const processedKey = parseString() || parseUnquotedKey()
+    if (processedKey) {
+      parseWhitespaceAndSkipComments()
+
+      if (parseCharacter(codeColon)) {
+        // expect a value after the :
+        return stack.update(Caret.beforeValue)
+      }
+
+      const truncatedText = input.isEnd(i)
+      if (isStartOfValue(input.charAt(i)) || truncatedText) {
+        // repair missing colon
+        output.insertBeforeLastWhitespace(':')
+        return stack.update(Caret.beforeValue)
+      }
+
+      throwColonExpected()
+    }
+
+    return false
+  }
+
+  function processObjectComma(): boolean {
+    if (parseCharacter(codeComma)) {
+      return stack.update(Caret.beforeKey)
+    }
+
+    return false
+  }
+
+  function processObjectEnd(): boolean {
+    if (parseCharacter(codeClosingBrace)) {
+      return stack.pop()
+    }
+
+    return false
+  }
+
+  function processRepairObjectEndOrComma(): true {
+    // repair missing object end and trailing comma
+    if (input.charAt(i) === '{') {
+      output.stripLastOccurrence(',')
+      output.insertBeforeLastWhitespace('}')
+      return stack.pop()
+    }
+
+    // repair missing comma
+    if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
+      output.insertBeforeLastWhitespace(',')
+      return stack.update(Caret.beforeKey)
+    }
+
+    // repair missing closing brace
+    output.insertBeforeLastWhitespace('}')
+    return stack.pop()
+  }
+
+  function processArrayComma(): boolean {
+    if (parseCharacter(codeComma)) {
+      return stack.update(Caret.beforeValue)
+    }
+
+    return false
+  }
+
+  function processArrayEnd(): boolean {
+    if (parseCharacter(codeClosingBracket)) {
+      return stack.pop()
+    }
+
+    return false
+  }
+
+  function processRepairMissingArrayComma(): boolean {
+    // repair missing comma
+    if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
+      output.insertBeforeLastWhitespace(',')
+      return stack.update(Caret.beforeValue)
+    }
+
+    return false
+  }
+
+  function processRepairArrayEnd(): true {
+    // repair missing closing bracket
+    output.insertBeforeLastWhitespace(']')
+    return stack.pop()
+  }
+
+  function processRepairNdJsonEnd(): boolean {
+    if (input.isEnd(i)) {
+      output.push('\n]')
+      return stack.pop()
+    } else {
+      throwUnexpectedEnd()
+    }
+  }
+
+  function processDataTypeEnd(): true {
+    if (skipCharacter(codeCloseParenthesis)) {
+      skipCharacter(codeSemicolon)
+    }
+
+    return stack.pop()
+  }
+
+  function processRoot(): boolean {
+    const processedComma = parseCharacter(codeComma)
+    parseWhitespaceAndSkipComments()
+
+    if (isStartOfValue(input.charAt(i)) && output.endsWithCommaOrNewline()) {
+      // start of a new value after end of the root level object: looks like
+      // newline delimited JSON -> turn into a root level array
+      if (!processedComma) {
+        // repair missing comma
+        output.insertBeforeLastWhitespace(',')
+      }
+
+      output.unshift('[\n')
+
+      return stack.push(StackType.ndJson, Caret.beforeValue)
+    }
+
+    if (processedComma) {
+      // repair: remove trailing comma
+      output.stripLastOccurrence(',')
+
+      return stack.update(Caret.afterValue)
+    }
+
+    // repair redundant end braces and brackets
+    while (
+      input.charCodeAt(i) === codeClosingBrace ||
+      input.charCodeAt(i) === codeClosingBracket
+    ) {
+      i++
+      parseWhitespaceAndSkipComments()
+    }
+
+    if (!input.isEnd(i)) {
+      throwUnexpectedCharacter()
     }
 
     return false
@@ -431,22 +510,6 @@ export function jsonrepairCore({
 
   function skipEscapeCharacter(): boolean {
     return skipCharacter(codeBackslash)
-  }
-
-  function parseObjectStart(): boolean {
-    return parseCharacter(codeOpeningBrace)
-  }
-
-  function parseObjectEnd(): boolean {
-    return parseCharacter(codeClosingBrace)
-  }
-
-  function parseArrayStart(): boolean {
-    return parseCharacter(codeOpeningBracket)
-  }
-
-  function parseArrayEnd(): boolean {
-    return parseCharacter(codeClosingBracket)
   }
 
   /**
@@ -785,8 +848,4 @@ export function jsonrepairCore({
     transform,
     flush
   }
-}
-
-function last<T>(array: T[]): T | undefined {
-  return array[array.length - 1]
 }
