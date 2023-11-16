@@ -14,30 +14,35 @@ export interface InputBuffer {
 export function createInputBuffer(): InputBuffer {
   let buffer = ''
   let offset = 0
+  let currentLength = 0
   let closed = false
 
+  // TODO: the ensure function slows down jsonrepair considerably. Can we improve on this?
+  //  ie. only check after parsing a string if we exceeded the end of the buffer?
   function ensure(index: number) {
     if (index < offset) {
       throw new Error(`Index out of range (index: ${index}, offset: ${offset})`)
     }
 
-    // FIXME: throw exception when reading data that is not yet received
-    // if (!closed && index >= offset + buffer.length) {
-    //   throw new Error(
-    //     `Input data not yet received (index: ${index}, currentLength: ${offset + buffer.length})`
-    //   )
-    // }
+    if (index >= currentLength) {
+      if (!closed) {
+        throw new Error(
+          `Input data not yet received (index: ${index}, currentLength: ${currentLength})`
+        )
+      }
+    }
   }
 
   function push(chunk: string) {
     buffer += chunk
+    currentLength += chunk.length
   }
 
   function flush(position: number) {
-    if (position > offset + buffer.length) {
+    if (position > currentLength) {
       throw new Error(
         'Cannot flush: position is larger than the actual data in the buffer' +
-          ` (position: ${position}, buffer length: ${buffer.length})`
+        ` (position: ${position}, buffer length: ${buffer.length})`
       )
     }
 
@@ -69,15 +74,7 @@ export function createInputBuffer(): InputBuffer {
       throw new Error('Cannot get length: input is not yet closed')
     }
 
-    return currentLength()
-  }
-
-  function currentLength(): number {
-    return offset + buffer.length
-  }
-
-  function currentBufferSize(): number {
-    return buffer.length
+    return currentLength
   }
 
   function isEnd(index: number): boolean {
@@ -85,7 +82,7 @@ export function createInputBuffer(): InputBuffer {
       ensure(index)
     }
 
-    return index >= offset + buffer.length
+    return index >= currentLength
   }
 
   function close() {
@@ -99,8 +96,8 @@ export function createInputBuffer(): InputBuffer {
     charCodeAt,
     substring,
     length,
-    currentLength,
-    currentBufferSize,
+    currentLength: () => currentLength,
+    currentBufferSize: () => buffer.length,
     isEnd,
     close
   }

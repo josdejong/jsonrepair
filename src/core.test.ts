@@ -22,8 +22,7 @@ describe('core', () => {
     expect(chunks).toEqual(['[1', '2,', '3,', '4,', '5,', '6,', '7]'])
   })
 
-  test.skip('it should throw an error when having a too small input buffer', () => {
-    // FIXME: test having a too small input buffer
+  test('it should throw an error when having a too small input buffer', () => {
     const { transform } = createCore({ bufferSize: 4, chunkSize: 2 })
     transform.transform('1234')
 
@@ -40,8 +39,8 @@ describe('core', () => {
 function createCore(options?: { chunkSize: number; bufferSize: number }) {
   const chunks: string[] = []
   const transform = jsonrepairCore({
-    bufferSize: options.bufferSize,
-    chunkSize: options.chunkSize,
+    bufferSize: options?.bufferSize,
+    chunkSize: options?.chunkSize,
     onData: (chunk) => {
       chunks.push(chunk)
     }

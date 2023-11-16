@@ -104,6 +104,8 @@ export function jsonrepairCore({
   }
 
   function flush() {
+    input.close()
+
     while (process()) {
       // loop until there is nothing more to process
     }
@@ -396,6 +398,7 @@ export function jsonrepairCore({
       return stack.pop()
     } else {
       throwUnexpectedEnd()
+      return false // just to make TS happy
     }
   }
 

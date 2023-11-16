@@ -312,6 +312,7 @@ describe('jsonrepair', () => {
       strictEqual(jsonrepair('{"a":2  ,  }'), '{"a":2    }')
       strictEqual(jsonrepair('{"a":2  , \n }'), '{"a":2   \n }')
       strictEqual(jsonrepair('{"a":2/*foo*/,/*foo*/}'), '{"a":2}')
+      strictEqual(jsonrepair('{},'), '{}')
 
       // not matching: inside a string
       strictEqual(jsonrepair('"{a:2,}"'), '"{a:2,}"')
