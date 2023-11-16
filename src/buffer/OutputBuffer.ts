@@ -7,10 +7,9 @@ export interface OutputBuffer {
   length: () => number
   flush: () => void
 
-  // FIXME: extract the following three util functions from OutputBuffer
   stripLastOccurrence: (textToStrip: string, stripRemainingText?: boolean) => void
   insertBeforeLastWhitespace: (textToInsert: string) => void
-  endsWithCommaOrNewline: () => boolean
+  endsWithIgnoringWhitespace: (char: string) => boolean
 }
 
 export interface OutputBufferProps {
@@ -114,22 +113,34 @@ export function createOutputBuffer({
     flushChunks()
   }
 
-  /**
-   * Test whether a string ends with a newline or comma character and optional whitespace
-   */
-  function endsWithCommaOrNewline(): boolean {
-    return /[,\n][ \t\r]*$/.test(buffer)
+  function endsWithIgnoringWhitespace(char: string): boolean {
+    let i = buffer.length - 1
+
+    while (i > 0) {
+      if (char === buffer.charAt(i)) {
+        return true
+      }
+
+      if (!isWhitespace(buffer.charCodeAt(i))) {
+        return false
+      }
+
+      i--
+    }
+
+    return false
   }
 
   return {
     push,
     unshift,
     remove,
+    length,
+    flush,
+
     stripLastOccurrence,
     insertBeforeLastWhitespace,
-    endsWithCommaOrNewline,
-    length,
-    flush
+    endsWithIgnoringWhitespace
   }
 }
 

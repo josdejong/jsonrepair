@@ -120,7 +120,8 @@ export function jsonrepairCore({
           case Caret.beforeKey: return (
             processObjectKey() ||
             processUnexpectedColon() ||
-            processRepairTrailingComma()
+            processRepairTrailingComma() ||
+            processRepairObjectEndOrComma()
           )
           case Caret.beforeValue: return (
             processValue() ||
@@ -139,7 +140,8 @@ export function jsonrepairCore({
         switch (stack.caret) {
           case Caret.beforeValue: return (
             processValue() ||
-            processRepairTrailingComma()
+            processRepairTrailingComma() ||
+            processRepairArrayEnd()
           )
           case Caret.afterValue: return (
             processArrayComma() ||
@@ -265,20 +267,19 @@ export function jsonrepairCore({
   }
 
   function processRepairMissingObjectValue(): boolean {
-    if (stack.type === StackType.object) {
-      // repair missing object value
-      output.push('null')
+    // repair missing object value
+    output.push('null')
+    return stack.update(Caret.afterValue)
+  }
+
+  function processRepairTrailingComma(): boolean {
+    // repair trailing comma
+    if (output.endsWithIgnoringWhitespace(',')) {
+      output.stripLastOccurrence(',')
       return stack.update(Caret.afterValue)
     }
 
     return false
-  }
-
-  function processRepairTrailingComma(): true {
-    // repair trailing comma
-    // FIXME: should verify that there actually is a trailing comma before the last whitespace
-    output.stripLastOccurrence(',')
-    return stack.update(Caret.afterValue)
   }
 
   function processUnexpectedColon(): boolean {
@@ -410,7 +411,10 @@ export function jsonrepairCore({
     const processedComma = parseCharacter(codeComma)
     parseWhitespaceAndSkipComments()
 
-    if (isStartOfValue(input.charAt(i)) && output.endsWithCommaOrNewline()) {
+    if (
+      isStartOfValue(input.charAt(i)) &&
+      (output.endsWithIgnoringWhitespace(',') || output.endsWithIgnoringWhitespace('\n'))
+    ) {
       // start of a new value after end of the root level object: looks like
       // newline delimited JSON -> turn into a root level array
       if (!processedComma) {
