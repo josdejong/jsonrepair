@@ -1,5 +1,5 @@
 import { deepStrictEqual, strictEqual, throws } from 'assert'
-import { describe, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { jsonrepair } from './index.js'
 import { JSONRepairError } from './JSONRepairError.js'
 
@@ -617,8 +617,13 @@ describe('jsonrepair', () => {
       new JSONRepairError('Invalid unicode character "\\uZ000"', 1)
     )
   })
+
+  test('should configure a bufferSize and chunkSize', () => {
+    expect(() => jsonrepair("{name: 'John',      }", { bufferSize: 4, chunkSize: 2 }))
+      .toThrow('Cannot insert: start of the output is already flushed from the buffer')
+  })
 })
 
 function assertRepair(text: string) {
-  strictEqual(jsonrepair(text), text)
+  expect(jsonrepair(text)).toEqual(text)
 }

@@ -58,7 +58,7 @@ const escapeCharacters: { [key: string]: string } = {
   // note that \u is handled separately in parseString()
 }
 
-export interface JsonRepairCoreProps {
+export interface JsonRepairCoreOptions {
   onData: (chunk: string) => void
   chunkSize?: number
   bufferSize?: number
@@ -73,7 +73,7 @@ export function jsonrepairCore({
   onData,
   bufferSize = 65536,
   chunkSize = 65536
-}: JsonRepairCoreProps): JsonRepairCore {
+}: JsonRepairCoreOptions): JsonRepairCore {
   const input = createInputBuffer()
 
   const output = createOutputBuffer({
@@ -632,10 +632,8 @@ export function jsonrepairCore({
         }
 
         if (skipEscapeChars) {
-          const processed = skipEscapeCharacter()
-          if (processed) {
-            // repair: skipped escape character (nothing to do)
-          }
+          // repair: skipped escape character (nothing to do)
+          skipEscapeCharacter()
         }
       }
 

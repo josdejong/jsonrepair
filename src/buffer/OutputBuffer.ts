@@ -12,7 +12,7 @@ export interface OutputBuffer {
   endsWithIgnoringWhitespace: (char: string) => boolean
 }
 
-export interface OutputBufferProps {
+export interface OutputBufferOptions {
   write: (chunk: string) => void
   chunkSize: number
   bufferSize: number
@@ -22,7 +22,7 @@ export function createOutputBuffer({
   write,
   chunkSize,
   bufferSize
-}: OutputBufferProps): OutputBuffer {
+}: OutputBufferOptions): OutputBuffer {
   let buffer = ''
   let offset = 0
 

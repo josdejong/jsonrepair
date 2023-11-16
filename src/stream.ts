@@ -2,20 +2,38 @@
 import { Transform } from 'node:stream'
 import { jsonrepairCore } from './core.js'
 
-export function jsonrepairTransform(): Transform {
+export interface JsonRepairTransformOptions {
+  chunkSize?: number
+  bufferSize?: number
+}
+
+export function jsonrepairTransform(options?: JsonRepairTransformOptions): Transform {
   const repair = jsonrepairCore({
-    onData: (chunk) => transform.push(chunk)
+    onData: (chunk) => transform.push(chunk),
+    bufferSize: options?.bufferSize,
+    chunkSize: options?.chunkSize
   })
 
   const transform = new Transform({
-    // TODO: support Buffer and encoding
     transform(data, encoding, callback) {
-      repair.transform(data)
-      callback()
+      // TODO: support Buffer and encoding
+      try {
+        repair.transform(data)
+      } catch (err) {
+        this.emit('error', err)
+      } finally {
+        callback()
+      }
     },
+
     flush(callback) {
-      repair.flush()
-      callback()
+      try {
+        repair.flush()
+      } catch (err) {
+        this.emit('error', err)
+      } finally {
+        callback()
+      }
     }
   })
 
