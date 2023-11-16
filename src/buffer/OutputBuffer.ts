@@ -75,9 +75,6 @@ export function createOutputBuffer({
     return offset + buffer.length
   }
 
-  /**
-   * Strip last occurrence of textToStrip from the output
-   */
   function stripLastOccurrence(textToStrip: string, stripRemainingText = false) {
     const bufferIndex = buffer.lastIndexOf(textToStrip)
 
@@ -106,7 +103,7 @@ export function createOutputBuffer({
     }
 
     if (bufferIndex <= 0) {
-      throw new Error(`Cannot insertBeforeLastWhitespace: ${flushedMessage}`)
+      throw new Error(`Cannot insert: ${flushedMessage}`)
     }
 
     buffer = buffer.substring(0, bufferIndex) + textToInsert + buffer.substring(bufferIndex)

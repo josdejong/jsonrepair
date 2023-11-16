@@ -31,8 +31,14 @@ describe('core', () => {
     }).toThrow('Input data not yet received (index: 6, currentLength: 6)')
   })
 
-  test.skip('it should throw an error when having a too small output buffer', () => {
-    // FIXME: test having a too small output buffer
+  test('it should throw an error when having a too small output buffer', () => {
+    // testing with ndjson, that has to insert a [ at the start of the document
+    const { transform } = createCore({ bufferSize: 4, chunkSize: 2 })
+    transform.transform('{"id":1}\n')
+
+    expect(() => {
+      transform.transform('{"id":2}\n')
+    }).toThrow('Cannot unshift: start of the output is already flushed from the buffer')
   })
 })
 
