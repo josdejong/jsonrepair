@@ -612,7 +612,7 @@ export function jsonrepairCore({
           }
         } else {
           const char = input.charAt(i)
-          const code = input.charCodeAt(i)
+          const code = char.charCodeAt(0)
 
           if (code === codeDoubleQuote && input.charCodeAt(i - 1) !== codeBackslash) {
             // repair unescaped double quote

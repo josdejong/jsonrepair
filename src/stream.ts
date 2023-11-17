@@ -15,10 +15,9 @@ export function jsonrepairTransform(options?: JsonRepairTransformOptions): Trans
   })
 
   const transform = new Transform({
-    transform(data, encoding, callback) {
-      // TODO: support Buffer and encoding
+    transform(chunk, encoding, callback) {
       try {
-        repair.transform(data)
+        repair.transform(chunk.toString())
       } catch (err) {
         this.emit('error', err)
       } finally {
