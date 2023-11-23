@@ -395,15 +395,14 @@ export function jsonrepair(text: string): string {
       const isEndQuote = isDoubleQuote(text.charCodeAt(i))
         ? isDoubleQuote
         : isSingleQuote(text.charCodeAt(i))
-        ? isSingleQuote // eslint-disable-line indent
-        : isSingleQuoteLike(text.charCodeAt(i)) // eslint-disable-line indent
-        ? isSingleQuoteLike // eslint-disable-line indent
-        : isDoubleQuoteLike // eslint-disable-line indent
+          ? isSingleQuote
+          : isSingleQuoteLike(text.charCodeAt(i))
+            ? isSingleQuoteLike
+            : isDoubleQuoteLike
 
       const iBefore = i
-      const outputBefore = output // we may need to revert
 
-      output += '"'
+      let str = '"'
       i++
 
       const isEndOfString = stopAtDelimiter
@@ -415,7 +414,7 @@ export function jsonrepair(text: string): string {
           const char = text.charAt(i + 1)
           const escapeChar = escapeCharacters[char]
           if (escapeChar !== undefined) {
-            output += text.slice(i, i + 2)
+            str += text.slice(i, i + 2)
             i += 2
           } else if (char === 'u') {
             let j = 2
@@ -424,7 +423,7 @@ export function jsonrepair(text: string): string {
             }
 
             if (j === 6) {
-              output += text.slice(i, i + 6)
+              str += text.slice(i, i + 6)
               i += 6
             } else if (i + j >= text.length) {
               // repair invalid or truncated unicode char at the end of the text
@@ -435,7 +434,7 @@ export function jsonrepair(text: string): string {
             }
           } else {
             // repair invalid escape character: remove it
-            output += char
+            str += char
             i += 2
           }
         } else {
@@ -444,17 +443,17 @@ export function jsonrepair(text: string): string {
 
           if (code === codeDoubleQuote && text.charCodeAt(i - 1) !== codeBackslash) {
             // repair unescaped double quote
-            output += '\\' + char
+            str += '\\' + char
             i++
           } else if (isControlCharacter(code)) {
             // unescaped control character
-            output += controlCharacters[char]
+            str += controlCharacters[char]
             i++
           } else {
             if (!isValidStringCharacter(code)) {
               throwInvalidCharacter(char)
             }
-            output += char
+            str += char
             i++
           }
         }
@@ -477,17 +476,18 @@ export function jsonrepair(text: string): string {
         // this string and try again, running in a more conservative mode,
         // stopping at the first next delimiter
         i = iBefore
-        output = outputBefore
         return parseString(true)
       }
 
       if (hasEndQuote) {
-        output += '"'
+        str += '"'
         i++
       } else {
         // repair missing quote
-        output = insertBeforeLastWhitespace(output, '"')
+        str = insertBeforeLastWhitespace(str, '"')
       }
+
+      output += str
 
       parseConcatenatedString()
 
