@@ -84,7 +84,7 @@ export function jsonrepairCore({
 
   let i = 0
   let iFlushed = 0
-  const stack = createStack() // TODO: inlining the variables and functions of createStack makes the code run 5%-10% faster, but then the code is much less readable
+  const stack = createStack()
 
   function flushInputBuffer() {
     while (iFlushed < i - bufferSize - chunkSize) {
