@@ -29,7 +29,8 @@
     "json",
     "repair",
     "fix",
-    "invalid"
+    "invalid",
+    "stream"
   ],
   "bin": {
     "jsonrepair": "./bin/cli.js"

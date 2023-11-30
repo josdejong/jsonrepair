@@ -31,7 +31,7 @@ The following issues can be fixed:
     { "id": 2, "name": "Sarah" }
     ```
 
-Note that in practice, the `jsonrepair` library can handle file sizes up to 512 MB.
+The `jsonrepair` library has streaming support and can handle infinitely large documents.
 
 ## Install
 
@@ -44,7 +44,7 @@ Note that in the `lib` folder, there are builds for ESM, UMD, and CommonJs.
 
 ## Use
 
-Use with an ES modules import (recommended):
+Use the `jsonrepair` function using an ES modules import:
 
 ```js
 import { jsonrepair } from 'jsonrepair'
@@ -61,6 +61,32 @@ try {
 } catch (err) {
   console.error(err)
 }
+```
+
+Use the streaming API in Node.js:
+
+```js
+import { createReadStream, createWriteStream } from 'node:fs'
+import { pipeline } from 'node:stream'
+import { jsonrepairTransform } from 'jsonrepair/stream'
+
+const inputStream = createReadStream('./data/broken.json')
+const outputStream = createWriteStream('./data/repaired.json')
+
+pipeline(inputStream, jsonrepairTransform(), outputStream, (err) => {
+  if (err) {
+    console.error(err)
+  } else {
+    console.log('done')
+  }
+})
+
+// or using .pipe() instead of pipeline():
+inputStream
+  .pipe(jsonrepairTransform())
+  .pipe(outputStream)
+  .on('error', (err) => console.error(err))
+  .on('finish', () => console.log('done'))
 ```
 
 Use in CommonJS (not recommended):
@@ -85,13 +111,28 @@ Use with UMD in the browser (not recommended):
 
 ### API
 
+#### Function API
+
+You can use `jsonrepair` as a function or as a streaming transform. Broken JSON is passed to the function, and the function either returns the repaired JSON, or throws an `JSONRepairError` exception when an issue is encountered which could not be solved.
+
 ```ts
 // @throws JSONRepairError 
-jsonrepair(json: string) : string
+jsonrepair(json: string, options?: { chunkSize?: number, bufferSize?: number }) : string
 ```
 
-The function `jsonrepair` throws an exception `JSONRepairError` when an issue is encountered which could not be solved. When no error is thrown, the output will be valid JSON.
+The options `chunkSize` and `bufferSize` are normally not relevant for the function API. They are there because they are used internally by the streaming API. Read the "Streaming API" section for more information.
 
+#### Streaming API
+
+The streaming API is availabe in `jsonrepair/stream` and can be used in a Node.js stream. It consists of a transform function that can be used in a stream pipeline.
+
+```ts
+jsonrepairTransform(options?: { chunkSize?: number, bufferSize?: number }) : Transform
+```
+
+The option `chunkSize` determines the size of the chunks that the transform outputs, and is `65536` bytes by default. Changing `chunkSize` can influcence the performance. 
+
+The option `bufferSize` determines how many bytes of the input and output stream are kept in memory and is also `65536` bytes by default. This buffer is used as a "moving window" on the input and output. This is necessary because `jsonrepair` must look ahead or look back to see what to fix, and it must sometimes walk back the generated output to insert a missing comma for example. The `bufferSize` must be larger than the length of the largest string and whitespace in the JSON data, otherwise, and error is thrown when processing the data. Making `bufferSize` very large will result in more memory usage and less performance.
 
 ### Command Line Interface (CLI)
 
