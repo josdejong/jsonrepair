@@ -124,7 +124,7 @@ The options `chunkSize` and `bufferSize` are normally not relevant for the funct
 
 #### Streaming API
 
-The streaming API is availabe in `jsonrepair/stream` and can be used in a Node.js stream. It consists of a transform function that can be used in a stream pipeline.
+The streaming API is availabe in `jsonrepair/stream` and can be used in a [Node.js stream](https://nodejs.org/api/stream.html). It consists of a transform function that can be used in a stream pipeline.
 
 ```ts
 jsonrepairTransform(options?: { chunkSize?: number, bufferSize?: number }) : Transform
