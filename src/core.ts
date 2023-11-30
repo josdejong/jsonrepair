@@ -96,7 +96,7 @@ export function jsonrepairCore({
   function transform(chunk: string) {
     input.push(chunk)
 
-    while (i < input.currentLength() - bufferSize && process()) {
+    while (i < input.currentLength() - bufferSize && parse()) {
       // loop until there is nothing more to process
     }
 
@@ -106,33 +106,33 @@ export function jsonrepairCore({
   function flush() {
     input.close()
 
-    while (process()) {
+    while (parse()) {
       // loop until there is nothing more to process
     }
 
     output.flush()
   }
 
-  function process(): boolean {
+  function parse(): boolean {
     parseWhitespaceAndSkipComments()
 
     switch (stack.type) {
       case StackType.object: {
         switch (stack.caret) {
           case Caret.beforeKey: return (
-            processObjectKey() ||
-            processUnexpectedColon() ||
-            processRepairTrailingComma() ||
-            processRepairObjectEndOrComma()
+            parseObjectKey() ||
+            parseUnexpectedColon() ||
+            parseRepairTrailingComma() ||
+            parseRepairObjectEndOrComma()
           )
           case Caret.beforeValue: return (
-            processValue() ||
-            processRepairMissingObjectValue()
+            parseValue() ||
+            parseRepairMissingObjectValue()
           )
           case Caret.afterValue: return (
-            processObjectComma() ||
-            processObjectEnd() ||
-            processRepairObjectEndOrComma()
+            parseObjectComma() ||
+            parseObjectEnd() ||
+            parseRepairObjectEndOrComma()
           )
           default: return false
         }
@@ -141,15 +141,15 @@ export function jsonrepairCore({
       case StackType.array: {
         switch (stack.caret) {
           case Caret.beforeValue: return (
-            processValue() ||
-            processRepairTrailingComma() ||
-            processRepairArrayEnd()
+            parseValue() ||
+            parseRepairTrailingComma() ||
+            parseRepairArrayEnd()
           )
           case Caret.afterValue: return (
-            processArrayComma() ||
-            processArrayEnd() ||
-            processRepairMissingComma() ||
-            processRepairArrayEnd()
+            parseArrayComma() ||
+            parseArrayEnd() ||
+            parseRepairMissingComma() ||
+            parseRepairArrayEnd()
           )
           default: return false
         }
@@ -158,13 +158,13 @@ export function jsonrepairCore({
       case StackType.ndJson: {
         switch (stack.caret) {
           case Caret.beforeValue: return (
-            processValue() ||
-            processRepairTrailingComma()
+            parseValue() ||
+            parseRepairTrailingComma()
           )
           case Caret.afterValue: return (
-            processArrayComma() ||
-            processRepairMissingComma() ||
-            processRepairNdJsonEnd()
+            parseArrayComma() ||
+            parseRepairMissingComma() ||
+            parseRepairNdJsonEnd()
           )
           default: return false
         }
@@ -173,10 +173,10 @@ export function jsonrepairCore({
       case StackType.functionCall: {
         switch (stack.caret) {
           case Caret.beforeValue: return (
-            processValue()
+            parseValue()
           )
           case Caret.afterValue: return (
-            processFunctionCallEnd()
+            parseFunctionCallEnd()
           )
           default: return false
         }
@@ -185,11 +185,11 @@ export function jsonrepairCore({
       case StackType.root: {
         switch (stack.caret) {
           case Caret.beforeValue: return (
-            processValue() ||
-            processUnexpectedEnd()
+            parseValue() ||
+            parseUnexpectedEnd()
           )
           case Caret.afterValue: return (
-            processRootEnd()
+            parseRootEnd()
           )
           default: return false
         }
@@ -199,14 +199,16 @@ export function jsonrepairCore({
     }
   }
 
-  function processValue(): boolean {
-    return processObjectStart() ||
-      processArrayStart() ||
-      processPrimitiveValue() ||
-      processRepairUnquotedString()
+  function parseValue(): boolean {
+    return parseObjectStart() ||
+      parseArrayStart() ||
+      parseString() ||
+      parseNumber() ||
+      parseKeywords() ||
+      parseRepairUnquotedString()
   }
 
-  function processObjectStart(): boolean {
+  function parseObjectStart(): boolean {
     if (parseCharacter(codeOpeningBrace)) {
       parseWhitespaceAndSkipComments()
       if (parseCharacter(codeClosingBrace)) {
@@ -219,7 +221,7 @@ export function jsonrepairCore({
     return false
   }
 
-  function processArrayStart(): boolean {
+  function parseArrayStart(): boolean {
     if (parseCharacter(codeOpeningBracket)) {
       parseWhitespaceAndSkipComments()
       if (parseCharacter(codeClosingBracket)) {
@@ -232,16 +234,7 @@ export function jsonrepairCore({
     return false
   }
 
-  function processPrimitiveValue(): boolean {
-    const processed = parseString() || parseNumber() || parseKeywords()
-    if (processed) {
-      return stack.update(Caret.afterValue)
-    }
-
-    return false
-  }
-
-  function processRepairUnquotedString(): boolean {
+  function parseRepairUnquotedString(): boolean {
     const unquotedStringEnd = findNextDelimiter()
     if (unquotedStringEnd !== null) {
       const symbol = input.substring(i, unquotedStringEnd)
@@ -268,13 +261,13 @@ export function jsonrepairCore({
     return false
   }
 
-  function processRepairMissingObjectValue(): boolean {
+  function parseRepairMissingObjectValue(): boolean {
     // repair missing object value
     output.push('null')
     return stack.update(Caret.afterValue)
   }
 
-  function processRepairTrailingComma(): boolean {
+  function parseRepairTrailingComma(): boolean {
     // repair trailing comma
     if (output.endsWithIgnoringWhitespace(',')) {
       output.stripLastOccurrence(',')
@@ -284,7 +277,7 @@ export function jsonrepairCore({
     return false
   }
 
-  function processUnexpectedColon(): boolean {
+  function parseUnexpectedColon(): boolean {
     if (input.charCodeAt(i) === codeColon) {
       throwObjectKeyExpected()
     }
@@ -292,7 +285,7 @@ export function jsonrepairCore({
     return false
   }
 
-  function processUnexpectedEnd(): boolean {
+  function parseUnexpectedEnd(): boolean {
     if (input.isEnd(i)) {
       throwUnexpectedEnd()
     } else {
@@ -302,9 +295,9 @@ export function jsonrepairCore({
     return false
   }
 
-  function processObjectKey(): boolean {
-    const processedKey = parseString() || parseUnquotedKey()
-    if (processedKey) {
+  function parseObjectKey(): boolean {
+    const parsedKey = parseString() || parseUnquotedKey()
+    if (parsedKey) {
       parseWhitespaceAndSkipComments()
 
       if (parseCharacter(codeColon)) {
@@ -325,7 +318,7 @@ export function jsonrepairCore({
     return false
   }
 
-  function processObjectComma(): boolean {
+  function parseObjectComma(): boolean {
     if (parseCharacter(codeComma)) {
       return stack.update(Caret.beforeKey)
     }
@@ -333,7 +326,7 @@ export function jsonrepairCore({
     return false
   }
 
-  function processObjectEnd(): boolean {
+  function parseObjectEnd(): boolean {
     if (parseCharacter(codeClosingBrace)) {
       return stack.pop()
     }
@@ -341,7 +334,7 @@ export function jsonrepairCore({
     return false
   }
 
-  function processRepairObjectEndOrComma(): true {
+  function parseRepairObjectEndOrComma(): true {
     // repair missing object end and trailing comma
     if (input.charAt(i) === '{') {
       output.stripLastOccurrence(',')
@@ -360,7 +353,7 @@ export function jsonrepairCore({
     return stack.pop()
   }
 
-  function processArrayComma(): boolean {
+  function parseArrayComma(): boolean {
     if (parseCharacter(codeComma)) {
       return stack.update(Caret.beforeValue)
     }
@@ -368,7 +361,7 @@ export function jsonrepairCore({
     return false
   }
 
-  function processArrayEnd(): boolean {
+  function parseArrayEnd(): boolean {
     if (parseCharacter(codeClosingBracket)) {
       return stack.pop()
     }
@@ -376,7 +369,7 @@ export function jsonrepairCore({
     return false
   }
 
-  function processRepairMissingComma(): boolean {
+  function parseRepairMissingComma(): boolean {
     // repair missing comma
     if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
       output.insertBeforeLastWhitespace(',')
@@ -386,13 +379,13 @@ export function jsonrepairCore({
     return false
   }
 
-  function processRepairArrayEnd(): true {
+  function parseRepairArrayEnd(): true {
     // repair missing closing bracket
     output.insertBeforeLastWhitespace(']')
     return stack.pop()
   }
 
-  function processRepairNdJsonEnd(): boolean {
+  function parseRepairNdJsonEnd(): boolean {
     if (input.isEnd(i)) {
       output.push('\n]')
       return stack.pop()
@@ -402,7 +395,7 @@ export function jsonrepairCore({
     }
   }
 
-  function processFunctionCallEnd(): true {
+  function parseFunctionCallEnd(): true {
     if (skipCharacter(codeCloseParenthesis)) {
       skipCharacter(codeSemicolon)
     }
@@ -410,8 +403,8 @@ export function jsonrepairCore({
     return stack.pop()
   }
 
-  function processRootEnd(): boolean {
-    const processedComma = parseCharacter(codeComma)
+  function parseRootEnd(): boolean {
+    const parsedComma = parseCharacter(codeComma)
     parseWhitespaceAndSkipComments()
 
     if (
@@ -420,7 +413,7 @@ export function jsonrepairCore({
     ) {
       // start of a new value after end of the root level object: looks like
       // newline delimited JSON -> turn into a root level array
-      if (!processedComma) {
+      if (!parsedComma) {
         // repair missing comma
         output.insertBeforeLastWhitespace(',')
       }
@@ -430,7 +423,7 @@ export function jsonrepairCore({
       return stack.push(StackType.ndJson, Caret.beforeValue)
     }
 
-    if (processedComma) {
+    if (parsedComma) {
       // repair: remove trailing comma
       output.stripLastOccurrence(',')
 
@@ -661,7 +654,7 @@ export function jsonrepairCore({
 
       parseConcatenatedString()
 
-      return true
+      return stack.update(Caret.afterValue)
     }
 
     return false
@@ -671,19 +664,19 @@ export function jsonrepairCore({
    * Repair concatenated strings like "hello" + "world", change this into "helloworld"
    */
   function parseConcatenatedString(): boolean {
-    let processed = false
+    let parsed = false
 
     parseWhitespaceAndSkipComments()
     while (input.charCodeAt(i) === codePlus) {
-      processed = true
+      parsed = true
       i++
       parseWhitespaceAndSkipComments()
 
       // repair: remove the end quote of the first string
       output.stripLastOccurrence('"', true)
       const start = output.length()
-      const processedStr = parseString()
-      if (processedStr) {
+      const parsedStr = parseString()
+      if (parsedStr) {
         // repair: remove the start quote of the second string
         output.remove(start, start + 1)
       } else {
@@ -692,7 +685,7 @@ export function jsonrepairCore({
       }
     }
 
-    return processed
+    return parsed
   }
 
   /**
@@ -703,7 +696,7 @@ export function jsonrepairCore({
     if (input.charCodeAt(i) === codeMinus) {
       i++
       if (expectDigitOrRepair(start)) {
-        return true
+        return stack.update(Caret.afterValue)
       }
     }
 
@@ -718,7 +711,7 @@ export function jsonrepairCore({
     if (input.charCodeAt(i) === codeDot) {
       i++
       if (expectDigitOrRepair(start)) {
-        return true
+        return stack.update(Caret.afterValue)
       }
       while (isDigit(input.charCodeAt(i))) {
         i++
@@ -731,7 +724,7 @@ export function jsonrepairCore({
         i++
       }
       if (expectDigitOrRepair(start)) {
-        return true
+        return stack.update(Caret.afterValue)
       }
       while (isDigit(input.charCodeAt(i))) {
         i++
@@ -744,7 +737,7 @@ export function jsonrepairCore({
       const hasInvalidLeadingZero = /^0\d/.test(num)
 
       output.push(hasInvalidLeadingZero ? `"${num}"` : num)
-      return true
+      return stack.update(Caret.afterValue)
     }
 
     return false
@@ -770,7 +763,7 @@ export function jsonrepairCore({
     if (input.substring(i, i + name.length) === name) {
       output.push(value)
       i += name.length
-      return true
+      return stack.update(Caret.afterValue)
     }
 
     return false
@@ -794,7 +787,7 @@ export function jsonrepairCore({
         i++
       }
 
-      return true
+      return stack.update(Caret.afterValue) // we do not have a state Caret.afterKey, therefore we use afterValue here
     }
 
     return false
