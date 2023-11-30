@@ -1,9 +1,12 @@
 #!/usr/bin/env node
-import { createReadStream, createWriteStream, readFileSync, renameSync } from 'fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
+import { createReadStream, createWriteStream, readFileSync, renameSync } from 'node:fs'
+import { pipeline as pipelineCallback } from 'node:stream'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 import { jsonrepairTransform } from '../lib/esm/stream.js'
 
+const pipeline = promisify(pipelineCallback)
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
@@ -56,7 +59,7 @@ function processArgs(args) {
   return options
 }
 
-function run(options) {
+async function run(options) {
   if (options.version) {
     outputVersion()
     return
@@ -80,31 +83,25 @@ function run(options) {
     const tempFileSuffix = '.repair-' + new Date().toISOString().replace(/\W/g, '-') + '.json'
     const tempFile = options.inputFile + tempFileSuffix
 
-    streamIt({
-      readStream: createReadStream(options.inputFile),
-      writeStream: createWriteStream(tempFile),
-      onFinish: () => renameSync(tempFile, options.inputFile)
-    })
+    try {
+      const readStream = createReadStream(options.inputFile)
+      const writeStream = createWriteStream(tempFile)
+      await pipeline(readStream, jsonrepairTransform(), writeStream)
+      renameSync(tempFile, options.inputFile)
+    } catch (err) {
+      process.stderr.write(err.toString())
+    }
 
     return
   }
 
-  streamIt({
-    readStream: options.inputFile ? createReadStream(options.inputFile) : process.stdin,
-    writeStream: options.outputFile ? createWriteStream(options.outputFile) : process.stdout
-  })
-}
-
-function noop() {}
-
-// Warning: onFinish does not fire when using process.stdout,
-// see https://github.com/nodejs/node/issues/7606
-function streamIt({ readStream, writeStream, onFinish = noop }) {
-  readStream
-    .pipe(jsonrepairTransform())
-    .pipe(writeStream)
-    .on('error', (err) => process.stderr.write(err.toString()))
-    .on('finish', onFinish)
+  try {
+    const readStream = options.inputFile ? createReadStream(options.inputFile) : process.stdin
+    const writeStream = options.outputFile ? createWriteStream(options.outputFile) : process.stdout
+    await pipeline(readStream, jsonrepairTransform(), writeStream)
+  } catch (err) {
+    process.stderr.write(err.toString())
+  }
 }
 
 function outputVersion() {
@@ -143,4 +140,4 @@ function outputHelp() {
 }
 
 const options = processArgs(process.argv)
-run(options)
+await run(options)
