@@ -682,10 +682,14 @@ export function jsonrepairCore({
       // repair: remove the end quote of the first string
       output.stripLastOccurrence('"', true)
       const start = output.length()
-      parseString()
-
-      // repair: remove the start quote of the second string
-      output.remove(start, start + 1)
+      const processedStr = parseString()
+      if (processedStr) {
+        // repair: remove the start quote of the second string
+        output.remove(start, start + 1)
+      } else {
+        // repair: remove the + because it is not followed by a string
+        output.insertBeforeLastWhitespace('"')
+      }
     }
 
     return processed

@@ -425,6 +425,8 @@ describe('jsonrepair', () => {
       )
 
       strictEqual(jsonrepair('"hello +\n " world"'), '"hello world"')
+      strictEqual(jsonrepair('"hello +'), '"hello"')
+      strictEqual(jsonrepair('["hello +]'), '["hello"]')
     })
 
     test('should repair missing comma between array items', () => {
