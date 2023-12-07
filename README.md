@@ -173,6 +173,13 @@ Similar libraries:
 
 ### Develop
 
+When implementing a fix or a new feature, it important to know that there are currently two implementations:
+
+- `src/regular` This is a non-streaming implementation. The code is small and works for files up to 512MB, ideal for usage in the browser.
+- `src/streaming` A streaming implementation that can be used in Node.js. The code is larger and more complex, and the implementation uses a configurable `bufferSize` and `chunkSize`. When the parsed document contains a string or number that is longer than the configured `bufferSize`, the library will throw an "Index out of range" error since it cannot hold the full string in the buffer. When configured with an infinite buffer size, the streaming implementation works the same as the regular implementation. In that case this out of range error cannot occur, but it makes the performance worse and the application can run out of memory when repairing large documents.
+
+Both implementations are tested against the same suite of unit tests in `src/index.test.ts`.
+
 To build the library (ESM, CommonJs, and UMD output in the folder `lib`):
 
 ```
