@@ -18,7 +18,9 @@ describe('InputBuffer', () => {
     const { buffer } = testInputBuffer('0123456789')
 
     buffer.flush(2)
-    expect(() => buffer.charAt(1)).toThrow(/Index out of range \(index: 1, offset: 2\)/)
+    expect(() => buffer.charAt(1)).toThrow(
+      /Index out of range, please configure a larger buffer size \(index: 1, offset: 2\)/
+    )
     expect(buffer.charAt(2)).toBe('2')
   })
 
@@ -42,8 +44,12 @@ describe('InputBuffer', () => {
 
     expect(buffer.substring(3, 5)).toBe('34')
     buffer.flush(5)
-    expect(() => buffer.substring(0, 1)).toThrow(/Index out of range \(index: 0, offset: 5\)/)
-    expect(() => buffer.substring(4, 9)).toThrow(/Index out of range \(index: 4, offset: 5\)/)
+    expect(() => buffer.substring(0, 1)).toThrow(
+      /Index out of range, please configure a larger buffer size \(index: 0, offset: 5\)/
+    )
+    expect(() => buffer.substring(4, 9)).toThrow(
+      /Index out of range, please configure a larger buffer size \(index: 4, offset: 5\)/
+    )
   })
 
   test('should get the length', () => {

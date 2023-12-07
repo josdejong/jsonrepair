@@ -62,7 +62,9 @@ describe('command line interface', function () {
 
     await expect(() => {
       return run(`node ${binFile} "${largeFile}" --buffer 2`)
-    }).rejects.toMatch(/Error: Index out of range \(index: 65536\)/)
+    }).rejects.toMatch(
+      /Error: Index out of range, please configure a larger buffer size \(index: 65536\)/
+    )
 
     unlinkSync(largeFile)
   })

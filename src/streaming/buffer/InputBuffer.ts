@@ -19,12 +19,12 @@ export function createInputBuffer(): InputBuffer {
 
   function ensure(index: number) {
     if (index < offset) {
-      throw new Error(`Index out of range (index: ${index}, offset: ${offset})`)
+      throw new Error(`${indexOutOfRangeMessage} (index: ${index}, offset: ${offset})`)
     }
 
     if (index >= currentLength) {
       if (!closed) {
-        throw new Error(`Index out of range (index: ${index})`)
+        throw new Error(`${indexOutOfRangeMessage} (index: ${index})`)
       }
     }
   }
@@ -95,3 +95,5 @@ export function createInputBuffer(): InputBuffer {
     close
   }
 }
+
+const indexOutOfRangeMessage = 'Index out of range, please configure a larger buffer size'
