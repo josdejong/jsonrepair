@@ -119,93 +119,85 @@ export function jsonrepairCore({
     switch (stack.type) {
       case StackType.object: {
         switch (stack.caret) {
-          case Caret.beforeKey: return (
-            parseObjectKey() ||
-            parseUnexpectedColon() ||
-            parseRepairTrailingComma() ||
-            parseRepairObjectEndOrComma()
-          )
-          case Caret.beforeValue: return (
-            parseValue() ||
-            parseRepairMissingObjectValue()
-          )
-          case Caret.afterValue: return (
-            parseObjectComma() ||
-            parseObjectEnd() ||
-            parseRepairObjectEndOrComma()
-          )
-          default: return false
+          case Caret.beforeKey:
+            return (
+              parseObjectKey() ||
+              parseUnexpectedColon() ||
+              parseRepairTrailingComma() ||
+              parseRepairObjectEndOrComma()
+            )
+          case Caret.beforeValue:
+            return parseValue() || parseRepairMissingObjectValue()
+          case Caret.afterValue:
+            return parseObjectComma() || parseObjectEnd() || parseRepairObjectEndOrComma()
+          default:
+            return false
         }
       }
 
       case StackType.array: {
         switch (stack.caret) {
-          case Caret.beforeValue: return (
-            parseValue() ||
-            parseRepairTrailingComma() ||
-            parseRepairArrayEnd()
-          )
-          case Caret.afterValue: return (
-            parseArrayComma() ||
-            parseArrayEnd() ||
-            parseRepairMissingComma() ||
-            parseRepairArrayEnd()
-          )
-          default: return false
+          case Caret.beforeValue:
+            return parseValue() || parseRepairTrailingComma() || parseRepairArrayEnd()
+          case Caret.afterValue:
+            return (
+              parseArrayComma() ||
+              parseArrayEnd() ||
+              parseRepairMissingComma() ||
+              parseRepairArrayEnd()
+            )
+          default:
+            return false
         }
       }
 
       case StackType.ndJson: {
         switch (stack.caret) {
-          case Caret.beforeValue: return (
-            parseValue() ||
-            parseRepairTrailingComma()
-          )
-          case Caret.afterValue: return (
-            parseArrayComma() ||
-            parseRepairMissingComma() ||
-            parseRepairNdJsonEnd()
-          )
-          default: return false
+          case Caret.beforeValue:
+            return parseValue() || parseRepairTrailingComma()
+          case Caret.afterValue:
+            return parseArrayComma() || parseRepairMissingComma() || parseRepairNdJsonEnd()
+          default:
+            return false
         }
       }
 
       case StackType.functionCall: {
         switch (stack.caret) {
-          case Caret.beforeValue: return (
-            parseValue()
-          )
-          case Caret.afterValue: return (
-            parseFunctionCallEnd()
-          )
-          default: return false
+          case Caret.beforeValue:
+            return parseValue()
+          case Caret.afterValue:
+            return parseFunctionCallEnd()
+          default:
+            return false
         }
       }
 
       case StackType.root: {
         switch (stack.caret) {
-          case Caret.beforeValue: return (
-            parseValue() ||
-            parseUnexpectedEnd()
-          )
-          case Caret.afterValue: return (
-            parseRootEnd()
-          )
-          default: return false
+          case Caret.beforeValue:
+            return parseValue() || parseUnexpectedEnd()
+          case Caret.afterValue:
+            return parseRootEnd()
+          default:
+            return false
         }
       }
 
-      default: return false
+      default:
+        return false
     }
   }
 
   function parseValue(): boolean {
-    return parseObjectStart() ||
+    return (
+      parseObjectStart() ||
       parseArrayStart() ||
       parseString() ||
       parseNumber() ||
       parseKeywords() ||
       parseRepairUnquotedString()
+    )
   }
 
   function parseObjectStart(): boolean {
@@ -431,10 +423,7 @@ export function jsonrepairCore({
     }
 
     // repair redundant end braces and brackets
-    while (
-      input.charCodeAt(i) === codeClosingBrace ||
-      input.charCodeAt(i) === codeClosingBracket
-    ) {
+    while (input.charCodeAt(i) === codeClosingBrace || input.charCodeAt(i) === codeClosingBracket) {
       i++
       parseWhitespaceAndSkipComments()
     }
