@@ -66,13 +66,13 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     })
 
     test('correctly handle strings equaling a JSON delimiter', function () {
-      // assertRepair('""')
+      assertRepair('""')
       assertRepair('"["')
-      // assertRepair('"]"')
-      // assertRepair('"{"')
-      // assertRepair('"}"')
-      // assertRepair('":"')
-      // assertRepair('","')
+      assertRepair('"]"')
+      assertRepair('"{"')
+      assertRepair('"}"')
+      assertRepair('":"')
+      assertRepair('","')
     })
 
     test('supports unicode characters in a string', () => {
@@ -281,8 +281,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       )
     })
 
-    // FIXME
-    test.skip('should repair escaped string contents', () => {
+    test('should repair escaped string contents', () => {
       expect(jsonrepair('\\"hello world\\"')).toBe('"hello world"')
       expect(jsonrepair('\\"hello world\\')).toBe('"hello world"')
       expect(jsonrepair('\\"hello \\\\"world\\\\"\\"')).toBe('"hello \\"world\\""')
@@ -416,8 +415,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{greeting: hello world!}')).toBe('{"greeting": "hello world!"}')
     })
 
-    // FIXME
-    test.skip('should concatenate strings', () => {
+    test('should concatenate strings', () => {
       expect(jsonrepair('"hello" + " world"')).toBe('"hello world"')
       expect(jsonrepair('"hello" +\n " world"')).toBe('"hello world"')
       expect(jsonrepair('"a"+"b"+"c"')).toBe('"abc"')
