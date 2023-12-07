@@ -42,7 +42,7 @@ function processArgs(args) {
 
       case '--buffer':
         i++
-        options.bufferSize = parseBytes(args[i])
+        options.bufferSize = parseSize(args[i])
         break
 
       case '-o':
@@ -123,7 +123,7 @@ function outputVersion() {
   console.log(pkg.version)
 }
 
-function parseBytes(size) {
+function parseSize(size) {
   // match
   const match = size.match(/^(\d+)([KMG]?)$/)
   if (!match) {
