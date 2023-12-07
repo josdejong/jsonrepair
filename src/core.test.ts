@@ -28,7 +28,7 @@ describe('core', () => {
 
     expect(() => {
       transform.transform('56')
-    }).toThrow('Input data not yet received (index: 6, currentLength: 6)')
+    }).toThrow('Index out of range (index: 6)')
   })
 
   test('it should throw an error when having a too small output buffer', () => {

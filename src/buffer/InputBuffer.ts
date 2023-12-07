@@ -17,8 +17,6 @@ export function createInputBuffer(): InputBuffer {
   let currentLength = 0
   let closed = false
 
-  // TODO: the ensure function slows down jsonrepair considerably. Can we improve on this?
-  //  ie. only check after parsing a string if we exceeded the end of the buffer?
   function ensure(index: number) {
     if (index < offset) {
       throw new Error(`Index out of range (index: ${index}, offset: ${offset})`)
@@ -26,9 +24,7 @@ export function createInputBuffer(): InputBuffer {
 
     if (index >= currentLength) {
       if (!closed) {
-        throw new Error(
-          `Input data not yet received (index: ${index}, currentLength: ${currentLength})`
-        )
+        throw new Error(`Index out of range (index: ${index})`)
       }
     }
   }
@@ -40,10 +36,7 @@ export function createInputBuffer(): InputBuffer {
 
   function flush(position: number) {
     if (position > currentLength) {
-      throw new Error(
-        'Cannot flush: position is larger than the actual data in the buffer' +
-        ` (position: ${position}, buffer length: ${buffer.length})`
-      )
+      return
     }
 
     buffer = buffer.substring(position - offset)

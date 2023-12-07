@@ -15,6 +15,7 @@ function processArgs(args) {
     version: false,
     help: false,
     overwrite: false,
+    bufferSize: undefined,
     inputFile: null,
     outputFile: null
   }
@@ -37,6 +38,11 @@ function processArgs(args) {
 
       case '--overwrite':
         options.overwrite = true
+        break
+
+      case '--buffer':
+        i++
+        options.bufferSize = parseBytes(args[i])
         break
 
       case '-o':
@@ -86,10 +92,15 @@ async function run(options) {
     try {
       const readStream = createReadStream(options.inputFile)
       const writeStream = createWriteStream(tempFile)
-      await pipeline(readStream, jsonrepairTransform(), writeStream)
+      await pipeline(
+        readStream,
+        jsonrepairTransform({ bufferSize: options.bufferSize }),
+        writeStream
+      )
       renameSync(tempFile, options.inputFile)
     } catch (err) {
       process.stderr.write(err.toString())
+      process.exit(1)
     }
 
     return
@@ -98,9 +109,10 @@ async function run(options) {
   try {
     const readStream = options.inputFile ? createReadStream(options.inputFile) : process.stdin
     const writeStream = options.outputFile ? createWriteStream(options.outputFile) : process.stdout
-    await pipeline(readStream, jsonrepairTransform(), writeStream)
+    await pipeline(readStream, jsonrepairTransform({ bufferSize: options.bufferSize }), writeStream)
   } catch (err) {
     process.stderr.write(err.toString())
+    process.exit(1)
   }
 }
 
@@ -109,6 +121,28 @@ function outputVersion() {
   const pkg = JSON.parse(String(readFileSync(file, 'utf-8')))
 
   console.log(pkg.version)
+}
+
+function parseBytes(size) {
+  // match
+  const match = size.match(/^(\d+)([KMG]?)$/)
+  if (!match) {
+    throw new Error(`Buffer size "${size}" not recognized. Examples: 65536, 512K, 2M`)
+  }
+
+  const num = parseInt(match[1])
+  const suffix = match[2] // K, M, or G
+
+  switch (suffix) {
+    case 'K':
+      return num * 1024
+    case 'M':
+      return num * 1024 * 1024
+    case 'G':
+      return num * 1024 * 1024 * 1024
+    default:
+      return num
+  }
 }
 
 const help = `
@@ -125,6 +159,7 @@ Options:
     --help,    -h       Show this message
     --output,  -o       Output file
     --overwrite         Overwrite the input file
+    --buffer            Buffer size in bytes, for example 64K (default) or 1M
 
 Example usage:
     jsonrepair broken.json                        # Repair a file, output to console

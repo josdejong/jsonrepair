@@ -1,6 +1,7 @@
 // Only use native node.js API's and references to ./lib here, this file is not transpiled!
 import cp from 'child_process'
 import { copyFileSync, existsSync, readFileSync, rmSync } from 'fs'
+import { unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { describe, test, expect, beforeEach, afterEach } from 'vitest'
@@ -13,6 +14,7 @@ describe('command line interface', function () {
   const inputFile = join(__dirname, 'data', 'invalid.json')
   const replaceFile = join(__dirname, 'output', 'replace.json')
   const outputFile = join(__dirname, 'output', 'repaired.json')
+  const largeFile = join(__dirname, 'output', 'large.json')
 
   beforeEach(() => {
     if (existsSync(outputFile)) {
@@ -49,6 +51,26 @@ describe('command line interface', function () {
 
     const content = String(readFileSync(replaceFile))
     expect(stripNewlines(content)).toBe('{"hello":"world"}')
+  })
+
+  test('should configure buffer size', async () => {
+    // create a document that is larger than the 64K chunk size of the library
+    const largeDoc = new Array(10_000).fill('test test test ')
+    const str = '{"a": ["' + largeDoc.join('')
+    expect(str.length).toBeGreaterThan(65536)
+    writeFileSync(largeFile, str)
+
+    await expect(() => {
+      return run(`node ${binFile} "${largeFile}" --buffer 2`)
+    }).rejects.toMatch(/Error: Index out of range \(index: 65536\)/)
+
+    unlinkSync(largeFile)
+  })
+
+  test('should throw an error in case of an invalid buffer size', async () => {
+    await expect(() => {
+      return run(`node ${binFile} "${inputFile}" --buffer FOO`)
+    }).rejects.toMatch(/Error: Buffer size "FOO" not recognized/)
   })
 })
 
