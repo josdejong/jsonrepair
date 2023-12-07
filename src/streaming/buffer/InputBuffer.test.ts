@@ -1,4 +1,3 @@
-import { strictEqual, throws } from 'assert'
 import { describe, test, expect } from 'vitest'
 import { createInputBuffer } from './InputBuffer'
 
@@ -7,63 +6,63 @@ describe('InputBuffer', () => {
     const { buffer } = testInputBuffer('0123456789')
     buffer.close()
 
-    strictEqual(buffer.charAt(3), '3')
-    strictEqual(buffer.charAt(4), '4')
-    strictEqual(buffer.charAt(6), '6')
-    strictEqual(buffer.charAt(9), '9')
-    strictEqual(buffer.charAt(10), '')
-    strictEqual(buffer.charAt(100), '')
+    expect(buffer.charAt(3)).toBe('3')
+    expect(buffer.charAt(4)).toBe('4')
+    expect(buffer.charAt(6)).toBe('6')
+    expect(buffer.charAt(9)).toBe('9')
+    expect(buffer.charAt(10)).toBe('')
+    expect(buffer.charAt(100)).toBe('')
   })
 
   test('should throw when using charAt when the index is already flushed', () => {
     const { buffer } = testInputBuffer('0123456789')
 
     buffer.flush(2)
-    throws(() => buffer.charAt(1), /Error: Index out of range \(index: 1, offset: 2\)/)
-    strictEqual(buffer.charAt(2), '2')
+    expect(() => buffer.charAt(1)).toThrow(/Index out of range \(index: 1, offset: 2\)/)
+    expect(buffer.charAt(2)).toBe('2')
   })
 
   test('should read bytes via charCodeAt', () => {
     const { buffer } = testInputBuffer('0123456789')
     buffer.close()
 
-    strictEqual(buffer.charCodeAt(3), '3'.charCodeAt(0))
-    strictEqual(buffer.charCodeAt(8), '8'.charCodeAt(0))
-    strictEqual(buffer.charCodeAt(12), NaN)
+    expect(buffer.charCodeAt(3)).toBe('3'.charCodeAt(0))
+    expect(buffer.charCodeAt(8)).toBe('8'.charCodeAt(0))
+    expect(buffer.charCodeAt(12)).toBe(NaN)
   })
 
   test('should get a substring', () => {
     const { buffer } = testInputBuffer('0123456789')
 
-    strictEqual(buffer.substring(3, 5), '34')
+    expect(buffer.substring(3, 5)).toBe('34')
   })
 
   test('should get a substring with limited buffer size', () => {
     const { buffer } = testInputBuffer('0123456789')
 
-    strictEqual(buffer.substring(3, 5), '34')
+    expect(buffer.substring(3, 5)).toBe('34')
     buffer.flush(5)
-    throws(() => buffer.substring(0, 1), /Error: Index out of range \(index: 0, offset: 5\)/)
-    throws(() => buffer.substring(4, 9), /Error: Index out of range \(index: 4, offset: 5\)/)
+    expect(() => buffer.substring(0, 1)).toThrow(/Index out of range \(index: 0, offset: 5\)/)
+    expect(() => buffer.substring(4, 9)).toThrow(/Index out of range \(index: 4, offset: 5\)/)
   })
 
   test('should get the length', () => {
     const { buffer } = testInputBuffer('0123456789')
 
-    throws(() => buffer.length(), /Error: Cannot get length: input is not yet closed/)
+    expect(() => buffer.length()).toThrow(/Cannot get length: input is not yet closed/)
     buffer.close()
-    strictEqual(buffer.length(), 10)
+    expect(buffer.length()).toBe(10)
   })
 
   test('should get the currentLength', () => {
     const { buffer } = testInputBuffer('')
-    strictEqual(buffer.currentLength(), 0)
+    expect(buffer.currentLength()).toBe(0)
 
     buffer.push('0123456789')
-    strictEqual(buffer.currentLength(), 10)
+    expect(buffer.currentLength()).toBe(10)
 
     buffer.flush(4)
-    strictEqual(buffer.currentLength(), 10)
+    expect(buffer.currentLength()).toBe(10)
   })
 
   test('should flush', () => {
@@ -78,12 +77,12 @@ describe('InputBuffer', () => {
     const { buffer } = testInputBuffer('0123456789')
     buffer.close()
 
-    strictEqual(buffer.isEnd(0), false)
-    strictEqual(buffer.isEnd(2), false)
-    strictEqual(buffer.isEnd(6), false)
-    strictEqual(buffer.isEnd(9), false)
-    strictEqual(buffer.isEnd(10), true)
-    strictEqual(buffer.isEnd(11), true)
+    expect(buffer.isEnd(0)).toBe(false)
+    expect(buffer.isEnd(2)).toBe(false)
+    expect(buffer.isEnd(6)).toBe(false)
+    expect(buffer.isEnd(9)).toBe(false)
+    expect(buffer.isEnd(10)).toBe(true)
+    expect(buffer.isEnd(11)).toBe(true)
   })
 })
 

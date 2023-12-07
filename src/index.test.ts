@@ -1,4 +1,3 @@
-import { deepStrictEqual, strictEqual, throws } from 'assert'
 import { describe, expect, test } from 'vitest'
 import { JSONRepairError } from './utils/JSONRepairError'
 import { jsonrepair as jsonRepairRegular } from './index'
@@ -15,7 +14,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       const text = '{"a":2.3e100,"b":"str","c":null,"d":false,"e":[1,2,3]}'
       const parsed = jsonrepair(text)
 
-      deepStrictEqual(parsed, text, 'should parse a JSON object correctly')
+      expect(parsed).toBe(text)
     })
 
     test('parse whitespace', function () {
@@ -77,299 +76,296 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     })
 
     test('supports unicode characters in a string', () => {
-      strictEqual(jsonrepair('"★"'), '"★"')
-      strictEqual(jsonrepair('"\u2605"'), '"\u2605"')
-      strictEqual(jsonrepair('"😀"'), '"😀"')
-      strictEqual(jsonrepair('"\ud83d\ude00"'), '"\ud83d\ude00"')
-      strictEqual(jsonrepair('"йнформация"'), '"йнформация"')
+      expect(jsonrepair('"★"')).toBe('"★"')
+      expect(jsonrepair('"\u2605"')).toBe('"\u2605"')
+      expect(jsonrepair('"😀"')).toBe('"😀"')
+      expect(jsonrepair('"\ud83d\ude00"')).toBe('"\ud83d\ude00"')
+      expect(jsonrepair('"йнформация"')).toBe('"йнформация"')
     })
 
     test('supports escaped unicode characters in a string', () => {
-      strictEqual(jsonrepair('"\\u2605"'), '"\\u2605"')
-      strictEqual(jsonrepair('"\\u2605A"'), '"\\u2605A"')
-      strictEqual(jsonrepair('"\\ud83d\\ude00"'), '"\\ud83d\\ude00"')
-      strictEqual(
-        jsonrepair('"\\u0439\\u043d\\u0444\\u043e\\u0440\\u043c\\u0430\\u0446\\u0438\\u044f"'),
-        '"\\u0439\\u043d\\u0444\\u043e\\u0440\\u043c\\u0430\\u0446\\u0438\\u044f"'
-      )
+      expect(jsonrepair('"\\u2605"')).toBe('"\\u2605"')
+      expect(jsonrepair('"\\u2605A"')).toBe('"\\u2605A"')
+      expect(jsonrepair('"\\ud83d\\ude00"')).toBe('"\\ud83d\\ude00"')
+      expect(
+        jsonrepair('"\\u0439\\u043d\\u0444\\u043e\\u0440\\u043c\\u0430\\u0446\\u0438\\u044f"')
+      ).toBe('"\\u0439\\u043d\\u0444\\u043e\\u0440\\u043c\\u0430\\u0446\\u0438\\u044f"')
     })
 
     test('supports unicode characters in a key', () => {
-      strictEqual(jsonrepair('{"★":true}'), '{"★":true}')
-      strictEqual(jsonrepair('{"\u2605":true}'), '{"\u2605":true}')
-      strictEqual(jsonrepair('{"😀":true}'), '{"😀":true}')
-      strictEqual(jsonrepair('{"\ud83d\ude00":true}'), '{"\ud83d\ude00":true}')
+      expect(jsonrepair('{"★":true}')).toBe('{"★":true}')
+      expect(jsonrepair('{"\u2605":true}')).toBe('{"\u2605":true}')
+      expect(jsonrepair('{"😀":true}')).toBe('{"😀":true}')
+      expect(jsonrepair('{"\ud83d\ude00":true}')).toBe('{"\ud83d\ude00":true}')
     })
   })
 
   describe('repair invalid JSON', () => {
     test('should add missing quotes', () => {
-      strictEqual(jsonrepair('abc'), '"abc"')
-      strictEqual(jsonrepair('hello   world'), '"hello   world"')
-      strictEqual(jsonrepair('{a:2}'), '{"a":2}')
-      strictEqual(jsonrepair('{a: 2}'), '{"a": 2}')
-      strictEqual(jsonrepair('{2: 2}'), '{"2": 2}')
-      strictEqual(jsonrepair('{true: 2}'), '{"true": 2}')
-      strictEqual(jsonrepair('{\n  a: 2\n}'), '{\n  "a": 2\n}')
-      strictEqual(jsonrepair('[a,b]'), '["a","b"]')
-      strictEqual(jsonrepair('[\na,\nb\n]'), '[\n"a",\n"b"\n]')
+      expect(jsonrepair('abc')).toBe('"abc"')
+      expect(jsonrepair('hello   world')).toBe('"hello   world"')
+      expect(jsonrepair('{a:2}')).toBe('{"a":2}')
+      expect(jsonrepair('{a: 2}')).toBe('{"a": 2}')
+      expect(jsonrepair('{2: 2}')).toBe('{"2": 2}')
+      expect(jsonrepair('{true: 2}')).toBe('{"true": 2}')
+      expect(jsonrepair('{\n  a: 2\n}')).toBe('{\n  "a": 2\n}')
+      expect(jsonrepair('[a,b]')).toBe('["a","b"]')
+      expect(jsonrepair('[\na,\nb\n]')).toBe('[\n"a",\n"b"\n]')
     })
 
     test('should add missing end quote', () => {
-      strictEqual(jsonrepair('"abc'), '"abc"')
-      strictEqual(jsonrepair("'abc"), '"abc"')
-      strictEqual(jsonrepair('\u2018abc'), '"abc"')
+      expect(jsonrepair('"abc')).toBe('"abc"')
+      expect(jsonrepair("'abc")).toBe('"abc"')
+      expect(jsonrepair('\u2018abc')).toBe('"abc"')
     })
 
     test('should repair truncated JSON', () => {
-      strictEqual(jsonrepair('"foo'), '"foo"')
-      strictEqual(jsonrepair('['), '[]')
-      strictEqual(jsonrepair('["foo'), '["foo"]')
-      strictEqual(jsonrepair('["foo"'), '["foo"]')
-      strictEqual(jsonrepair('["foo",'), '["foo"]')
-      strictEqual(jsonrepair('{"foo":"bar"'), '{"foo":"bar"}')
-      strictEqual(jsonrepair('{"foo":"bar'), '{"foo":"bar"}')
-      strictEqual(jsonrepair('{"foo":'), '{"foo":null}')
-      strictEqual(jsonrepair('{"foo"'), '{"foo":null}')
-      strictEqual(jsonrepair('{"foo'), '{"foo":null}')
-      strictEqual(jsonrepair('{'), '{}')
-      strictEqual(jsonrepair('2.'), '2.0')
-      strictEqual(jsonrepair('2e'), '2e0')
-      strictEqual(jsonrepair('2e+'), '2e+0')
-      strictEqual(jsonrepair('2e-'), '2e-0')
-      strictEqual(jsonrepair('{"foo":"bar\\u20'), '{"foo":"bar"}')
-      strictEqual(jsonrepair('"\\u'), '""')
-      strictEqual(jsonrepair('"\\u2'), '""')
-      strictEqual(jsonrepair('"\\u260'), '""')
-      strictEqual(jsonrepair('"\\u2605'), '"\\u2605"')
-      strictEqual(jsonrepair('{"s \\ud'), '{"s": null}')
+      expect(jsonrepair('"foo')).toBe('"foo"')
+      expect(jsonrepair('[')).toBe('[]')
+      expect(jsonrepair('["foo')).toBe('["foo"]')
+      expect(jsonrepair('["foo"')).toBe('["foo"]')
+      expect(jsonrepair('["foo",')).toBe('["foo"]')
+      expect(jsonrepair('{"foo":"bar"')).toBe('{"foo":"bar"}')
+      expect(jsonrepair('{"foo":"bar')).toBe('{"foo":"bar"}')
+      expect(jsonrepair('{"foo":')).toBe('{"foo":null}')
+      expect(jsonrepair('{"foo"')).toBe('{"foo":null}')
+      expect(jsonrepair('{"foo')).toBe('{"foo":null}')
+      expect(jsonrepair('{')).toBe('{}')
+      expect(jsonrepair('2.')).toBe('2.0')
+      expect(jsonrepair('2e')).toBe('2e0')
+      expect(jsonrepair('2e+')).toBe('2e+0')
+      expect(jsonrepair('2e-')).toBe('2e-0')
+      expect(jsonrepair('{"foo":"bar\\u20')).toBe('{"foo":"bar"}')
+      expect(jsonrepair('"\\u')).toBe('""')
+      expect(jsonrepair('"\\u2')).toBe('""')
+      expect(jsonrepair('"\\u260')).toBe('""')
+      expect(jsonrepair('"\\u2605')).toBe('"\\u2605"')
+      expect(jsonrepair('{"s \\ud')).toBe('{"s": null}')
     })
 
     test('should add missing start quote', () => {
-      strictEqual(jsonrepair('abc"'), '"abc"')
-      strictEqual(jsonrepair('[a","b"]'), '["a","b"]')
-      strictEqual(jsonrepair('[a",b"]'), '["a","b"]')
-      strictEqual(jsonrepair('{"a":"foo","b":"bar"}'), '{"a":"foo","b":"bar"}')
-      strictEqual(jsonrepair('{a":"foo","b":"bar"}'), '{"a":"foo","b":"bar"}')
-      strictEqual(jsonrepair('{"a":"foo",b":"bar"}'), '{"a":"foo","b":"bar"}')
-      strictEqual(jsonrepair('{"a":foo","b":"bar"}'), '{"a":"foo","b":"bar"}')
+      expect(jsonrepair('abc"')).toBe('"abc"')
+      expect(jsonrepair('[a","b"]')).toBe('["a","b"]')
+      expect(jsonrepair('[a",b"]')).toBe('["a","b"]')
+      expect(jsonrepair('{"a":"foo","b":"bar"}')).toBe('{"a":"foo","b":"bar"}')
+      expect(jsonrepair('{a":"foo","b":"bar"}')).toBe('{"a":"foo","b":"bar"}')
+      expect(jsonrepair('{"a":"foo",b":"bar"}')).toBe('{"a":"foo","b":"bar"}')
+      expect(jsonrepair('{"a":foo","b":"bar"}')).toBe('{"a":"foo","b":"bar"}')
     })
 
     test('should stop at the first next return when missing an end quote', () => {
-      strictEqual(jsonrepair('[\n"abc,\n"def"\n]'), '[\n"abc",\n"def"\n]')
-      strictEqual(jsonrepair('[\n"abc,  \n"def"\n]'), '[\n"abc",  \n"def"\n]')
-      strictEqual(jsonrepair('["abc]\n'), '["abc"]\n')
-      strictEqual(jsonrepair('["abc  ]\n'), '["abc"  ]\n')
+      expect(jsonrepair('[\n"abc,\n"def"\n]')).toBe('[\n"abc",\n"def"\n]')
+      expect(jsonrepair('[\n"abc,  \n"def"\n]'), '[\n"abc").toBe( \n"def"\n]')
+      expect(jsonrepair('["abc]\n')).toBe('["abc"]\n')
+      expect(jsonrepair('["abc  ]\n')).toBe('["abc"  ]\n')
     })
 
     test('should replace single quotes with double quotes', () => {
-      strictEqual(jsonrepair("{'a':2}"), '{"a":2}')
-      strictEqual(jsonrepair("{'a':'foo'}"), '{"a":"foo"}')
-      strictEqual(jsonrepair('{"a":\'foo\'}'), '{"a":"foo"}')
-      strictEqual(jsonrepair("{a:'foo',b:'bar'}"), '{"a":"foo","b":"bar"}')
+      expect(jsonrepair("{'a':2}")).toBe('{"a":2}')
+      expect(jsonrepair("{'a':'foo'}")).toBe('{"a":"foo"}')
+      expect(jsonrepair('{"a":\'foo\'}')).toBe('{"a":"foo"}')
+      expect(jsonrepair("{a:'foo',b:'bar'}")).toBe('{"a":"foo","b":"bar"}')
     })
 
     test('should replace special quotes with double quotes', () => {
-      strictEqual(jsonrepair('{“a”:“b”}'), '{"a":"b"}')
-      strictEqual(jsonrepair('{‘a’:‘b’}'), '{"a":"b"}')
-      strictEqual(jsonrepair('{`a´:`b´}'), '{"a":"b"}')
+      expect(jsonrepair('{“a”:“b”}')).toBe('{"a":"b"}')
+      expect(jsonrepair('{‘a’:‘b’}')).toBe('{"a":"b"}')
+      expect(jsonrepair('{`a´:`b´}')).toBe('{"a":"b"}')
     })
 
     test('should not replace special quotes inside a normal string', () => {
-      strictEqual(jsonrepair('"Rounded “ quote"'), '"Rounded “ quote"')
-      strictEqual(jsonrepair("'Rounded “ quote'"), '"Rounded “ quote"')
-      strictEqual(jsonrepair('"Rounded ’ quote"'), '"Rounded ’ quote"')
-      strictEqual(jsonrepair("'Rounded ’ quote'"), '"Rounded ’ quote"')
-      strictEqual(jsonrepair("'Double \" quote'"), '"Double \\" quote"')
+      expect(jsonrepair('"Rounded “ quote"')).toBe('"Rounded “ quote"')
+      expect(jsonrepair("'Rounded “ quote'")).toBe('"Rounded “ quote"')
+      expect(jsonrepair('"Rounded ’ quote"')).toBe('"Rounded ’ quote"')
+      expect(jsonrepair("'Rounded ’ quote'")).toBe('"Rounded ’ quote"')
+      expect(jsonrepair("'Double \" quote'")).toBe('"Double \\" quote"')
     })
 
     test('should not crash when repairing quotes', () => {
-      strictEqual(jsonrepair("{pattern: '’'}"), '{"pattern": "’"}')
+      expect(jsonrepair("{pattern: '’'}")).toBe('{"pattern": "’"}')
     })
 
     test('should leave string content untouched', () => {
-      strictEqual(jsonrepair('"{a:b}"'), '"{a:b}"')
+      expect(jsonrepair('"{a:b}"')).toBe('"{a:b}"')
     })
 
     test('should add/remove escape characters', () => {
-      strictEqual(jsonrepair('"foo\'bar"'), '"foo\'bar"')
-      strictEqual(jsonrepair('"foo\\"bar"'), '"foo\\"bar"')
-      strictEqual(jsonrepair("'foo\"bar'"), '"foo\\"bar"')
-      strictEqual(jsonrepair("'foo\\'bar'"), '"foo\'bar"')
-      strictEqual(jsonrepair('"foo\\\'bar"'), '"foo\'bar"')
-      strictEqual(jsonrepair('"\\a"'), '"a"')
+      expect(jsonrepair('"foo\'bar"')).toBe('"foo\'bar"')
+      expect(jsonrepair('"foo\\"bar"')).toBe('"foo\\"bar"')
+      expect(jsonrepair("'foo\"bar'")).toBe('"foo\\"bar"')
+      expect(jsonrepair("'foo\\'bar'")).toBe('"foo\'bar"')
+      expect(jsonrepair('"foo\\\'bar"')).toBe('"foo\'bar"')
+      expect(jsonrepair('"\\a"')).toBe('"a"')
     })
 
     test('should repair a missing object value', () => {
-      // strictEqual(jsonrepair('{"a":}'), '{"a":null}')
-      // strictEqual(jsonrepair('{"a":,"b":2}'), '{"a":null,"b":2}')
-      strictEqual(jsonrepair('{"a":'), '{"a":null}')
+      // expect(jsonrepair('{"a":}')).toBe('{"a":null}')
+      // expect(jsonrepair('{"a":,"b":2}')).toBe('{"a":null,"b":2}')
+      expect(jsonrepair('{"a":')).toBe('{"a":null}')
     })
 
     test('should repair undefined values', () => {
-      strictEqual(jsonrepair('{"a":undefined}'), '{"a":null}')
-      strictEqual(jsonrepair('[undefined]'), '[null]')
-      strictEqual(jsonrepair('undefined'), 'null')
+      expect(jsonrepair('{"a":undefined}')).toBe('{"a":null}')
+      expect(jsonrepair('[undefined]')).toBe('[null]')
+      expect(jsonrepair('undefined')).toBe('null')
     })
 
     test('should escape unescaped control characters', () => {
-      strictEqual(jsonrepair('"hello\bworld"'), '"hello\\bworld"')
-      strictEqual(jsonrepair('"hello\fworld"'), '"hello\\fworld"')
-      strictEqual(jsonrepair('"hello\nworld"'), '"hello\\nworld"')
-      strictEqual(jsonrepair('"hello\rworld"'), '"hello\\rworld"')
-      strictEqual(jsonrepair('"hello\tworld"'), '"hello\\tworld"')
-      strictEqual(jsonrepair('{"key\nafter": "foo"}'), '{"key\\nafter": "foo"}')
+      expect(jsonrepair('"hello\bworld"')).toBe('"hello\\bworld"')
+      expect(jsonrepair('"hello\fworld"')).toBe('"hello\\fworld"')
+      expect(jsonrepair('"hello\nworld"')).toBe('"hello\\nworld"')
+      expect(jsonrepair('"hello\rworld"')).toBe('"hello\\rworld"')
+      expect(jsonrepair('"hello\tworld"')).toBe('"hello\\tworld"')
+      expect(jsonrepair('{"key\nafter": "foo"}')).toBe('{"key\\nafter": "foo"}')
 
-      strictEqual(jsonrepair('["hello\nworld"]'), '["hello\\nworld"]')
-      strictEqual(jsonrepair('["hello\nworld"  ]'), '["hello\\nworld"  ]')
-      strictEqual(jsonrepair('["hello\nworld"\n]'), '["hello\\nworld"\n]')
+      expect(jsonrepair('["hello\nworld"]')).toBe('["hello\\nworld"]')
+      expect(jsonrepair('["hello\nworld"  ]')).toBe('["hello\\nworld"  ]')
+      expect(jsonrepair('["hello\nworld"\n]')).toBe('["hello\\nworld"\n]')
     })
 
     test('should replace special white space characters', () => {
-      strictEqual(jsonrepair('{"a":\u00a0"foo\u00a0bar"}'), '{"a": "foo\u00a0bar"}')
-      strictEqual(jsonrepair('{"a":\u202F"foo"}'), '{"a": "foo"}')
-      strictEqual(jsonrepair('{"a":\u205F"foo"}'), '{"a": "foo"}')
-      strictEqual(jsonrepair('{"a":\u3000"foo"}'), '{"a": "foo"}')
+      expect(jsonrepair('{"a":\u00a0"foo\u00a0bar"}')).toBe('{"a": "foo\u00a0bar"}')
+      expect(jsonrepair('{"a":\u202F"foo"}')).toBe('{"a": "foo"}')
+      expect(jsonrepair('{"a":\u205F"foo"}')).toBe('{"a": "foo"}')
+      expect(jsonrepair('{"a":\u3000"foo"}')).toBe('{"a": "foo"}')
     })
 
     test('should replace non normalized left/right quotes', () => {
-      strictEqual(jsonrepair('\u2018foo\u2019'), '"foo"')
-      strictEqual(jsonrepair('\u201Cfoo\u201D'), '"foo"')
-      strictEqual(jsonrepair('\u0060foo\u00B4'), '"foo"')
+      expect(jsonrepair('\u2018foo\u2019')).toBe('"foo"')
+      expect(jsonrepair('\u201Cfoo\u201D')).toBe('"foo"')
+      expect(jsonrepair('\u0060foo\u00B4')).toBe('"foo"')
 
       // mix single quotes
-      strictEqual(jsonrepair("\u0060foo'"), '"foo"')
+      expect(jsonrepair("\u0060foo'")).toBe('"foo"')
 
-      strictEqual(jsonrepair("\u0060foo'"), '"foo"')
+      expect(jsonrepair("\u0060foo'")).toBe('"foo"')
     })
 
     test('should remove block comments', () => {
-      strictEqual(jsonrepair('/* foo */ {}'), ' {}')
-      strictEqual(jsonrepair('{} /* foo */ '), '{}  ')
-      strictEqual(jsonrepair('{} /* foo '), '{} ')
-      strictEqual(jsonrepair('\n/* foo */\n{}'), '\n\n{}')
-      strictEqual(jsonrepair('{"a":"foo",/*hello*/"b":"bar"}'), '{"a":"foo","b":"bar"}')
+      expect(jsonrepair('/* foo */ {}')).toBe(' {}')
+      expect(jsonrepair('{} /* foo */ ')).toBe('{}  ')
+      expect(jsonrepair('{} /* foo ')).toBe('{} ')
+      expect(jsonrepair('\n/* foo */\n{}')).toBe('\n\n{}')
+      expect(jsonrepair('{"a":"foo",/*hello*/"b":"bar"}')).toBe('{"a":"foo","b":"bar"}')
     })
 
     test('should remove line comments', () => {
-      strictEqual(jsonrepair('{} // comment'), '{} ')
-      strictEqual(jsonrepair('{\n"a":"foo",//hello\n"b":"bar"\n}'), '{\n"a":"foo",\n"b":"bar"\n}')
+      expect(jsonrepair('{} // comment')).toBe('{} ')
+      expect(jsonrepair('{\n"a":"foo",//hello\n"b":"bar"\n}')).toBe('{\n"a":"foo",\n"b":"bar"\n}')
     })
 
     test('should not remove comments inside a string', () => {
-      strictEqual(jsonrepair('"/* foo */"'), '"/* foo */"')
+      expect(jsonrepair('"/* foo */"')).toBe('"/* foo */"')
     })
 
     test('should strip JSONP notation', () => {
       // matching
-      strictEqual(jsonrepair('callback_123({});'), '{}')
-      strictEqual(jsonrepair('callback_123([]);'), '[]')
-      strictEqual(jsonrepair('callback_123(2);'), '2')
-      strictEqual(jsonrepair('callback_123("foo");'), '"foo"')
-      strictEqual(jsonrepair('callback_123(null);'), 'null')
-      strictEqual(jsonrepair('callback_123(true);'), 'true')
-      strictEqual(jsonrepair('callback_123(false);'), 'false')
-      strictEqual(jsonrepair('callback({}'), '{}')
-      strictEqual(jsonrepair('/* foo bar */ callback_123 ({})'), ' {}')
-      strictEqual(jsonrepair('/* foo bar */ callback_123 ({})'), ' {}')
-      strictEqual(jsonrepair('/* foo bar */\ncallback_123({})'), '\n{}')
-      strictEqual(jsonrepair('/* foo bar */ callback_123 (  {}  )'), '   {}  ')
-      strictEqual(jsonrepair('  /* foo bar */   callback_123({});  '), '     {}  ')
-      strictEqual(jsonrepair('\n/* foo\nbar */\ncallback_123 ({});\n\n'), '\n\n{}\n\n')
+      expect(jsonrepair('callback_123({});')).toBe('{}')
+      expect(jsonrepair('callback_123([]);')).toBe('[]')
+      expect(jsonrepair('callback_123(2);')).toBe('2')
+      expect(jsonrepair('callback_123("foo");')).toBe('"foo"')
+      expect(jsonrepair('callback_123(null);')).toBe('null')
+      expect(jsonrepair('callback_123(true);')).toBe('true')
+      expect(jsonrepair('callback_123(false);')).toBe('false')
+      expect(jsonrepair('callback({}')).toBe('{}')
+      expect(jsonrepair('/* foo bar */ callback_123 ({})')).toBe(' {}')
+      expect(jsonrepair('/* foo bar */ callback_123 ({})')).toBe(' {}')
+      expect(jsonrepair('/* foo bar */\ncallback_123({})')).toBe('\n{}')
+      expect(jsonrepair('/* foo bar */ callback_123 (  {}  )')).toBe('   {}  ')
+      expect(jsonrepair('  /* foo bar */   callback_123({});  ')).toBe('     {}  ')
+      expect(jsonrepair('\n/* foo\nbar */\ncallback_123 ({});\n\n')).toBe('\n\n{}\n\n')
 
       // non-matching
-      throws(
-        () => console.log({ output: jsonrepair('callback {}') }),
+      expect(() => console.log({ output: jsonrepair('callback {}') })).toThrow(
         new JSONRepairError('Unexpected character "{"', 9)
       )
     })
 
     // FIXME
     test.skip('should repair escaped string contents', () => {
-      strictEqual(jsonrepair('\\"hello world\\"'), '"hello world"')
-      strictEqual(jsonrepair('\\"hello world\\'), '"hello world"')
-      strictEqual(jsonrepair('\\"hello \\\\"world\\\\"\\"'), '"hello \\"world\\""')
-      strictEqual(jsonrepair('[\\"hello \\\\"world\\\\"\\"]'), '["hello \\"world\\""]')
-      strictEqual(
-        jsonrepair('{\\"stringified\\": \\"hello \\\\"world\\\\"\\"}'),
+      expect(jsonrepair('\\"hello world\\"')).toBe('"hello world"')
+      expect(jsonrepair('\\"hello world\\')).toBe('"hello world"')
+      expect(jsonrepair('\\"hello \\\\"world\\\\"\\"')).toBe('"hello \\"world\\""')
+      expect(jsonrepair('[\\"hello \\\\"world\\\\"\\"]')).toBe('["hello \\"world\\""]')
+      expect(jsonrepair('{\\"stringified\\": \\"hello \\\\"world\\\\"\\"}')).toBe(
         '{"stringified": "hello \\"world\\""}'
       )
 
       // the following is a bit weird but comes close to the most likely intention
-      strictEqual(jsonrepair('[\\"hello\\, \\"world\\"]'), '["hello", "world"]')
+      expect(jsonrepair('[\\"hello\\, \\"world\\"]'), '["hello").toBe("world"]')
 
       // the following is sort of invalid: the end quote should be escaped too,
       // but the fixed result is most likely what you want in the end
-      strictEqual(jsonrepair('\\"hello"'), '"hello"')
+      expect(jsonrepair('\\"hello"')).toBe('"hello"')
     })
 
     test('should strip trailing commas from an array', () => {
-      strictEqual(jsonrepair('[1,2,3,]'), '[1,2,3]')
-      strictEqual(jsonrepair('[1,2,3,\n]'), '[1,2,3\n]')
-      strictEqual(jsonrepair('[1,2,3,  \n  ]'), '[1,2,3  \n  ]')
-      strictEqual(jsonrepair('[1,2,3,/*foo*/]'), '[1,2,3]')
-      strictEqual(jsonrepair('{"array":[1,2,3,]}'), '{"array":[1,2,3]}')
+      expect(jsonrepair('[1,2,3,]')).toBe('[1,2,3]')
+      expect(jsonrepair('[1,2,3,\n]')).toBe('[1,2,3\n]')
+      expect(jsonrepair('[1,2,3,  \n  ]')).toBe('[1,2,3  \n  ]')
+      expect(jsonrepair('[1,2,3,/*foo*/]')).toBe('[1,2,3]')
+      expect(jsonrepair('{"array":[1,2,3,]}')).toBe('{"array":[1,2,3]}')
 
       // not matching: inside a string
-      strictEqual(jsonrepair('"[1,2,3,]"'), '"[1,2,3,]"')
+      expect(jsonrepair('"[1,2,3,]"')).toBe('"[1,2,3,]"')
     })
 
     test('should strip trailing commas from an object', () => {
-      strictEqual(jsonrepair('{"a":2,}'), '{"a":2}')
-      strictEqual(jsonrepair('{"a":2  ,  }'), '{"a":2    }')
-      strictEqual(jsonrepair('{"a":2  , \n }'), '{"a":2   \n }')
-      strictEqual(jsonrepair('{"a":2/*foo*/,/*foo*/}'), '{"a":2}')
-      strictEqual(jsonrepair('{},'), '{}')
+      expect(jsonrepair('{"a":2,}')).toBe('{"a":2}')
+      expect(jsonrepair('{"a":2  ,  }')).toBe('{"a":2    }')
+      expect(jsonrepair('{"a":2  , \n }')).toBe('{"a":2   \n }')
+      expect(jsonrepair('{"a":2/*foo*/,/*foo*/}')).toBe('{"a":2}')
+      expect(jsonrepair('{},')).toBe('{}')
 
       // not matching: inside a string
-      strictEqual(jsonrepair('"{a:2,}"'), '"{a:2,}"')
+      expect(jsonrepair('"{a:2,}"')).toBe('"{a:2,}"')
     })
 
     test('should strip trailing comma at the end', () => {
-      strictEqual(jsonrepair('4,'), '4')
-      strictEqual(jsonrepair('4 ,'), '4 ')
-      strictEqual(jsonrepair('4 , '), '4  ')
-      strictEqual(jsonrepair('{"a":2},'), '{"a":2}')
-      strictEqual(jsonrepair('[1,2,3],'), '[1,2,3]')
+      expect(jsonrepair('4,')).toBe('4')
+      expect(jsonrepair('4 ,')).toBe('4 ')
+      expect(jsonrepair('4 , ')).toBe('4  ')
+      expect(jsonrepair('{"a":2},')).toBe('{"a":2}')
+      expect(jsonrepair('[1,2,3],')).toBe('[1,2,3]')
     })
 
     test('should add a missing closing brace for an object', () => {
-      strictEqual(jsonrepair('{'), '{}')
-      strictEqual(jsonrepair('{"a":2'), '{"a":2}')
-      strictEqual(jsonrepair('{"a":2,'), '{"a":2}')
-      strictEqual(jsonrepair('{"a":{"b":2}'), '{"a":{"b":2}}')
-      strictEqual(jsonrepair('{\n  "a":{"b":2\n}'), '{\n  "a":{"b":2\n}}')
-      strictEqual(jsonrepair('[{"b":2]'), '[{"b":2}]')
-      strictEqual(jsonrepair('[{"b":2\n]'), '[{"b":2}\n]')
-      strictEqual(jsonrepair('[{"i":1{"i":2}]'), '[{"i":1},{"i":2}]')
-      strictEqual(jsonrepair('[{"i":1,{"i":2}]'), '[{"i":1},{"i":2}]')
+      expect(jsonrepair('{')).toBe('{}')
+      expect(jsonrepair('{"a":2')).toBe('{"a":2}')
+      expect(jsonrepair('{"a":2,')).toBe('{"a":2}')
+      expect(jsonrepair('{"a":{"b":2}')).toBe('{"a":{"b":2}}')
+      expect(jsonrepair('{\n  "a":{"b":2\n}')).toBe('{\n  "a":{"b":2\n}}')
+      expect(jsonrepair('[{"b":2]')).toBe('[{"b":2}]')
+      expect(jsonrepair('[{"b":2\n]')).toBe('[{"b":2}\n]')
+      expect(jsonrepair('[{"i":1{"i":2}]')).toBe('[{"i":1},{"i":2}]')
+      expect(jsonrepair('[{"i":1,{"i":2}]')).toBe('[{"i":1},{"i":2}]')
     })
 
     test('should remove a redundant closing bracket for an object', () => {
-      strictEqual(jsonrepair('{"a": 1}}'), '{"a": 1}')
-      strictEqual(jsonrepair('{"a": 1}}]}'), '{"a": 1}')
-      strictEqual(jsonrepair('{"a": 1 }  }  ]  }  '), '{"a": 1 }        ')
-      strictEqual(jsonrepair('{"a":2]'), '{"a":2}')
-      strictEqual(jsonrepair('{"a":2,]'), '{"a":2}')
-      strictEqual(jsonrepair('{}}'), '{}')
-      strictEqual(jsonrepair('[2,}'), '[2]')
-      strictEqual(jsonrepair('[}'), '[]')
-      strictEqual(jsonrepair('{]'), '{}')
+      expect(jsonrepair('{"a": 1}}')).toBe('{"a": 1}')
+      expect(jsonrepair('{"a": 1}}]}')).toBe('{"a": 1}')
+      expect(jsonrepair('{"a": 1 }  }  ]  }  ')).toBe('{"a": 1 }        ')
+      expect(jsonrepair('{"a":2]')).toBe('{"a":2}')
+      expect(jsonrepair('{"a":2,]')).toBe('{"a":2}')
+      expect(jsonrepair('{}}')).toBe('{}')
+      expect(jsonrepair('[2,}')).toBe('[2]')
+      expect(jsonrepair('[}')).toBe('[]')
+      expect(jsonrepair('{]')).toBe('{}')
     })
 
     test('should add a missing closing bracket for an array', () => {
-      strictEqual(jsonrepair('['), '[]')
-      strictEqual(jsonrepair('[1,2,3'), '[1,2,3]')
-      strictEqual(jsonrepair('[1,2,3,'), '[1,2,3]')
-      strictEqual(jsonrepair('[[1,2,3,'), '[[1,2,3]]')
-      strictEqual(jsonrepair('{\n"values":[1,2,3\n}'), '{\n"values":[1,2,3]\n}')
-      strictEqual(jsonrepair('{\n"values":[1,2,3\n'), '{\n"values":[1,2,3]}\n')
+      expect(jsonrepair('[')).toBe('[]')
+      expect(jsonrepair('[1,2,3')).toBe('[1,2,3]')
+      expect(jsonrepair('[1,2,3,')).toBe('[1,2,3]')
+      expect(jsonrepair('[[1,2,3,')).toBe('[[1,2,3]]')
+      expect(jsonrepair('{\n"values":[1,2,3\n}')).toBe('{\n"values":[1,2,3]\n}')
+      expect(jsonrepair('{\n"values":[1,2,3\n')).toBe('{\n"values":[1,2,3]}\n')
     })
 
     test('should strip MongoDB data types', () => {
       // simple
-      strictEqual(jsonrepair('NumberLong("2")'), '"2"')
-      strictEqual(jsonrepair('{"_id":ObjectId("123")}'), '{"_id":"123"}')
+      expect(jsonrepair('NumberLong("2")')).toBe('"2"')
+      expect(jsonrepair('{"_id":ObjectId("123")}')).toBe('{"_id":"123"}')
 
       // extensive
       const mongoDocument =
@@ -398,85 +394,83 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
         '   "decimal2" : 4\n' +
         '}'
 
-      strictEqual(jsonrepair(mongoDocument), expectedJson)
+      expect(jsonrepair(mongoDocument)).toBe(expectedJson)
     })
 
     test('should replace Python constants None, True, False', () => {
-      strictEqual(jsonrepair('True'), 'true')
-      strictEqual(jsonrepair('False'), 'false')
-      strictEqual(jsonrepair('None'), 'null')
+      expect(jsonrepair('True')).toBe('true')
+      expect(jsonrepair('False')).toBe('false')
+      expect(jsonrepair('None')).toBe('null')
     })
 
     test('should turn unknown symbols into a string', () => {
-      strictEqual(jsonrepair('foo'), '"foo"')
-      strictEqual(jsonrepair('[1,foo,4]'), '[1,"foo",4]')
-      strictEqual(jsonrepair('{foo: bar}'), '{"foo": "bar"}')
+      expect(jsonrepair('foo')).toBe('"foo"')
+      expect(jsonrepair('[1,foo,4]')).toBe('[1,"foo",4]')
+      expect(jsonrepair('{foo: bar}')).toBe('{"foo": "bar"}')
 
-      strictEqual(jsonrepair('foo 2 bar'), '"foo 2 bar"')
-      strictEqual(jsonrepair('{greeting: hello world}'), '{"greeting": "hello world"}')
-      strictEqual(
-        jsonrepair('{greeting: hello world\nnext: "line"}'),
+      expect(jsonrepair('foo 2 bar')).toBe('"foo 2 bar"')
+      expect(jsonrepair('{greeting: hello world}')).toBe('{"greeting": "hello world"}')
+      expect(jsonrepair('{greeting: hello world\nnext: "line"}')).toBe(
         '{"greeting": "hello world",\n"next": "line"}'
       )
-      strictEqual(jsonrepair('{greeting: hello world!}'), '{"greeting": "hello world!"}')
+      expect(jsonrepair('{greeting: hello world!}')).toBe('{"greeting": "hello world!"}')
     })
 
     // FIXME
     test.skip('should concatenate strings', () => {
-      strictEqual(jsonrepair('"hello" + " world"'), '"hello world"')
-      strictEqual(jsonrepair('"hello" +\n " world"'), '"hello world"')
-      strictEqual(jsonrepair('"a"+"b"+"c"'), '"abc"')
-      strictEqual(jsonrepair('"hello" + /*comment*/ " world"'), '"hello world"')
-      strictEqual(
-        jsonrepair("{\n  \"greeting\": 'hello' +\n 'world'\n}"),
+      expect(jsonrepair('"hello" + " world"')).toBe('"hello world"')
+      expect(jsonrepair('"hello" +\n " world"')).toBe('"hello world"')
+      expect(jsonrepair('"a"+"b"+"c"')).toBe('"abc"')
+      expect(jsonrepair('"hello" + /*comment*/ " world"')).toBe('"hello world"')
+      expect(jsonrepair("{\n  \"greeting\": 'hello' +\n 'world'\n}")).toBe(
         '{\n  "greeting": "helloworld"\n}'
       )
 
-      strictEqual(jsonrepair('"hello +\n " world"'), '"hello world"')
-      strictEqual(jsonrepair('"hello +'), '"hello"')
-      strictEqual(jsonrepair('["hello +]'), '["hello"]')
+      expect(jsonrepair('"hello +\n " world"')).toBe('"hello world"')
+      expect(jsonrepair('"hello +')).toBe('"hello"')
+      expect(jsonrepair('["hello +]')).toBe('["hello"]')
     })
 
     test('should repair missing comma between array items', () => {
-      strictEqual(jsonrepair('{"array": [{}{}]}'), '{"array": [{},{}]}')
-      strictEqual(jsonrepair('{"array": [{} {}]}'), '{"array": [{}, {}]}')
-      strictEqual(jsonrepair('{"array": [{}\n{}]}'), '{"array": [{},\n{}]}')
-      strictEqual(jsonrepair('{"array": [\n{}\n{}\n]}'), '{"array": [\n{},\n{}\n]}')
-      strictEqual(jsonrepair('{"array": [\n1\n2\n]}'), '{"array": [\n1,\n2\n]}')
-      strictEqual(jsonrepair('{"array": [\n"a"\n"b"\n]}'), '{"array": [\n"a",\n"b"\n]}')
+      expect(jsonrepair('{"array": [{}{}]}')).toBe('{"array": [{},{}]}')
+      expect(jsonrepair('{"array": [{} {}]}'), '{"array": [{}).toBe({}]}')
+      expect(jsonrepair('{"array": [{}\n{}]}')).toBe('{"array": [{},\n{}]}')
+      expect(jsonrepair('{"array": [\n{}\n{}\n]}')).toBe('{"array": [\n{},\n{}\n]}')
+      expect(jsonrepair('{"array": [\n1\n2\n]}')).toBe('{"array": [\n1,\n2\n]}')
+      expect(jsonrepair('{"array": [\n"a"\n"b"\n]}')).toBe('{"array": [\n"a",\n"b"\n]}')
 
       // should leave normal array as is
-      strictEqual(jsonrepair('[\n{},\n{}\n]'), '[\n{},\n{}\n]')
+      expect(jsonrepair('[\n{},\n{}\n]')).toBe('[\n{},\n{}\n]')
     })
 
     test('should repair missing comma between object properties', () => {
-      strictEqual(jsonrepair('{"a":2\n"b":3\n}'), '{"a":2,\n"b":3\n}')
-      strictEqual(jsonrepair('{"a":2\n"b":3\nc:4}'), '{"a":2,\n"b":3,\n"c":4}')
+      expect(jsonrepair('{"a":2\n"b":3\n}')).toBe('{"a":2,\n"b":3\n}')
+      expect(jsonrepair('{"a":2\n"b":3\nc:4}')).toBe('{"a":2,\n"b":3,\n"c":4}')
     })
 
     test('should repair numbers at the end', () => {
-      strictEqual(jsonrepair('{"a":2.'), '{"a":2.0}')
-      strictEqual(jsonrepair('{"a":2e'), '{"a":2e0}')
-      strictEqual(jsonrepair('{"a":2e-'), '{"a":2e-0}')
-      strictEqual(jsonrepair('{"a":-'), '{"a":-0}')
+      expect(jsonrepair('{"a":2.')).toBe('{"a":2.0}')
+      expect(jsonrepair('{"a":2e')).toBe('{"a":2e0}')
+      expect(jsonrepair('{"a":2e-')).toBe('{"a":2e-0}')
+      expect(jsonrepair('{"a":-')).toBe('{"a":-0}')
     })
 
     test('should repair missing colon between object key and value', () => {
-      strictEqual(jsonrepair('{"a" "b"}'), '{"a": "b"}')
-      strictEqual(jsonrepair('{"a" 2}'), '{"a": 2}')
-      strictEqual(jsonrepair('{"a"2}'), '{"a":2}')
-      strictEqual(jsonrepair('{\n"a" "b"\n}'), '{\n"a": "b"\n}')
-      strictEqual(jsonrepair('{"a" \'b\'}'), '{"a": "b"}')
-      strictEqual(jsonrepair("{'a' 'b'}"), '{"a": "b"}')
-      strictEqual(jsonrepair('{“a” “b”}'), '{"a": "b"}')
-      strictEqual(jsonrepair("{a 'b'}"), '{"a": "b"}')
-      strictEqual(jsonrepair('{a “b”}'), '{"a": "b"}')
+      expect(jsonrepair('{"a" "b"}')).toBe('{"a": "b"}')
+      expect(jsonrepair('{"a" 2}')).toBe('{"a": 2}')
+      expect(jsonrepair('{"a"2}')).toBe('{"a":2}')
+      expect(jsonrepair('{\n"a" "b"\n}')).toBe('{\n"a": "b"\n}')
+      expect(jsonrepair('{"a" \'b\'}')).toBe('{"a": "b"}')
+      expect(jsonrepair("{'a' 'b'}")).toBe('{"a": "b"}')
+      expect(jsonrepair('{“a” “b”}')).toBe('{"a": "b"}')
+      expect(jsonrepair("{a 'b'}")).toBe('{"a": "b"}')
+      expect(jsonrepair('{a “b”}')).toBe('{"a": "b"}')
     })
 
     test('should repair missing a combination of comma, quotes and brackets', () => {
-      strictEqual(jsonrepair('{"array": [\na\nb\n]}'), '{"array": [\n"a",\n"b"\n]}')
-      strictEqual(jsonrepair('1\n2'), '[\n1,\n2\n]')
-      strictEqual(jsonrepair('[a,b\nc]'), '["a","b",\n"c"]')
+      expect(jsonrepair('{"array": [\na\nb\n]}')).toBe('{"array": [\n"a",\n"b"\n]}')
+      expect(jsonrepair('1\n2')).toBe('[\n1,\n2\n]')
+      expect(jsonrepair('[a,b\nc]')).toBe('["a","b",\n"c"]')
     })
 
     test('should repair newline separated json (for example from MongoDB)', () => {
@@ -484,7 +478,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
         '' + '/* 1 */\n' + '{}\n' + '\n' + '/* 2 */\n' + '{}\n' + '\n' + '/* 3 */\n' + '{}\n'
       const expected = '[\n\n{},\n\n\n{},\n\n\n{}\n\n]'
 
-      strictEqual(jsonrepair(text), expected)
+      expect(jsonrepair(text)).toBe(expected)
     })
 
     test('should repair newline separated json having commas', () => {
@@ -492,7 +486,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
         '' + '/* 1 */\n' + '{},\n' + '\n' + '/* 2 */\n' + '{},\n' + '\n' + '/* 3 */\n' + '{}\n'
       const expected = '[\n\n{},\n\n\n{},\n\n\n{}\n\n]'
 
-      strictEqual(jsonrepair(text), expected)
+      expect(jsonrepair(text)).toBe(expected)
     })
 
     test('should repair newline separated json having commas and trailing comma', () => {
@@ -500,132 +494,87 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
         '' + '/* 1 */\n' + '{},\n' + '\n' + '/* 2 */\n' + '{},\n' + '\n' + '/* 3 */\n' + '{},\n'
       const expected = '[\n\n{},\n\n\n{},\n\n\n{}\n\n]'
 
-      strictEqual(jsonrepair(text), expected)
+      expect(jsonrepair(text)).toBe(expected)
     })
 
     test('should repair a comma separated list with value', () => {
-      strictEqual(jsonrepair('1,2,3'), '[\n1,2,3\n]')
-      strictEqual(jsonrepair('1,2,3,'), '[\n1,2,3\n]')
-      strictEqual(jsonrepair('1\n2\n3'), '[\n1,\n2,\n3\n]')
-      strictEqual(jsonrepair('a\nb'), '[\n"a",\n"b"\n]')
-      strictEqual(jsonrepair('a,b'), '[\n"a","b"\n]')
+      expect(jsonrepair('1,2,3')).toBe('[\n1,2,3\n]')
+      expect(jsonrepair('1,2,3,')).toBe('[\n1,2,3\n]')
+      expect(jsonrepair('1\n2\n3')).toBe('[\n1,\n2,\n3\n]')
+      expect(jsonrepair('a\nb')).toBe('[\n"a",\n"b"\n]')
+      expect(jsonrepair('a,b')).toBe('[\n"a","b"\n]')
     })
 
     test('should repair a number with leading zero', () => {
-      strictEqual(jsonrepair('0789'), '"0789"')
-      strictEqual(jsonrepair('000789'), '"000789"')
-      strictEqual(jsonrepair('001.2'), '"001.2"')
-      strictEqual(jsonrepair('002e3'), '"002e3"')
-      strictEqual(jsonrepair('[0789]'), '["0789"]')
-      strictEqual(jsonrepair('{value:0789}'), '{"value":"0789"}')
+      expect(jsonrepair('0789')).toBe('"0789"')
+      expect(jsonrepair('000789')).toBe('"000789"')
+      expect(jsonrepair('001.2')).toBe('"001.2"')
+      expect(jsonrepair('002e3')).toBe('"002e3"')
+      expect(jsonrepair('[0789]')).toBe('["0789"]')
+      expect(jsonrepair('{value:0789}')).toBe('{"value":"0789"}')
     })
   })
 
   test('should throw an exception in case of non-repairable issues', function () {
-    throws(
-      function () {
-        console.log({ output: jsonrepair('') })
-      },
-      new JSONRepairError('Unexpected end of json string', 0)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('') })
+    }).toThrow(new JSONRepairError('Unexpected end of json string', 0))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('{"a",') })
-      },
-      new JSONRepairError('Colon expected', 4)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('{"a",') })
+    }).toThrow(new JSONRepairError('Colon expected', 4))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('{:2}') })
-      },
-      new JSONRepairError('Object key expected', 1)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('{:2}') })
+    }).toThrow(new JSONRepairError('Object key expected', 1))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('{"a":2}{}') })
-      },
-      new JSONRepairError('Unexpected character "{"', 7)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('{"a":2}{}') })
+    }).toThrow(new JSONRepairError('Unexpected character "{"', 7))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('{"a" ]') })
-      },
-      new JSONRepairError('Colon expected', 5)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('{"a" ]') })
+    }).toThrow(new JSONRepairError('Colon expected', 5))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('{"a":2}foo') })
-      },
-      new JSONRepairError('Unexpected character "f"', 7)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('{"a":2}foo') })
+    }).toThrow(new JSONRepairError('Unexpected character "f"', 7))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('2.3.4') })
-      },
-      new JSONRepairError('Unexpected character "."', 3)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('2.3.4') })
+    }).toThrow(new JSONRepairError('Unexpected character "."', 3))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('234..5') })
-      },
-      new JSONRepairError("Invalid number '234.', expecting a digit but got '.'", 4)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('234..5') })
+    }).toThrow(new JSONRepairError("Invalid number '234.', expecting a digit but got '.'", 4))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('2e3.4') })
-      },
-      new JSONRepairError('Unexpected character "."', 3)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('2e3.4') })
+    }).toThrow(new JSONRepairError('Unexpected character "."', 3))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('[2e,') })
-      },
-      new JSONRepairError("Invalid number '2e', expecting a digit but got ','", 3)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('[2e,') })
+    }).toThrow(new JSONRepairError("Invalid number '2e', expecting a digit but got ','", 3))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('[-,') })
-      },
-      new JSONRepairError("Invalid number '-', expecting a digit but got ','", 2)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('[-,') })
+    }).toThrow(new JSONRepairError("Invalid number '-', expecting a digit but got ','", 2))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('foo [') })
-      },
-      new JSONRepairError('Unexpected character "["', 4)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('foo [') })
+    }).toThrow(new JSONRepairError('Unexpected character "["', 4))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('"\\u26"') })
-      },
-      new JSONRepairError('Invalid unicode character "\\u26""', 1)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('"\\u26"') })
+    }).toThrow(new JSONRepairError('Invalid unicode character "\\u26""', 1))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('"\\uZ000"') })
-      },
-      new JSONRepairError('Invalid unicode character "\\uZ000"', 1)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('"\\uZ000"') })
+    }).toThrow(new JSONRepairError('Invalid unicode character "\\uZ000"', 1))
 
-    throws(
-      function () {
-        console.log({ output: jsonrepair('"\\uZ000') })
-      },
-      new JSONRepairError('Invalid unicode character "\\uZ000"', 1)
-    )
+    expect(function () {
+      console.log({ output: jsonrepair('"\\uZ000') })
+    }).toThrow(new JSONRepairError('Invalid unicode character "\\uZ000"', 1))
   })
 
   function assertRepair(text: string) {
