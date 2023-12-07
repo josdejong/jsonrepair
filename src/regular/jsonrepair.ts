@@ -1,4 +1,4 @@
-import { JSONRepairError } from './JSONRepairError.js'
+import { JSONRepairError } from '../utils/JSONRepairError.js'
 import {
   codeAsterisk,
   codeBackslash,
@@ -37,7 +37,7 @@ import {
   nextNonWhiteSpaceCharacter,
   removeAtIndex,
   stripLastOccurrence
-} from './stringUtils.js'
+} from '../utils/stringUtils.js'
 
 const controlCharacters: { [key: string]: string } = {
   '\b': '\\b',
@@ -512,10 +512,14 @@ export function jsonrepair(text: string): string {
       // repair: remove the end quote of the first string
       output = stripLastOccurrence(output, '"', true)
       const start = output.length
-      parseString()
-
-      // repair: remove the start quote of the second string
-      output = removeAtIndex(output, start, 1)
+      const parsedStr = parseString()
+      if (parsedStr) {
+        // repair: remove the start quote of the second string
+        output = removeAtIndex(output, start, 1)
+      } else {
+        // repair: remove the + because it is not followed by a string
+        output = insertBeforeLastWhitespace(output, '"')
+      }
     }
 
     return processed

@@ -1,2 +1,3 @@
-export { jsonrepair } from './jsonrepair.js'
-export { JSONRepairError } from './JSONRepairError.js'
+// Cross-platform, non-streaming JavaScript API
+export { jsonrepair } from './regular/jsonrepair.js'
+export { JSONRepairError } from './utils/JSONRepairError.js'

@@ -1,76 +1,30 @@
 #!/usr/bin/env node
-import { createReadStream, createWriteStream, readFileSync } from 'fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
-import { jsonrepair } from '../lib/esm/jsonrepair.js'
+import { createReadStream, createWriteStream, readFileSync, renameSync } from 'node:fs'
+import { pipeline as pipelineCallback } from 'node:stream'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
+import { jsonrepairTransform } from '../lib/esm/stream.js'
 
+const pipeline = promisify(pipelineCallback)
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-
-function outputVersion() {
-  const file = join(__dirname, '../package.json')
-  const pkg = JSON.parse(String(readFileSync(file, 'utf-8')))
-
-  console.log(pkg.version)
-}
-
-function outputHelp() {
-  console.log('jsonrepair')
-  console.log('https://github.com/josdejong/jsonrepair')
-  console.log()
-  console.log(
-    'Repair invalid JSON documents. When a document could not be repaired, the output will be left unchanged.'
-  )
-  console.log()
-  console.log('Usage:')
-  console.log('    jsonrepair [filename] {OPTIONS}')
-  console.log()
-  console.log('Options:')
-  console.log('    --version, -v       Show application version')
-  console.log('    --help,    -h       Show this message')
-  console.log()
-  console.log('Example usage:')
-  console.log(
-    '    jsonrepair broken.json                        # Repair a file, output to console'
-  )
-  console.log('    jsonrepair broken.json > repaired.json        # Repair a file, output to file')
-  console.log(
-    '    jsonrepair broken.json --overwrite            # Repair a file, replace the file itself'
-  )
-  console.log(
-    '    cat broken.json | jsonrepair                  # Repair data from an input stream'
-  )
-  console.log(
-    '    cat broken.json | jsonrepair > repaired.json  # Repair data from an input stream, output to file'
-  )
-  console.log()
-}
-
-function streamToString(readableStream) {
-  return new Promise((resolve, reject) => {
-    let text = ''
-
-    readableStream.on('data', (chunk) => {
-      text += String(chunk)
-    })
-    readableStream.on('end', () => {
-      readableStream.destroy()
-      resolve(text)
-    })
-    readableStream.on('error', (err) => reject(err))
-  })
-}
 
 function processArgs(args) {
   const options = {
     version: false,
     help: false,
     overwrite: false,
-    inputFile: null
+    bufferSize: undefined,
+    inputFile: null,
+    outputFile: null
   }
 
   // we skip the first two args, since they contain node and the script path
-  args.slice(2).forEach(function (arg) {
+  let i = 2
+  while (i < args.length) {
+    const arg = args[i]
+
     switch (arg) {
       case '-v':
       case '--version':
@@ -86,6 +40,17 @@ function processArgs(args) {
         options.overwrite = true
         break
 
+      case '--buffer':
+        i++
+        options.bufferSize = parseSize(args[i])
+        break
+
+      case '-o':
+      case '--output':
+        i++
+        options.outputFile = args[i]
+        break
+
       default:
         if (options.inputFile == null) {
           options.inputFile = arg
@@ -93,32 +58,121 @@ function processArgs(args) {
           throw new Error('Unexpected argument "' + arg + '"')
         }
     }
-  })
+
+    i++
+  }
 
   return options
 }
 
-const options = processArgs(process.argv)
-
-if (options.version) {
-  outputVersion()
-} else if (options.help) {
-  outputHelp()
-} else if (options.inputFile != null) {
-  if (options.overwrite) {
-    streamToString(createReadStream(options.inputFile))
-      .then((text) => {
-        const outputStream = createWriteStream(options.inputFile)
-        outputStream.write(jsonrepair(text))
-      })
-      .catch((err) => process.stderr.write(err.toString()))
-  } else {
-    streamToString(createReadStream(options.inputFile))
-      .then((text) => process.stdout.write(jsonrepair(text)))
-      .catch((err) => process.stderr.write(err.toString()))
+async function run(options) {
+  if (options.version) {
+    outputVersion()
+    return
   }
-} else {
-  streamToString(process.stdin)
-    .then((text) => process.stdout.write(jsonrepair(text)))
-    .catch((err) => process.stderr.write(err.toString()))
+
+  if (options.help) {
+    outputHelp()
+    return
+  }
+
+  if (options.overwrite) {
+    if (!options.inputFile) {
+      console.error('Error: cannot use --overwrite: no input file provided')
+      process.exit(1)
+    }
+    if (options.outputFile) {
+      console.error('Error: cannot use --overwrite: there is also an --output provided')
+      process.exit(1)
+    }
+
+    const tempFileSuffix = '.repair-' + new Date().toISOString().replace(/\W/g, '-') + '.json'
+    const tempFile = options.inputFile + tempFileSuffix
+
+    try {
+      const readStream = createReadStream(options.inputFile)
+      const writeStream = createWriteStream(tempFile)
+      await pipeline(
+        readStream,
+        jsonrepairTransform({ bufferSize: options.bufferSize }),
+        writeStream
+      )
+      renameSync(tempFile, options.inputFile)
+    } catch (err) {
+      process.stderr.write(err.toString())
+      process.exit(1)
+    }
+
+    return
+  }
+
+  try {
+    const readStream = options.inputFile ? createReadStream(options.inputFile) : process.stdin
+    const writeStream = options.outputFile ? createWriteStream(options.outputFile) : process.stdout
+    await pipeline(readStream, jsonrepairTransform({ bufferSize: options.bufferSize }), writeStream)
+  } catch (err) {
+    process.stderr.write(err.toString())
+    process.exit(1)
+  }
 }
+
+function outputVersion() {
+  const file = join(__dirname, '../package.json')
+  const pkg = JSON.parse(String(readFileSync(file, 'utf-8')))
+
+  console.log(pkg.version)
+}
+
+function parseSize(size) {
+  // match
+  const match = size.match(/^(\d+)([KMG]?)$/)
+  if (!match) {
+    throw new Error(`Buffer size "${size}" not recognized. Examples: 65536, 512K, 2M`)
+  }
+
+  const num = parseInt(match[1])
+  const suffix = match[2] // K, M, or G
+
+  switch (suffix) {
+    case 'K':
+      return num * 1024
+    case 'M':
+      return num * 1024 * 1024
+    case 'G':
+      return num * 1024 * 1024 * 1024
+    default:
+      return num
+  }
+}
+
+const help = `
+jsonrepair
+https://github.com/josdejong/jsonrepair
+
+Repair invalid JSON documents. When a document could not be repaired, the output will be left unchanged.
+
+Usage:
+    jsonrepair [filename] {OPTIONS}
+
+Options:
+    --version, -v       Show application version
+    --help,    -h       Show this message
+    --output,  -o       Output file
+    --overwrite         Overwrite the input file
+    --buffer            Buffer size in bytes, for example 64K (default) or 1M
+
+Example usage:
+    jsonrepair broken.json                        # Repair a file, output to console
+    jsonrepair broken.json > repaired.json        # Repair a file, output to file
+    jsonrepair broken.json --output repaired.json # Repair a file, output to file
+    jsonrepair broken.json --overwrite            # Repair a file, replace the file itself
+    cat broken.json | jsonrepair                  # Repair data from an input stream
+    cat broken.json | jsonrepair > repaired.json  # Repair data from an input stream, output to file
+`
+
+function outputHelp() {
+  console.log(help)
+}
+
+const options = processArgs(process.argv)
+await run(options)
