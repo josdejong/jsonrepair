@@ -150,3 +150,53 @@ export function isSingleQuoteLike(code: number): boolean {
 export function isSingleQuote(code: number): boolean {
   return code === codeQuote
 }
+
+/**
+ * Strip last occurrence of textToStrip from text
+ */
+export function stripLastOccurrence(
+  text: string,
+  textToStrip: string,
+  stripRemainingText = false
+): string {
+  const index = text.lastIndexOf(textToStrip)
+  return index !== -1
+    ? text.substring(0, index) + (stripRemainingText ? '' : text.substring(index + 1))
+    : text
+}
+
+export function insertBeforeLastWhitespace(text: string, textToInsert: string): string {
+  let index = text.length
+
+  if (!isWhitespace(text.charCodeAt(index - 1))) {
+    // no trailing whitespaces
+    return text + textToInsert
+  }
+
+  while (isWhitespace(text.charCodeAt(index - 1))) {
+    index--
+  }
+
+  return text.substring(0, index) + textToInsert + text.substring(index)
+}
+
+export function removeAtIndex(text: string, start: number, count: number) {
+  return text.substring(0, start) + text.substring(start + count)
+}
+
+/**
+ * Test whether a string ends with a newline or comma character and optional whitespace
+ */
+export function endsWithCommaOrNewline(text: string): boolean {
+  return /[,\n][ \t\r]*$/.test(text)
+}
+
+export function nextNonWhiteSpaceCharacter(text: string, start: number): string {
+  let i = start
+
+  while (isWhitespace(text.charCodeAt(i))) {
+    i++
+  }
+
+  return text.charAt(i)
+}

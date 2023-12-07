@@ -1,6 +1,6 @@
 import { createInputBuffer } from './buffer/InputBuffer.js'
 import { createOutputBuffer } from './buffer/OutputBuffer.js'
-import { JSONRepairError } from './JSONRepairError.js'
+import { JSONRepairError } from '../utils/JSONRepairError.js'
 import { Caret, createStack, StackType } from './stack.js'
 import {
   codeAsterisk,
@@ -35,7 +35,7 @@ import {
   isStartOfValue,
   isValidStringCharacter,
   isWhitespace
-} from './utils/stringUtils.js'
+} from '../utils/stringUtils.js'
 
 const controlCharacters: { [key: string]: string } = {
   '\b': '\\b',
