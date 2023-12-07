@@ -3,7 +3,7 @@ import { isWhitespace } from '../utils/stringUtils.js'
 export interface OutputBuffer {
   push: (text: string) => void
   unshift: (text: string) => void
-  remove: (start: number, end?: number) => string
+  remove: (start: number, end?: number) => void
   length: () => number
   flush: () => void
 
@@ -59,16 +59,16 @@ export function createOutputBuffer({
     flushChunks()
   }
 
-  function remove(start: number, end = offset + buffer.length): string {
+  function remove(start: number, end?: number) {
     if (start < offset) {
       throw new Error(`Cannot remove: ${flushedMessage}`)
     }
 
-    const s = start - offset
-    const e = end - offset
-    const removed = buffer.substring(s, e)
-    buffer = buffer.substring(0, s) + buffer.substring(e)
-    return removed
+    if (end !== undefined) {
+      buffer = buffer.substring(0, start - offset) + buffer.substring(end - offset)
+    } else {
+      buffer = buffer.substring(0, start - offset)
+    }
   }
 
   function length(): number {
@@ -79,12 +79,11 @@ export function createOutputBuffer({
     const bufferIndex = buffer.lastIndexOf(textToStrip)
 
     if (bufferIndex !== -1) {
-      const index = offset + bufferIndex
-
       if (stripRemainingText) {
-        remove(index)
+        buffer = buffer.substring(0, bufferIndex)
       } else {
-        remove(index, index + textToStrip.length)
+        buffer =
+          buffer.substring(0, bufferIndex) + buffer.substring(bufferIndex + textToStrip.length)
       }
     }
   }

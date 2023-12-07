@@ -2,6 +2,7 @@ import { deepStrictEqual, strictEqual, throws } from 'assert'
 import { describe, expect, test } from 'vitest'
 import { jsonrepair } from './index.js'
 import { JSONRepairError } from './JSONRepairError.js'
+import { readFileSync, writeFileSync } from 'node:fs'
 
 describe('jsonrepair', () => {
   describe('parse valid JSON', () => {
@@ -621,8 +622,27 @@ describe('jsonrepair', () => {
   })
 
   test('should configure a bufferSize and chunkSize', () => {
-    expect(() => jsonrepair("{name: 'John',      }", { bufferSize: 4, chunkSize: 2 }))
-      .toThrow('Cannot insert: start of the output is already flushed from the buffer')
+    expect(() => jsonrepair("{name: 'John',      }", { bufferSize: 4, chunkSize: 2 })).toThrow(
+      'Cannot insert: start of the output is already flushed from the buffer'
+    )
+  })
+
+  test('performance', () => {
+    console.time('read')
+    const input = String(readFileSync('C:\\Users\\wjosd\\data\\json\\ships.json'))
+    console.timeEnd('read')
+
+    console.time('repair')
+    const output = jsonrepair(input)
+    // const output = jsonrepair(input, { bufferSize: Infinity, chunkSize: Infinity })
+
+    console.timeEnd('repair')
+
+    console.time('write')
+    writeFileSync('C:\\Users\\wjosd\\data\\json\\ships.repaired.json', output)
+    console.timeEnd('write')
+
+    console.log('done', { bytes: input.length })
   })
 })
 
