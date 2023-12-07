@@ -82,11 +82,11 @@ pipeline(inputStream, jsonrepairTransform(), outputStream, (err) => {
 })
 
 // or using .pipe() instead of pipeline():
-inputStream
-  .pipe(jsonrepairTransform())
-  .pipe(outputStream)
-  .on('error', (err) => console.error(err))
-  .on('finish', () => console.log('done'))
+// inputStream
+//   .pipe(jsonrepairTransform())
+//   .pipe(outputStream)
+//   .on('error', (err) => console.error(err))
+//   .on('finish', () => console.log('done'))
 ```
 
 Use in CommonJS (not recommended):
@@ -111,16 +111,14 @@ Use with UMD in the browser (not recommended):
 
 ### API
 
-#### Function API
+#### Regular API
 
 You can use `jsonrepair` as a function or as a streaming transform. Broken JSON is passed to the function, and the function either returns the repaired JSON, or throws an `JSONRepairError` exception when an issue is encountered which could not be solved.
 
 ```ts
 // @throws JSONRepairError 
-jsonrepair(json: string, options?: { chunkSize?: number, bufferSize?: number }) : string
+jsonrepair(json: string) : string
 ```
-
-The options `chunkSize` and `bufferSize` are normally not relevant for the function API. They are there because they are used internally by the streaming API. Read the "Streaming API" section for more information.
 
 #### Streaming API
 
@@ -152,17 +150,21 @@ Options:
 
 ```
 --version, -v       Show application version
---help,    -h       Show help
+--help,    -h       Show this message
+--output,  -o       Output file
+--overwrite         Overwrite the input file
+--buffer            Buffer size in bytes, for example 64K (default) or 1M
 ```
 
 Example usage:
 
 ```
-$ jsonrepair broken.json                         # Repair a file, output to console
-$ jsonrepair broken.json > repaired.json         # Repair a file, output to file
-$ jsonrepair broken.json --overwrite             # Repair a file, replace the file itself
-$ cat broken.json | jsonrepair                   # Repair data from an input stream
-$ cat broken.json | jsonrepair > repaired.json   # Repair data from an input stream, output to file
+$ jsonrepair broken.json                        # Repair a file, output to console
+$ jsonrepair broken.json > repaired.json        # Repair a file, output to file
+$ jsonrepair broken.json --output repaired.json # Repair a file, output to file
+$ jsonrepair broken.json --overwrite            # Repair a file, replace the file itself
+$ cat broken.json | jsonrepair                  # Repair data from an input stream
+$ cat broken.json | jsonrepair > repaired.json  # Repair data from an input stream, output to file
 ```
 
 ### Alternatives:
