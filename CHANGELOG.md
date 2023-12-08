@@ -7,31 +7,12 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Features
 
-* create CLI option --output, and refactor the CLI a bit ([1cf15c4](https://github.com/josdejong/jsonrepair/commit/1cf15c4d37cdb1286aa2b2503d125f6a4c596a8d))
-* expose options bufferSize and chunkSize ([aac8866](https://github.com/josdejong/jsonrepair/commit/aac886609f876a4704017829421e07846d04a14d))
-* get NDJSON working again ([bbe44c6](https://github.com/josdejong/jsonrepair/commit/bbe44c6d64e3ebc1960aeaa48ee21b9c1fbe9d18))
-* get repairing Mongo data types and JSONP working again ([dad0a1b](https://github.com/josdejong/jsonrepair/commit/dad0a1bc5143882338503806bf5964cbe9131d61))
-* implement option `--buffer` in the CLI ([67591a6](https://github.com/josdejong/jsonrepair/commit/67591a6579941fc09e0fcf838ebacbd86bb534a0))
-* implement streaming support (WIP) ([b1cbc8a](https://github.com/josdejong/jsonrepair/commit/b1cbc8a8e8db65d15358d5ac18cc4fc9d60afaa4))
-* keep the regular and streaming implementation side by side (WIP) ([8585240](https://github.com/josdejong/jsonrepair/commit/858524010ddce062e064cebad2f2a5215506d40e))
-* make the CLI streaming (WIP) ([2ac0b60](https://github.com/josdejong/jsonrepair/commit/2ac0b60f4eab6db2bf52e55eab6ca86680727c9c))
-* repair a string concat that is not followed by a string ([bf57c09](https://github.com/josdejong/jsonrepair/commit/bf57c09e1a36a32ffcc3ec2850db44c161e5e8e7))
-* repair many cases again (WIP) ([c09a9d7](https://github.com/josdejong/jsonrepair/commit/c09a9d758c07db86539dafdc7076e0f7cf6c9c3f))
-* streaming support in Node.js ([79f7a66](https://github.com/josdejong/jsonrepair/commit/79f7a663622e2814c0297dea77a72a94704f32b9))
-
+* [#106](https://github.com/josdejong/jsonrepair/discussions/106) streaming support in Node.js
+  ([#111](https://github.com/josdejong/jsonrepair/pull/111))
 
 ### Bug Fixes
 
-* a bug in `.charCodeAt` ([d384b5a](https://github.com/josdejong/jsonrepair/commit/d384b5a7240d24357f721a55a499569d58014bef))
-* broken unit tests ([23743d6](https://github.com/josdejong/jsonrepair/commit/23743d691113a0d1184b6fabe10a5214c36ce6e4))
-* do not export `jsonrepairCore` ([b07f6f9](https://github.com/josdejong/jsonrepair/commit/b07f6f9da9cb0b2fe556014beefc0d02a96fdf55))
-* get CLI tests working ([fd21b9c](https://github.com/josdejong/jsonrepair/commit/fd21b9cdc002f20ff0064c64c4c4cf65bb65be99))
-* improved index out of range error message ([9aff9a4](https://github.com/josdejong/jsonrepair/commit/9aff9a481f514b986ecb8419b4d9140e5be5db09))
-* performance improvements ([b82efb4](https://github.com/josdejong/jsonrepair/commit/b82efb4c50f0d465d295534b52b5d0dcbd97af44))
-* port fixing truncated unicode chars ([7e919a2](https://github.com/josdejong/jsonrepair/commit/7e919a2c29bc37c9bf701f6683ed80d8918c623f))
-* refactoring and fixes (WIP) ([4a09322](https://github.com/josdejong/jsonrepair/commit/4a09322f2534456311b5277a612b4e64abdfa4f2))
-* throw an error when reading beyond the current received input ([b6ec71c](https://github.com/josdejong/jsonrepair/commit/b6ec71cfe5c47db70d20dd4d9e182f00faf47b3c))
-* unit tests ([0503223](https://github.com/josdejong/jsonrepair/commit/0503223f45827521ad2b759a1e5c34528a3951b0))
+* repair a string concat that is not followed by a string
 
 ### [3.4.1](https://github.com/josdejong/jsonrepair/compare/v3.4.0...v3.4.1) (2023-11-12)
 
