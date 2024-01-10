@@ -34,7 +34,6 @@ import {
   isStartOfValue,
   isValidStringCharacter,
   isWhitespace,
-  nextNonWhiteSpaceCharacter,
   removeAtIndex,
   stripLastOccurrence
 } from '../utils/stringUtils.js'
@@ -401,6 +400,7 @@ export function jsonrepair(text: string): string {
             : isDoubleQuoteLike
 
       const iBefore = i
+      const oBefore = output.length
 
       let str = '"'
       i++
@@ -466,19 +466,7 @@ export function jsonrepair(text: string): string {
         }
       }
 
-      // see whether we have an end quote followed by a valid delimiter
       const hasEndQuote = isQuote(text.charCodeAt(i))
-      const valid =
-        hasEndQuote &&
-        (i + 1 >= text.length || isDelimiter(nextNonWhiteSpaceCharacter(text, i + 1)))
-      if (!valid && !stopAtDelimiter) {
-        // we're dealing with a missing quote somewhere. Let's revert parsing
-        // this string and try again, running in a more conservative mode,
-        // stopping at the first next delimiter
-        i = iBefore
-        return parseString(true)
-      }
-
       if (hasEndQuote) {
         str += '"'
         i++
@@ -488,6 +476,23 @@ export function jsonrepair(text: string): string {
       }
 
       output += str
+
+      parseWhitespaceAndSkipComments()
+
+      // see whether we have an end quote followed by a valid delimiter
+      const isAtEnd = i >= text.length
+      const nextIsDelimiter = isDelimiter(text.charAt(i))
+      if (
+        !stopAtDelimiter &&
+        ((hasEndQuote && !isAtEnd && !nextIsDelimiter) || (!hasEndQuote && isAtEnd))
+      ) {
+        // we're dealing with a missing quote somewhere. Let's revert parsing
+        // this string and try again, running in a more conservative mode,
+        // stopping at the first next delimiter
+        i = iBefore
+        output = output.substring(0, oBefore)
+        return parseString(true)
+      }
 
       parseConcatenatedString()
 

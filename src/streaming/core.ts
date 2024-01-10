@@ -535,7 +535,9 @@ export function jsonrepairCore({
    *   and fixing the string by inserting a quote there.
    */
   function parseString(stopAtDelimiter = false): boolean {
-    const iBefore = i // we may need to revert
+    // we may need to revert
+    const iBefore = i
+    const oBefore = output.length()
 
     let skipEscapeChars = input.charCodeAt(i) === codeBackslash
     if (skipEscapeChars) {
@@ -619,26 +621,30 @@ export function jsonrepairCore({
         }
       }
 
-      // see whether we have an end quote followed by a valid delimiter
       const hasEndQuote = isQuote(input.charCodeAt(i))
-      const valid =
-        hasEndQuote && (input.isEnd(i + 1) || isDelimiter(nextNonWhiteSpaceCharacter(i + 1)))
-
-      if (!valid && !stopAtDelimiter) {
-        // we're dealing with a missing quote somewhere. Let's revert parsing
-        // this string and try again, running in a more conservative mode,
-        // stopping at the first next delimiter
-        i = iBefore
-        output.remove(iBefore)
-        return parseString(true)
-      }
-
       if (hasEndQuote) {
         output.push('"')
         i++
       } else {
         // repair missing quote
         output.insertBeforeLastWhitespace('"')
+      }
+
+      parseWhitespaceAndSkipComments()
+
+      // see whether we have an end quote followed by a valid delimiter
+      const isAtEnd = input.isEnd(i)
+      const nextIsDelimiter = isDelimiter(input.charAt(i))
+      if (
+        !stopAtDelimiter &&
+        ((hasEndQuote && !isAtEnd && !nextIsDelimiter) || (!hasEndQuote && isAtEnd))
+      ) {
+        // we're dealing with a missing quote somewhere. Let's revert parsing
+        // this string and try again, running in a more conservative mode,
+        // stopping at the first next delimiter
+        i = iBefore
+        output.remove(oBefore)
+        return parseString(true)
       }
 
       parseConcatenatedString()
@@ -790,16 +796,6 @@ export function jsonrepairCore({
     }
 
     return j > i ? j : null
-  }
-
-  function nextNonWhiteSpaceCharacter(start: number): string {
-    let i = start
-
-    while (isWhitespace(input.charCodeAt(i))) {
-      i++
-    }
-
-    return input.charAt(i)
   }
 
   function expectDigit(start: number) {

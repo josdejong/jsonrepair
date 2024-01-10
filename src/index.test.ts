@@ -258,6 +258,14 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('"/* foo */"')).toBe('"/* foo */"')
     })
 
+    test('should remove comments after a string containing a delimiter', () => {
+      expect(jsonrepair('["a"/* foo */]')).toBe('["a"]')
+      expect(jsonrepair('["(a)"/* foo */]')).toBe('["(a)"]')
+      expect(jsonrepair('["a]"/* foo */]')).toBe('["a]"]')
+      expect(jsonrepair('{"a":"b"/* foo */}')).toBe('{"a":"b"}')
+      expect(jsonrepair('{"a":"(b)"/* foo */}')).toBe('{"a":"(b)"}')
+    })
+
     test('should strip JSONP notation', () => {
       // matching
       expect(jsonrepair('callback_123({});')).toBe('{}')

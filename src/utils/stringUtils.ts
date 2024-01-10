@@ -190,13 +190,3 @@ export function removeAtIndex(text: string, start: number, count: number) {
 export function endsWithCommaOrNewline(text: string): boolean {
   return /[,\n][ \t\r]*$/.test(text)
 }
-
-export function nextNonWhiteSpaceCharacter(text: string, start: number): string {
-  let i = start
-
-  while (isWhitespace(text.charCodeAt(i))) {
-    i++
-  }
-
-  return text.charAt(i)
-}
