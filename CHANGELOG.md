@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.5.1](https://github.com/josdejong/jsonrepair/compare/v3.5.0...v3.5.1) (2024-01-10)
+
+
+### Bug Fixes
+
+* [#112](https://github.com/josdejong/jsonrepair/issues/112) remove comments after a string containing a delimiter ([6e12753](https://github.com/josdejong/jsonrepair/commit/6e12753a144f97b7076e89c7452e68f3b226051f))
+
 ## [3.5.0](https://github.com/josdejong/jsonrepair/compare/v3.4.1...v3.5.0) (2023-12-07)
 
 
