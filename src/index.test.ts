@@ -1,11 +1,13 @@
 import { describe, expect, test } from 'vitest'
+import { jsonrepairGenerator } from './generator/generator'
 import { JSONRepairError } from './utils/JSONRepairError'
 import { jsonrepair as jsonRepairRegular } from './index'
 import { jsonrepairCore } from './streaming/core'
 
 const implementations = [
   { name: 'regular', jsonrepair: jsonRepairRegular },
-  { name: 'streaming', jsonrepair: createStreamingRepairWrapper() }
+  { name: 'streaming', jsonrepair: createStreamingRepairWrapper() },
+  { name: 'generator', jsonrepair: createGeneratorRepairWrapper() }
 ]
 
 describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
@@ -596,6 +598,26 @@ function createStreamingRepairWrapper(): (input: string) => string {
     // is faster, but it can potentially through an "Index out of range"
     // error, and we do not want that.
     const { transform, flush } = jsonrepairCore({
+      onData: (chunk) => (output += chunk),
+      bufferSize: Infinity,
+      chunkSize: Infinity
+    })
+
+    transform(text)
+    flush()
+
+    return output
+  }
+}
+
+function createGeneratorRepairWrapper(): (input: string) => string {
+  return function jsonrepair(text: string): string {
+    let output = ''
+
+    // Note: without an infinite bufferSize and chunkSize, the function
+    // is faster, but it can potentially through an "Index out of range"
+    // error, and we do not want that.
+    const { transform, flush } = jsonrepairGenerator({
       onData: (chunk) => (output += chunk),
       bufferSize: Infinity,
       chunkSize: Infinity
