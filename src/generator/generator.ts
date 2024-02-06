@@ -1,5 +1,5 @@
-import { createGeneratorInputBuffer } from './buffer/GeneratorInputBuffer'
-import { createOutputBuffer } from '../streaming/buffer/OutputBuffer'
+import { createGeneratorInputBuffer } from './buffer/GeneratorInputBuffer.js'
+import { createOutputBuffer } from '../streaming/buffer/OutputBuffer.js'
 import { JSONRepairError } from '../utils/JSONRepairError.js'
 import {
   codeAsterisk,
