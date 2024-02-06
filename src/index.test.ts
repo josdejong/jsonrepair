@@ -12,25 +12,25 @@ const implementations = [
 
 describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
   describe('parse valid JSON', () => {
-    test('parse full JSON object', function () {
+    test('parse full JSON object', function() {
       const text = '{"a":2.3e100,"b":"str","c":null,"d":false,"e":[1,2,3]}'
       const parsed = jsonrepair(text)
 
       expect(parsed).toBe(text)
     })
 
-    test('parse whitespace', function () {
+    test('parse whitespace', function() {
       assertRepair('  { \n } \t ')
     })
 
-    test('parse object', function () {
+    test('parse object', function() {
       assertRepair('{}')
       assertRepair('{"a": {}}')
       assertRepair('{"a": "b"}')
       assertRepair('{"a": 2}')
     })
 
-    test('parse array', function () {
+    test('parse array', function() {
       assertRepair('[]')
       assertRepair('[1,2,3]')
       assertRepair('[ 1 , 2 , 3 ]')
@@ -40,7 +40,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       assertRepair('[1, "hi", true, false, null, {}, []]')
     })
 
-    test('parse number', function () {
+    test('parse number', function() {
       assertRepair('23')
       assertRepair('0')
       assertRepair('0e+2')
@@ -55,19 +55,19 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       assertRepair('2.3e-3')
     })
 
-    test('parse string', function () {
+    test('parse string', function() {
       assertRepair('"str"')
       assertRepair('"\\"\\\\\\/\\b\\f\\n\\r\\t"')
       assertRepair('"\\u260E"')
     })
 
-    test('parse keywords', function () {
+    test('parse keywords', function() {
       assertRepair('true')
       assertRepair('false')
       assertRepair('null')
     })
 
-    test('correctly handle strings equaling a JSON delimiter', function () {
+    test('correctly handle strings equaling a JSON delimiter', function() {
       assertRepair('""')
       assertRepair('"["')
       assertRepair('"]"')
@@ -523,64 +523,64 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     })
   })
 
-  test('should throw an exception in case of non-repairable issues', function () {
-    expect(function () {
+  test('should throw an exception in case of non-repairable issues', function() {
+    expect(function() {
       console.log({ output: jsonrepair('') })
     }).toThrow(new JSONRepairError('Unexpected end of json string', 0))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('{"a",') })
     }).toThrow(new JSONRepairError('Colon expected', 4))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('{:2}') })
     }).toThrow(new JSONRepairError('Object key expected', 1))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('{"a":2}{}') })
     }).toThrow(new JSONRepairError('Unexpected character "{"', 7))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('{"a" ]') })
     }).toThrow(new JSONRepairError('Colon expected', 5))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('{"a":2}foo') })
     }).toThrow(new JSONRepairError('Unexpected character "f"', 7))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('2.3.4') })
     }).toThrow(new JSONRepairError('Unexpected character "."', 3))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('234..5') })
     }).toThrow(new JSONRepairError("Invalid number '234.', expecting a digit but got '.'", 4))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('2e3.4') })
     }).toThrow(new JSONRepairError('Unexpected character "."', 3))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('[2e,') })
     }).toThrow(new JSONRepairError("Invalid number '2e', expecting a digit but got ','", 3))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('[-,') })
     }).toThrow(new JSONRepairError("Invalid number '-', expecting a digit but got ','", 2))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('foo [') })
     }).toThrow(new JSONRepairError('Unexpected character "["', 4))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('"\\u26"') })
     }).toThrow(new JSONRepairError('Invalid unicode character "\\u26""', 1))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('"\\uZ000"') })
     }).toThrow(new JSONRepairError('Invalid unicode character "\\uZ000"', 1))
 
-    expect(function () {
+    expect(function() {
       console.log({ output: jsonrepair('"\\uZ000') })
     }).toThrow(new JSONRepairError('Invalid unicode character "\\uZ000"', 1))
   })

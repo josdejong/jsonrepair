@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { jsonrepairTransform } from './stream'
 
 describe('stream', () => {
-  test('should create and pipe a jsonrepair transform', async () => {
+  test('should create and pipe a jsonrepair transform', async() => {
     const input = new Readable()
     input.push("{name: 'John'}")
     input.push(null)
@@ -15,7 +15,7 @@ describe('stream', () => {
     ])
   })
 
-  test('should configure chunk size', async () => {
+  test('should configure chunk size', async() => {
     const input = new Readable()
     input.push("{name: 'John'}")
     input.push(null)
@@ -30,7 +30,7 @@ describe('stream', () => {
     ])
   })
 
-  test('should configure buffer size, should throw error', async () => {
+  test('should configure buffer size, should throw error', async() => {
     return new Promise<void>((resolve) => {
       const input = new Readable()
       input.push("{name: 'John',      }")

@@ -103,11 +103,11 @@ export function jsonrepairGenerator({
   parse()
 
   return {
-    transform: function (chunk) {
+    transform: function(chunk) {
       input.push(chunk)
       // it.next() // FIXME
     },
-    flush: function () {
+    flush: function() {
       input.close()
 
       // FIXME

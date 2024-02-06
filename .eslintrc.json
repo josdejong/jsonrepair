@@ -10,8 +10,8 @@
     "ecmaVersion": 2020,
     "sourceType": "module"
   },
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "@stylistic/ts"],
   "rules": {
-    "space-before-function-paren": "off"
+    "space-before-function-paren": ["error" ,"never"]
   }
 }
