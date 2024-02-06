@@ -546,16 +546,17 @@ export function jsonrepairCore({
       skipEscapeChars = true
     }
 
-    if (isQuote(input.charCodeAt(i))) {
+    const char = input.charCodeAt(i)
+    if (isQuote(char)) {
       // double quotes are correct JSON,
       // single quotes come from JavaScript for example, we assume it will have a correct single end quote too
       // otherwise, we will match any double-quote-like start with a double-quote-like end,
       // or any single-quote-like start with a single-quote-like end
-      const isEndQuote = isDoubleQuote(input.charCodeAt(i))
+      const isEndQuote = isDoubleQuote(char)
         ? isDoubleQuote
-        : isSingleQuote(input.charCodeAt(i))
+        : isSingleQuote(char)
           ? isSingleQuote // eslint-disable-line indent
-          : isSingleQuoteLike(input.charCodeAt(i)) // eslint-disable-line indent
+          : isSingleQuoteLike(char) // eslint-disable-line indent
             ? isSingleQuoteLike // eslint-disable-line indent
             : isDoubleQuoteLike // eslint-disable-line indent
 
@@ -660,11 +661,10 @@ export function jsonrepairCore({
    * Repair concatenated strings like "hello" + "world", change this into "helloworld"
    */
   function parseConcatenatedString(): boolean {
-    let parsed = false
+    const start = i
 
     parseWhitespaceAndSkipComments()
     while (input.charCodeAt(i) === codePlus) {
-      parsed = true
       i++
       parseWhitespaceAndSkipComments()
 
@@ -681,7 +681,7 @@ export function jsonrepairCore({
       }
     }
 
-    return parsed
+    return i > start
   }
 
   /**

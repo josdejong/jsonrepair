@@ -386,16 +386,17 @@ export function jsonrepair(text: string): string {
       skipEscapeChars = true
     }
 
-    if (isQuote(text.charCodeAt(i))) {
+    const char = text.charCodeAt(i)
+    if (isQuote(char)) {
       // double quotes are correct JSON,
       // single quotes come from JavaScript for example, we assume it will have a correct single end quote too
       // otherwise, we will match any double-quote-like start with a double-quote-like end,
       // or any single-quote-like start with a single-quote-like end
-      const isEndQuote = isDoubleQuote(text.charCodeAt(i))
+      const isEndQuote = isDoubleQuote(char)
         ? isDoubleQuote
-        : isSingleQuote(text.charCodeAt(i))
+        : isSingleQuote(char)
           ? isSingleQuote
-          : isSingleQuoteLike(text.charCodeAt(i))
+          : isSingleQuoteLike(char)
             ? isSingleQuoteLike
             : isDoubleQuoteLike
 
@@ -508,28 +509,27 @@ export function jsonrepair(text: string): string {
    * Repair concatenated strings like "hello" + "world", change this into "helloworld"
    */
   function parseConcatenatedString(): boolean {
-    let processed = false
+    const start = i
 
     parseWhitespaceAndSkipComments()
     while (text.charCodeAt(i) === codePlus) {
-      processed = true
       i++
       parseWhitespaceAndSkipComments()
 
       // repair: remove the end quote of the first string
       output = stripLastOccurrence(output, '"', true)
-      const start = output.length
+      const end = output.length
       const parsedStr = parseString()
       if (parsedStr) {
         // repair: remove the start quote of the second string
-        output = removeAtIndex(output, start, 1)
+        output = removeAtIndex(output, end, 1)
       } else {
         // repair: remove the + because it is not followed by a string
         output = insertBeforeLastWhitespace(output, '"')
       }
     }
 
-    return processed
+    return i > start
   }
 
   /**

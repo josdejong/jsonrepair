@@ -1,13 +1,13 @@
 export interface GeneratorInputBuffer {
   push: (chunk: string) => void
   flush: (position: number) => void
-  charAt: (index: number) => Generator<string>
-  charCodeAt: (index: number) => Generator<number>
-  substring: (start: number, end: number) => Generator<string>
+  charAt: (index: number) => Generator<void>
+  charCodeAt: (index: number) => Generator<void>
+  substring: (start: number, end: number) => Generator<void>
   length: () => number
   currentLength: () => number
   currentBufferSize: () => number
-  isEnd: (index: number) => Generator<boolean>
+  isEnd: (index: number) => Generator<void>
   close: () => void
 }
 
@@ -17,7 +17,7 @@ export function createGeneratorInputBuffer(): GeneratorInputBuffer {
   let currentLength = 0
   let closed = false
 
-  function * ensure(index: number): Generator {
+  function* ensure(index: number): Generator<void> {
     if (index < offset) {
       throw new Error(`${indexOutOfRangeMessage} (index: ${index}, offset: ${offset})`)
     }
@@ -26,11 +26,6 @@ export function createGeneratorInputBuffer(): GeneratorInputBuffer {
     while (!closed && index >= currentLength) {
       yield
     }
-
-    // TODO: cleanup?
-    // if (closed && index >= currentLength) {
-    //   throw new Error(`${indexOutOfRangeMessage} (index: ${index})`)
-    // }
   }
 
   function push(chunk: string) {
@@ -47,21 +42,21 @@ export function createGeneratorInputBuffer(): GeneratorInputBuffer {
     offset = position
   }
 
-  function * charAt(index: number): Generator<string> {
-    yield * ensure(index)
+  function* charAt(index: number): Generator<void> {
+    yield* ensure(index)
 
     return buffer.charAt(index - offset)
   }
 
-  function * charCodeAt(index: number): Generator<number> {
-    yield * ensure(index)
+  function* charCodeAt(index: number): Generator<void> {
+    yield* ensure(index)
 
     return buffer.charCodeAt(index - offset)
   }
 
-  function * substring(start: number, end: number): Generator<string> {
-    yield * ensure(end - 1) // -1 because end is excluded
-    yield * ensure(start)
+  function* substring(start: number, end: number): Generator<void> {
+    yield* ensure(end - 1) // -1 because end is excluded
+    yield* ensure(start)
 
     return buffer.slice(start - offset, end - offset)
   }
@@ -74,9 +69,9 @@ export function createGeneratorInputBuffer(): GeneratorInputBuffer {
     return currentLength
   }
 
-  function * isEnd(index: number): Generator<boolean> {
+  function* isEnd(index: number): Generator<void> {
     if (!closed) {
-      yield * ensure(index)
+      yield* ensure(index)
     }
 
     return index >= currentLength

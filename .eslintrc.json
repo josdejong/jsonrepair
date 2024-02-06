@@ -12,6 +12,8 @@
   },
   "plugins": ["@typescript-eslint", "@stylistic/ts"],
   "rules": {
-    "space-before-function-paren": ["error" ,"never"]
+    "space-before-function-paren": ["error" ,"never"],
+    "generator-star-spacing": ["error", {"before": false, "after": true}],
+    "yield-star-spacing": ["error", {"before": false, "after": true}]
   }
 }
