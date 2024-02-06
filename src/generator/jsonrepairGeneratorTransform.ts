@@ -7,8 +7,7 @@ export interface JsonRepairTransformOptions {
 }
 
 /**
- * FIXME: The generator version does not actually limit memory, and is very slow.
- *  Figure out why.
+ * FIXME: The generator version is very slow (like 5-10x as slow). Figure out why.
  */
 export function jsonrepairGeneratorTransform(options?: JsonRepairTransformOptions): Transform {
   const repair = jsonrepairGenerator({

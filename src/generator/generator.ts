@@ -89,8 +89,6 @@ export function jsonrepairGenerator({
   bufferSize = 65536,
   chunkSize = 65536
 }: JsonRepairGeneratorOptions): JsonRepairGenerator {
-  let i = 0 // current index in text
-
   const input = createGeneratorInputBuffer()
 
   const output = createOutputBuffer({
@@ -99,12 +97,25 @@ export function jsonrepairGenerator({
     chunkSize
   })
 
+  let i = 0 // current index in text
+  let iFlushed = 0
+
   const it = parse()
+
+  function flushInputBuffer() {
+    while (iFlushed < i - bufferSize - chunkSize) {
+      iFlushed += chunkSize
+      input.flush(iFlushed)
+    }
+  }
 
   return {
     transform: function(chunk) {
       input.push(chunk)
+
       it.next()
+
+      flushInputBuffer()
     },
     flush: function() {
       input.close()
