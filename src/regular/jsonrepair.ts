@@ -424,6 +424,8 @@ export function jsonrepair(text: string): string {
 
           return true
         } else if (isEndQuote(text.charCodeAt(i))) {
+          const iQuote = i
+          const iStr = str.length
           str += '"'
           i++
           output += str
@@ -431,13 +433,26 @@ export function jsonrepair(text: string): string {
           parseWhitespaceAndSkipComments()
 
           const isAtEnd = i >= text.length
-          if (!stopAtDelimiter && !isAtEnd && !isDelimiter(text.charAt(i))) {
-            return parseStringStopAtDelimiter()
+          if (!stopAtDelimiter && !isAtEnd && !isDelimiter(text.charAt(i)) && !isQuote(text.charCodeAt(i))) {
+            let cBefore = iQuote - 1
+            while (cBefore > 0 && isWhitespace(text.charCodeAt(cBefore))) {
+              cBefore--
+            }
+            if (!isDelimiter(text.charAt(cBefore))) {
+              // repair unescaped quote
+              str = str.substring(0, iStr) + '\\' + str.substring(iStr)
+
+              // revert to right after the quote and before any whitespace and continue the while loop
+              output = output.substring(0, oBefore)
+              i = iQuote + 1
+            } else {
+              return parseStringStopAtDelimiter()
+            }
+          } else {
+            parseConcatenatedString()
+
+            return true
           }
-
-          parseConcatenatedString()
-
-          return true
         } else if (stopAtDelimiter && isDelimiter(text[i])) {
           // repair missing quote
           str = insertBeforeLastWhitespace(str, '"')
@@ -448,9 +463,7 @@ export function jsonrepair(text: string): string {
           parseConcatenatedString()
 
           return true
-        }
-
-        if (text.charCodeAt(i) === codeBackslash) {
+        } else if (text.charCodeAt(i) === codeBackslash) {
           const char = text.charAt(i + 1)
           const escapeChar = escapeCharacters[char]
           if (escapeChar !== undefined) {
@@ -499,10 +512,8 @@ export function jsonrepair(text: string): string {
         }
 
         if (skipEscapeChars) {
-          const processed = skipEscapeCharacter()
-          if (processed) {
-            // repair: skipped escape character (nothing to do)
-          }
+          // repair: skipped escape character (nothing to do)
+          skipEscapeCharacter()
         }
       }
     }
