@@ -4,6 +4,7 @@ export interface OutputBuffer {
   push: (text: string) => void
   unshift: (text: string) => void
   remove: (start: number, end?: number) => void
+  insertAt: (index: number, text: string) => void
   length: () => number
   flush: () => void
 
@@ -71,6 +72,14 @@ export function createOutputBuffer({
     }
   }
 
+  function insertAt (index: number, text: string) {
+    if (index < offset) {
+      throw new Error(`Cannot insert: ${flushedMessage}`)
+    }
+
+    buffer = buffer.substring(0, index - offset) + text + buffer.substring(index - offset)
+  }
+
   function length(): number {
     return offset + buffer.length
   }
@@ -131,6 +140,7 @@ export function createOutputBuffer({
     push,
     unshift,
     remove,
+    insertAt,
     length,
     flush,
 

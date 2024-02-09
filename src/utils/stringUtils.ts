@@ -62,7 +62,7 @@ export function isDelimiter(char: string): boolean {
   return regexDelimiter.test(char)
 }
 
-const regexDelimiter = /^[,:[\]{}()\n+]$/
+const regexDelimiter = /^[,:[\]/{}()\n+]$/
 
 export function isStartOfValue(char: string): boolean {
   return regexStartOfValue.test(char) || (char && isQuote(char.charCodeAt(0)))

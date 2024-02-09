@@ -118,6 +118,9 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair("'abc")).toBe('"abc"')
       expect(jsonrepair('\u2018abc')).toBe('"abc"')
       expect(jsonrepair('"it\'s working')).toBe('"it\'s working"')
+      expect(jsonrepair('["abc+/*comment*/"def"]')).toBe('["abcdef"]')
+      expect(jsonrepair('["abc/*comment*/+"def"]')).toBe('["abcdef"]')
+      expect(jsonrepair('["abc,/*comment*/"def"]')).toBe('["abc","def"]')
     })
 
     test('should repair truncated JSON', () => {
@@ -228,6 +231,10 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     test('should escape unescaped double quotes', () => {
       expect(jsonrepair('"The TV has a 24" screen"')).toBe('"The TV has a 24\\" screen"')
       expect(jsonrepair('{"key": "apple "bee" carrot"}')).toBe('{"key": "apple \\"bee\\" carrot"}')
+
+      expect(jsonrepair('[",",":"]')).toBe('[",",":"]')
+      expect(jsonrepair('["a" 2')).toBe('["a", 2]')
+      expect(jsonrepair('["," 2')).toBe('[""," 2"]') // Ideally it would repair as [",", 2]
     })
 
     test('should replace special white space characters', () => {
