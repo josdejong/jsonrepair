@@ -563,7 +563,7 @@ export function jsonrepairCore({
       i++
 
       const isEndOfString = stopAtDelimiter
-        ? (i: number) => isDelimiter(input.charAt(i))
+        ? (i: number) => isDelimiter(input.charAt(i)) || isEndQuote(input.charCodeAt(i))
         : (i: number) => isEndQuote(input.charCodeAt(i))
 
       while (!input.isEnd(i) && !isEndOfString(i)) {
@@ -792,7 +792,7 @@ export function jsonrepairCore({
   function findNextDelimiter(): number | null {
     // note that the symbol can end with whitespaces: we stop at the next delimiter
     let j = i
-    while (!input.isEnd(j) && !isDelimiter(input.charAt(j))) {
+    while (!input.isEnd(j) && !isDelimiter(input.charAt(j)) && !isQuote(input.charCodeAt(j))) {
       j++
     }
 

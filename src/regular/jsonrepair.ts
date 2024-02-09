@@ -406,7 +406,7 @@ export function jsonrepair(text: string): string {
       i++
 
       const isEndOfString = stopAtDelimiter
-        ? (i: number) => isDelimiter(text[i])
+        ? (i: number) => isDelimiter(text[i]) || isEndQuote(text.charCodeAt(i))
         : (i: number) => isEndQuote(text.charCodeAt(i))
 
       while (i < text.length && !isEndOfString(i)) {
@@ -621,7 +621,7 @@ export function jsonrepair(text: string): string {
   function parseUnquotedString() {
     // note that the symbol can end with whitespaces: we stop at the next delimiter
     const start = i
-    while (i < text.length && !isDelimiter(text[i])) {
+    while (i < text.length && !isDelimiter(text[i]) && !isQuote(text.charCodeAt(i))) {
       i++
     }
 

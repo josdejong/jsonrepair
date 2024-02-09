@@ -59,7 +59,7 @@ export function isValidStringCharacter(code: number): boolean {
 }
 
 export function isDelimiter(char: string): boolean {
-  return regexDelimiter.test(char) || isQuote(char.charCodeAt(0))
+  return regexDelimiter.test(char)
 }
 
 const regexDelimiter = /^[,:[\]{}()\n+]$/

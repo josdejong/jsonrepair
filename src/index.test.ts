@@ -117,6 +117,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('"abc')).toBe('"abc"')
       expect(jsonrepair("'abc")).toBe('"abc"')
       expect(jsonrepair('\u2018abc')).toBe('"abc"')
+      expect(jsonrepair('"it\'s working')).toBe('"it\'s working"')
     })
 
     test('should repair truncated JSON', () => {
@@ -141,6 +142,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('"\\u260')).toBe('""')
       expect(jsonrepair('"\\u2605')).toBe('"\\u2605"')
       expect(jsonrepair('{"s \\ud')).toBe('{"s": null}')
+      expect(jsonrepair('{"message": "it\'s working')).toBe('{"message": "it\'s working"}')
     })
 
     test('should add missing start quote', () => {
@@ -155,7 +157,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
 
     test('should stop at the first next return when missing an end quote', () => {
       expect(jsonrepair('[\n"abc,\n"def"\n]')).toBe('[\n"abc",\n"def"\n]')
-      expect(jsonrepair('[\n"abc,  \n"def"\n]'), '[\n"abc").toBe( \n"def"\n]')
+      expect(jsonrepair('[\n"abc,  \n"def"\n]')).toBe('[\n"abc",  \n"def"\n]')
       expect(jsonrepair('["abc]\n')).toBe('["abc"]\n')
       expect(jsonrepair('["abc  ]\n')).toBe('["abc"  ]\n')
     })
@@ -199,8 +201,8 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     })
 
     test('should repair a missing object value', () => {
-      // expect(jsonrepair('{"a":}')).toBe('{"a":null}')
-      // expect(jsonrepair('{"a":,"b":2}')).toBe('{"a":null,"b":2}')
+      expect(jsonrepair('{"a":}')).toBe('{"a":null}')
+      expect(jsonrepair('{"a":,"b":2}')).toBe('{"a":null,"b":2}')
       expect(jsonrepair('{"a":')).toBe('{"a":null}')
     })
 
