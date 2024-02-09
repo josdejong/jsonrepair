@@ -405,11 +405,51 @@ export function jsonrepair(text: string): string {
       let str = '"'
       i++
 
-      const isEndOfString = stopAtDelimiter
-        ? (i: number) => isDelimiter(text[i]) || isEndQuote(text.charCodeAt(i))
-        : (i: number) => isEndQuote(text.charCodeAt(i))
+      function parseStringStopAtDelimiter() {
+        i = iBefore
+        output = output.substring(0, oBefore)
 
-      while (i < text.length && !isEndOfString(i)) {
+        return parseString(true)
+      }
+
+      while (true) {
+        if (i >= text.length) {
+          if (!stopAtDelimiter) {
+            return parseStringStopAtDelimiter()
+          }
+
+          // repair missing quote
+          str = insertBeforeLastWhitespace(str, '"')
+          output += str
+
+          return true
+        } else if (isEndQuote(text.charCodeAt(i))) {
+          str += '"'
+          i++
+          output += str
+
+          parseWhitespaceAndSkipComments()
+
+          const isAtEnd = i >= text.length
+          if (!stopAtDelimiter && !isAtEnd && !isDelimiter(text.charAt(i))) {
+            return parseStringStopAtDelimiter()
+          }
+
+          parseConcatenatedString()
+
+          return true
+        } else if (stopAtDelimiter && isDelimiter(text[i])) {
+          // repair missing quote
+          str = insertBeforeLastWhitespace(str, '"')
+          output += str
+
+          parseWhitespaceAndSkipComments()
+
+          parseConcatenatedString()
+
+          return true
+        }
+
         if (text.charCodeAt(i) === codeBackslash) {
           const char = text.charAt(i + 1)
           const escapeChar = escapeCharacters[char]
@@ -465,40 +505,6 @@ export function jsonrepair(text: string): string {
           }
         }
       }
-
-      const hasEndQuote = isQuote(text.charCodeAt(i))
-      if (hasEndQuote) {
-        str += '"'
-        i++
-      } else {
-        // repair missing quote
-        str = insertBeforeLastWhitespace(str, '"')
-      }
-
-      output += str
-
-      parseWhitespaceAndSkipComments()
-
-      // See whether we have:
-      // (a) An end quote which is not followed by a valid delimiter
-      // (b) No end quote and reached the end of the input
-      // If so, revert parsing this string and try again, running in a more
-      // conservative mode, stopping at the first next delimiter
-      const isAtEnd = i >= text.length
-      const nextIsDelimiter = isDelimiter(text.charAt(i))
-      if (
-        !stopAtDelimiter &&
-        ((hasEndQuote && !isAtEnd && !nextIsDelimiter) || (!hasEndQuote && isAtEnd))
-      ) {
-        i = iBefore
-        output = output.substring(0, oBefore)
-
-        return parseString(true)
-      }
-
-      parseConcatenatedString()
-
-      return true
     }
 
     return false
