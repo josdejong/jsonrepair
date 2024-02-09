@@ -561,18 +561,14 @@ export function jsonrepairCore({
       output.push('"')
       i++
 
-      function parseStringStopAtDelimiter() {
-        i = iBefore
-        output.remove(oBefore)
-
-        return parseString(true)
-      }
-
       while (true) {
         if (input.isEnd(i)) {
           // end of text, we have a missing quote somewhere
           if (!stopAtDelimiter) {
-            return parseStringStopAtDelimiter()
+            i = iBefore
+            output.remove(oBefore)
+
+            return parseString(true)
           }
 
           // repair missing quote
@@ -601,7 +597,10 @@ export function jsonrepairCore({
             // This is not the right end quote: it is preceded by a delimiter,
             // and NOT followed by a delimiter. So, there is an end quote missing
             // parse the string again and then stop at the first next delimiter
-            return parseStringStopAtDelimiter()
+            i = iBefore
+            output.remove(oBefore)
+
+            return parseString(true)
           }
 
           // revert to right after the quote but before any whitespace, and continue parsing the string
