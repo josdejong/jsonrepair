@@ -405,12 +405,70 @@ export function jsonrepair(text: string): string {
       let str = '"'
       i++
 
-      const isEndOfString = stopAtDelimiter
-        ? (i: number) => isDelimiter(text[i]) || isEndQuote(text.charCodeAt(i))
-        : (i: number) => isEndQuote(text.charCodeAt(i))
+      while (true) {
+        if (i >= text.length) {
+          // end of text, we are missing an end quote
+          if (!stopAtDelimiter) {
+            // retry parsing the string, stopping at the first next delimiter
+            i = iBefore
+            output = output.substring(0, oBefore)
 
-      while (i < text.length && !isEndOfString(i)) {
-        if (text.charCodeAt(i) === codeBackslash) {
+            return parseString(true)
+          }
+
+          // repair missing quote
+          str = insertBeforeLastWhitespace(str, '"')
+          output += str
+
+          return true
+        } else if (isEndQuote(text.charCodeAt(i))) {
+          // end quote
+          // let us check what is before and after the quote to verify whether this is a legit end quote
+          const iQuote = i
+          const oQuote = str.length
+          str += '"'
+          i++
+          output += str
+
+          parseWhitespaceAndSkipComments()
+
+          if (stopAtDelimiter || i >= text.length || isDelimiter(text.charAt(i)) || isQuote(text.charCodeAt(i))) {
+            // The quote is followed by a delimiter or the end of the text,
+            // so the quote is indeed the end of the string
+            parseConcatenatedString()
+
+            return true
+          }
+
+          if (isDelimiter(text.charAt(prevNonWhitespaceIndex(iQuote - 1)))) {
+            // This is not the right end quote: it is preceded by a delimiter,
+            // and NOT followed by a delimiter. So, there is an end quote missing
+            // parse the string again and then stop at the first next delimiter
+            i = iBefore
+            output = output.substring(0, oBefore)
+
+            return parseString(true)
+          }
+
+          // revert to right after the quote but before any whitespace, and continue parsing the string
+          output = output.substring(0, oBefore)
+          i = iQuote + 1
+
+          // repair unescaped quote
+          str = str.substring(0, oQuote) + '\\' + str.substring(oQuote)
+        } else if (stopAtDelimiter && isDelimiter(text[i])) {
+          // we're in the mode to stop the string at the first delimiter
+          // because there is an end quote missing
+
+          // repair missing quote
+          str = insertBeforeLastWhitespace(str, '"')
+          output += str
+
+          parseConcatenatedString()
+
+          return true
+        } else if (text.charCodeAt(i) === codeBackslash) {
+          // handle escaped content like \n or \u2605
           const char = text.charAt(i + 1)
           const escapeChar = escapeCharacters[char]
           if (escapeChar !== undefined) {
@@ -438,6 +496,7 @@ export function jsonrepair(text: string): string {
             i += 2
           }
         } else {
+          // handle regular characters
           const char = text.charAt(i)
           const code = text.charCodeAt(i)
 
@@ -459,46 +518,10 @@ export function jsonrepair(text: string): string {
         }
 
         if (skipEscapeChars) {
-          const processed = skipEscapeCharacter()
-          if (processed) {
-            // repair: skipped escape character (nothing to do)
-          }
+          // repair: skipped escape character (nothing to do)
+          skipEscapeCharacter()
         }
       }
-
-      const hasEndQuote = isQuote(text.charCodeAt(i))
-      if (hasEndQuote) {
-        str += '"'
-        i++
-      } else {
-        // repair missing quote
-        str = insertBeforeLastWhitespace(str, '"')
-      }
-
-      output += str
-
-      parseWhitespaceAndSkipComments()
-
-      // See whether we have:
-      // (a) An end quote which is not followed by a valid delimiter
-      // (b) No end quote and reached the end of the input
-      // If so, revert parsing this string and try again, running in a more
-      // conservative mode, stopping at the first next delimiter
-      const isAtEnd = i >= text.length
-      const nextIsDelimiter = isDelimiter(text.charAt(i))
-      if (
-        !stopAtDelimiter &&
-        ((hasEndQuote && !isAtEnd && !nextIsDelimiter) || (!hasEndQuote && isAtEnd))
-      ) {
-        i = iBefore
-        output = output.substring(0, oBefore)
-
-        return parseString(true)
-      }
-
-      parseConcatenatedString()
-
-      return true
     }
 
     return false
@@ -663,6 +686,16 @@ export function jsonrepair(text: string): string {
         return true
       }
     }
+  }
+
+  function prevNonWhitespaceIndex(start: number) : number {
+    let prev = start
+
+    while (prev > 0 && isWhitespace(text.charCodeAt(prev))) {
+      prev--
+    }
+
+    return prev
   }
 
   function expectDigit(start: number) {
