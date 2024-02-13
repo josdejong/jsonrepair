@@ -67,16 +67,16 @@
   "author": "Jos de Jong",
   "license": "ISC",
   "devDependencies": {
-    "@babel/cli": "7.23.4",
-    "@babel/core": "7.23.7",
+    "@babel/cli": "7.23.9",
+    "@babel/core": "7.23.9",
     "@babel/plugin-transform-typescript": "7.23.6",
-    "@babel/preset-env": "7.23.8",
+    "@babel/preset-env": "7.23.9",
     "@babel/preset-typescript": "7.23.3",
     "@commitlint/cli": "18.5.0",
     "@commitlint/config-conventional": "18.5.0",
-    "@types/node": "20.11.6",
-    "@typescript-eslint/eslint-plugin": "6.19.1",
-    "@typescript-eslint/parser": "6.19.1",
+    "@types/node": "20.11.17",
+    "@typescript-eslint/eslint-plugin": "7.0.1",
+    "@typescript-eslint/parser": "7.0.1",
     "benchmark": "2.1.4",
     "cpy-cli": "5.0.0",
     "del-cli": "5.1.0",
@@ -88,11 +88,11 @@
     "eslint-plugin-promise": "6.1.1",
     "husky": "8.0.3",
     "npm-run-all": "4.1.5",
-    "rollup": "4.9.6",
+    "rollup": "4.10.0",
     "standard-version": "9.5.0",
     "ts-node": "10.9.2",
     "typescript": "5.3.3",
     "uglify-js": "3.17.4",
-    "vitest": "1.2.1"
+    "vitest": "1.2.2"
   }
 }
