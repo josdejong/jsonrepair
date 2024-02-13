@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.6.0](https://github.com/josdejong/jsonrepair/compare/v3.5.1...v3.6.0) (2024-02-13)
+
+
+### Features
+
+* repair unescaped double quotes (WIP) ([9e7b04b](https://github.com/josdejong/jsonrepair/commit/9e7b04bf4ba3b3a805e379aab25e55ee729b3884))
+
+
+### Bug Fixes
+
+* [#102](https://github.com/josdejong/jsonrepair/issues/102) repair truncated string containing a single quote ([bc46250](https://github.com/josdejong/jsonrepair/commit/bc46250e6a990660261958325a7b2e2d8ed83099))
+* [#114](https://github.com/josdejong/jsonrepair/issues/114) [#102](https://github.com/josdejong/jsonrepair/issues/102) repair unescaped quotes in a string ([647326c](https://github.com/josdejong/jsonrepair/commit/647326cff40f7b727b357ecf93131f46f8caa7e0))
+
 ### [3.5.1](https://github.com/josdejong/jsonrepair/compare/v3.5.0...v3.5.1) (2024-01-10)
 
 
