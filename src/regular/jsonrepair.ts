@@ -407,8 +407,9 @@ export function jsonrepair(text: string): string {
 
       while (true) {
         if (i >= text.length) {
-          // end of text, we have a missing quote somewhere
+          // end of text, we are missing an end quote
           if (!stopAtDelimiter) {
+            // retry parsing the string, stopping at the first next delimiter
             i = iBefore
             output = output.substring(0, oBefore)
 
