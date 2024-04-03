@@ -62,8 +62,8 @@ describe('command line interface', function () {
 
     await expect(() => {
       return run(`node ${binFile} "${largeFile}" --buffer 2`)
-    }).rejects.toMatch(
-      /Error: Index out of range, please configure a larger buffer size \(index: 65536\)/
+    }).rejects.toThrow(
+      'Error: Index out of range, please configure a larger buffer size (index: 65536)'
     )
 
     unlinkSync(largeFile)
@@ -72,7 +72,7 @@ describe('command line interface', function () {
   test('should throw an error in case of an invalid buffer size', async () => {
     await expect(() => {
       return run(`node ${binFile} "${inputFile}" --buffer FOO`)
-    }).rejects.toMatch(/Error: Buffer size "FOO" not recognized/)
+    }).rejects.toThrow('Error: Buffer size "FOO" not recognized')
   })
 })
 
