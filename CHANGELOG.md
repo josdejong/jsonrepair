@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.6.1](https://github.com/josdejong/jsonrepair/compare/v3.6.0...v3.6.1) (2024-04-11)
+
+
+### Bug Fixes
+
+* [#117](https://github.com/josdejong/jsonrepair/issues/117), [#121](https://github.com/josdejong/jsonrepair/issues/121) improve repairing of truncated strings ([0fe1757](https://github.com/josdejong/jsonrepair/commit/0fe1757c62c035f6b8a118b3ba3213597912c923))
+
 ## [3.6.0](https://github.com/josdejong/jsonrepair/compare/v3.5.1...v3.6.0) (2024-02-13)
 
 
