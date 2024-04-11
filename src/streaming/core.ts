@@ -564,7 +564,12 @@ export function jsonrepairCore({
       while (true) {
         if (input.isEnd(i)) {
           // end of text, we have a missing quote somewhere
-          if (!stopAtDelimiter) {
+
+          const iPrev = prevNonWhitespaceIndex(i - 1)
+          if (!stopAtDelimiter && isDelimiter(input.charAt(iPrev))) {
+            // if the text ends with a delimiter, like ["hello],
+            // so the missing end quote should be inserted before this delimiter
+            // retry parsing the string, stopping at the first next delimiter
             i = iBefore
             output.remove(oBefore)
 
@@ -585,8 +590,14 @@ export function jsonrepairCore({
 
           parseWhitespaceAndSkipComments()
 
-          if (stopAtDelimiter || input.isEnd(i) || isDelimiter(input.charAt(i)) || isQuote(input.charCodeAt(i))) {
-            // The quote is followed by a delimiter or the end of the text,
+          if (
+            stopAtDelimiter ||
+            input.isEnd(i) ||
+            isDelimiter(input.charAt(i)) ||
+            isQuote(input.charCodeAt(i)) ||
+            isDigit(input.charCodeAt(i))
+          ) {
+            // The quote is followed by the end of the text, a delimiter, or a next value
             // so the quote is indeed the end of the string
             parseConcatenatedString()
 

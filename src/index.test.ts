@@ -146,6 +146,8 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('"\\u2605')).toBe('"\\u2605"')
       expect(jsonrepair('{"s \\ud')).toBe('{"s": null}')
       expect(jsonrepair('{"message": "it\'s working')).toBe('{"message": "it\'s working"}')
+      expect(jsonrepair('{"text":"Hello Sergey,I hop')).toBe('{"text":"Hello Sergey,I hop"}')
+      expect(jsonrepair('{"message": "with, multiple, commma\'s, you see?')).toBe('{"message": "with, multiple, commma\'s, you see?"}')
     })
 
     test('should add missing start quote', () => {
@@ -163,6 +165,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[\n"abc,  \n"def"\n]')).toBe('[\n"abc",  \n"def"\n]')
       expect(jsonrepair('["abc]\n')).toBe('["abc"]\n')
       expect(jsonrepair('["abc  ]\n')).toBe('["abc"  ]\n')
+      expect(jsonrepair('[\n[\n"abc\n]\n]\n')).toBe('[\n[\n"abc"\n]\n]\n')
     })
 
     test('should replace single quotes with double quotes', () => {
@@ -233,8 +236,9 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{"key": "apple "bee" carrot"}')).toBe('{"key": "apple \\"bee\\" carrot"}')
 
       expect(jsonrepair('[",",":"]')).toBe('[",",":"]')
+      expect(jsonrepair('["a" 2]')).toBe('["a", 2]')
       expect(jsonrepair('["a" 2')).toBe('["a", 2]')
-      expect(jsonrepair('["," 2')).toBe('[""," 2"]') // Ideally it would repair as [",", 2]
+      expect(jsonrepair('["," 2')).toBe('[",", 2]')
     })
 
     test('should replace special white space characters', () => {
@@ -452,15 +456,15 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     })
 
     test('should repair missing comma between array items', () => {
-      // expect(jsonrepair('{"array": [{}{}]}')).toBe('{"array": [{},{}]}')
-      // expect(jsonrepair('{"array": [{} {}]}'), '{"array": [{}).toBe({}]}')
-      // expect(jsonrepair('{"array": [{}\n{}]}')).toBe('{"array": [{},\n{}]}')
-      // expect(jsonrepair('{"array": [\n{}\n{}\n]}')).toBe('{"array": [\n{},\n{}\n]}')
-      // expect(jsonrepair('{"array": [\n1\n2\n]}')).toBe('{"array": [\n1,\n2\n]}')
+      expect(jsonrepair('{"array": [{}{}]}')).toBe('{"array": [{},{}]}')
+      expect(jsonrepair('{"array": [{} {}]}'), '{"array": [{}).toBe({}]}')
+      expect(jsonrepair('{"array": [{}\n{}]}')).toBe('{"array": [{},\n{}]}')
+      expect(jsonrepair('{"array": [\n{}\n{}\n]}')).toBe('{"array": [\n{},\n{}\n]}')
+      expect(jsonrepair('{"array": [\n1\n2\n]}')).toBe('{"array": [\n1,\n2\n]}')
       expect(jsonrepair('{"array": [\n"a"\n"b"\n]}')).toBe('{"array": [\n"a",\n"b"\n]}')
 
-      // // should leave normal array as is
-      // expect(jsonrepair('[\n{},\n{}\n]')).toBe('[\n{},\n{}\n]')
+      // should leave normal array as is
+      expect(jsonrepair('[\n{},\n{}\n]')).toBe('[\n{},\n{}\n]')
     })
 
     test('should repair missing comma between object properties', () => {
@@ -478,6 +482,9 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     test('should repair missing colon between object key and value', () => {
       expect(jsonrepair('{"a" "b"}')).toBe('{"a": "b"}')
       expect(jsonrepair('{"a" 2}')).toBe('{"a": 2}')
+      expect(jsonrepair('{"a" true}')).toBe('{"a": true}')
+      expect(jsonrepair('{"a" false}')).toBe('{"a": false}')
+      expect(jsonrepair('{"a" null}')).toBe('{"a": null}')
       expect(jsonrepair('{"a"2}')).toBe('{"a":2}')
       expect(jsonrepair('{\n"a" "b"\n}')).toBe('{\n"a": "b"\n}')
       expect(jsonrepair('{"a" \'b\'}')).toBe('{"a": "b"}')
