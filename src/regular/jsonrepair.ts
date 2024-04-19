@@ -572,8 +572,13 @@ export function jsonrepair(text: string): string {
     const start = i
     if (text.charCodeAt(i) === codeMinus) {
       i++
-      if (expectDigitOrRepair(start)) {
+      if (atEndOfNumber()) {
+        repairNumberEndingWithNumericSymbol(start)
         return true
+      }
+      if (!isDigit(text.charCodeAt(i))) {
+        i = start
+        return false
       }
     }
 
@@ -587,8 +592,13 @@ export function jsonrepair(text: string): string {
 
     if (text.charCodeAt(i) === codeDot) {
       i++
-      if (expectDigitOrRepair(start)) {
+      if (atEndOfNumber()) {
+        repairNumberEndingWithNumericSymbol(start)
         return true
+      }
+      if (!isDigit(text.charCodeAt(i))) {
+        i = start
+        return false
       }
       while (isDigit(text.charCodeAt(i))) {
         i++
@@ -600,12 +610,23 @@ export function jsonrepair(text: string): string {
       if (text.charCodeAt(i) === codeMinus || text.charCodeAt(i) === codePlus) {
         i++
       }
-      if (expectDigitOrRepair(start)) {
+      if (atEndOfNumber()) {
+        repairNumberEndingWithNumericSymbol(start)
         return true
+      }
+      if (!isDigit(text.charCodeAt(i))) {
+        i = start
+        return false
       }
       while (isDigit(text.charCodeAt(i))) {
         i++
       }
+    }
+
+    // if we're not at the end of the number by this point, allow this to be parsed as another type
+    if (!atEndOfNumber()) {
+      i = start
+      return false
     }
 
     if (i > start) {
@@ -647,7 +668,7 @@ export function jsonrepair(text: string): string {
   }
 
   /**
-   * Repair and unquoted string by adding quotes around it
+   * Repair an unquoted string by adding quotes around it
    * Repair a MongoDB function call like NumberLong("2")
    * Repair a JSONP function call like callback({...});
    */
@@ -708,24 +729,15 @@ export function jsonrepair(text: string): string {
     return prev
   }
 
-  function expectDigit(start: number) {
-    if (!isDigit(text.charCodeAt(i))) {
-      const numSoFar = text.slice(start, i)
-      throw new JSONRepairError(`Invalid number '${numSoFar}', expecting a digit ${got()}`, i)
-    }
+  function atEndOfNumber() {
+    return i >= text.length || isDelimiter(text[i]) || isWhitespace(text.charCodeAt(i))
   }
 
-  function expectDigitOrRepair(start: number) {
-    if (i >= text.length) {
-      // repair numbers cut off at the end
-      // this will only be called when we end after a '.', '-', or 'e' and does not
-      // change the number more than it needs to make it valid JSON
-      output += text.slice(start, i) + '0'
-      return true
-    } else {
-      expectDigit(start)
-      return false
-    }
+  function repairNumberEndingWithNumericSymbol(start: number) {
+    // repair numbers cut off at the end
+    // this will only be called when we end after a '.', '-', or 'e' and does not
+    // change the number more than it needs to make it valid JSON
+    output += text.slice(start, i) + '0'
   }
 
   function throwInvalidCharacter(char: string) {
@@ -751,10 +763,6 @@ export function jsonrepair(text: string): string {
   function throwInvalidUnicodeCharacter() {
     const chars = text.slice(i, i + 6)
     throw new JSONRepairError(`Invalid unicode character "${chars}"`, i)
-  }
-
-  function got(): string {
-    return text[i] ? `but got '${text[i]}'` : 'but reached end of input'
   }
 }
 

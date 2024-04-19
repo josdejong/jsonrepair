@@ -441,6 +441,18 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{greeting: hello world!}')).toBe('{"greeting": "hello world!"}')
     })
 
+    test('should turn invalid numbers into strings', () => {
+      expect(jsonrepair('ES2020')).toBe('"ES2020"')
+      // TODO: most of these still failing in parseRootEnd for streams: Error: Unexpected character "." at position 3
+      expect(jsonrepair('0.0.1')).toBe('"0.0.1"')
+      expect(jsonrepair('746de9ad-d4ff-4c66-97d7-00a92ad46967')).toBe('"746de9ad-d4ff-4c66-97d7-00a92ad46967"')
+      expect(jsonrepair('234..5')).toBe('"234..5"')
+      expect(jsonrepair('[0.0.1,2]')).toBe('["0.0.1",2]') // test delimiter for numerics
+      expect(jsonrepair('[2 0.0.1 2]')).toBe('[2, "0.0.1 2"]') // note: currently spaces delimit numbers, but don't delimit unquoted strings
+      expect(jsonrepair('2.3.4')).toBe('"2.3.4"')
+      expect(jsonrepair('2e3.4')).toBe('"2e3.4"')
+    })
+
     test('should concatenate strings', () => {
       expect(jsonrepair('"hello" + " world"')).toBe('"hello world"')
       expect(jsonrepair('"hello" +\n " world"')).toBe('"hello world"')
@@ -477,6 +489,9 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{"a":2e')).toBe('{"a":2e0}')
       expect(jsonrepair('{"a":2e-')).toBe('{"a":2e-0}')
       expect(jsonrepair('{"a":-')).toBe('{"a":-0}')
+      expect(jsonrepair('[2e,')).toBe('[2e0]')
+      expect(jsonrepair('[2e ')).toBe('[2e0] ') // spaces delimit numbers
+      expect(jsonrepair('[-,')).toBe('[-0]')
     })
 
     test('should repair missing colon between object key and value', () => {
@@ -566,26 +581,6 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     expect(function () {
       console.log({ output: jsonrepair('{"a":2}foo') })
     }).toThrow(new JSONRepairError('Unexpected character "f"', 7))
-
-    expect(function () {
-      console.log({ output: jsonrepair('2.3.4') })
-    }).toThrow(new JSONRepairError('Unexpected character "."', 3))
-
-    expect(function () {
-      console.log({ output: jsonrepair('234..5') })
-    }).toThrow(new JSONRepairError("Invalid number '234.', expecting a digit but got '.'", 4))
-
-    expect(function () {
-      console.log({ output: jsonrepair('2e3.4') })
-    }).toThrow(new JSONRepairError('Unexpected character "."', 3))
-
-    expect(function () {
-      console.log({ output: jsonrepair('[2e,') })
-    }).toThrow(new JSONRepairError("Invalid number '2e', expecting a digit but got ','", 3))
-
-    expect(function () {
-      console.log({ output: jsonrepair('[-,') })
-    }).toThrow(new JSONRepairError("Invalid number '-', expecting a digit but got ','", 2))
 
     expect(function () {
       console.log({ output: jsonrepair('foo [') })
