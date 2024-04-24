@@ -265,6 +265,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{} /* foo ')).toBe('{} ')
       expect(jsonrepair('\n/* foo */\n{}')).toBe('\n\n{}')
       expect(jsonrepair('{"a":"foo",/*hello*/"b":"bar"}')).toBe('{"a":"foo","b":"bar"}')
+      expect(jsonrepair('{"flag":/*boolean*/true}')).toBe('{"flag":true}')
     })
 
     test('should remove line comments', () => {
@@ -449,6 +450,10 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[0.0.1,2]')).toBe('["0.0.1",2]') // test delimiter for numerics
       expect(jsonrepair('[2 0.0.1 2]')).toBe('[2, "0.0.1 2"]') // note: currently spaces delimit numbers, but don't delimit unquoted strings
       expect(jsonrepair('2e3.4')).toBe('"2e3.4"')
+    })
+
+    test('should repair regular expressions', () => {
+      expect(jsonrepair('{regex: /standalone-styles.css/}')).toBe('{"regex": "/standalone-styles.css/"}')
     })
 
     test('should concatenate strings', () => {

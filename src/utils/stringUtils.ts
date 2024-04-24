@@ -64,6 +64,10 @@ export function isDelimiter(char: string): boolean {
 
 const regexDelimiter = /^[,:[\]/{}()\n+]$/
 
+export function isDelimiterExceptSlash(char: string) : boolean {
+  return isDelimiter(char) && char !== '/'
+}
+
 export function isStartOfValue(char: string): boolean {
   return regexStartOfValue.test(char) || (char && isQuote(char.charCodeAt(0)))
 }
