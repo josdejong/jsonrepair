@@ -726,8 +726,13 @@ export function jsonrepairCore({
     const start = i
     if (input.charCodeAt(i) === codeMinus) {
       i++
-      if (expectDigitOrRepair(start)) {
+      if (atEndOfNumber()) {
+        repairNumberEndingWithNumericSymbol(start)
         return stack.update(Caret.afterValue)
+      }
+      if (!isDigit(input.charCodeAt(i))) {
+        i = start
+        return false
       }
     }
 
@@ -741,8 +746,13 @@ export function jsonrepairCore({
 
     if (input.charCodeAt(i) === codeDot) {
       i++
-      if (expectDigitOrRepair(start)) {
+      if (atEndOfNumber()) {
+        repairNumberEndingWithNumericSymbol(start)
         return stack.update(Caret.afterValue)
+      }
+      if (!isDigit(input.charCodeAt(i))) {
+        i = start
+        return false
       }
       while (isDigit(input.charCodeAt(i))) {
         i++
@@ -754,12 +764,23 @@ export function jsonrepairCore({
       if (input.charCodeAt(i) === codeMinus || input.charCodeAt(i) === codePlus) {
         i++
       }
-      if (expectDigitOrRepair(start)) {
+      if (atEndOfNumber()) {
+        repairNumberEndingWithNumericSymbol(start)
         return stack.update(Caret.afterValue)
+      }
+      if (!isDigit(input.charCodeAt(i))) {
+        i = start
+        return false
       }
       while (isDigit(input.charCodeAt(i))) {
         i++
       }
+    }
+
+    // if we're not at the end of the number by this point, allow this to be parsed as another type
+    if (!atEndOfNumber()) {
+      i = start
+      return false
     }
 
     if (i > start) {
@@ -845,24 +866,15 @@ export function jsonrepairCore({
     return prev
   }
 
-  function expectDigit(start: number) {
-    if (!isDigit(input.charCodeAt(i))) {
-      const numSoFar = input.substring(start, i)
-      throw new JSONRepairError(`Invalid number '${numSoFar}', expecting a digit ${got()}`, i)
-    }
+  function atEndOfNumber() {
+    return input.isEnd(i) || isDelimiter(input.charAt(i)) || isWhitespace(input.charCodeAt(i))
   }
 
-  function expectDigitOrRepair(start: number) {
-    if (input.isEnd(i)) {
-      // repair numbers cut off at the end
-      // this will only be called when we end after a '.', '-', or 'e' and does not
-      // change the number more than it needs to make it valid JSON
-      output.push(input.substring(start, i) + '0')
-      return true
-    } else {
-      expectDigit(start)
-      return false
-    }
+  function repairNumberEndingWithNumericSymbol(start: number) {
+    // repair numbers cut off at the end
+    // this will only be called when we end after a '.', '-', or 'e' and does not
+    // change the number more than it needs to make it valid JSON
+    output.push(input.substring(start, i) + '0')
   }
 
   function throwInvalidCharacter(char: string) {
@@ -888,11 +900,6 @@ export function jsonrepairCore({
   function throwInvalidUnicodeCharacter() {
     const chars = input.substring(i, i + 6)
     throw new JSONRepairError(`Invalid unicode character "${chars}"`, i)
-  }
-
-  function got(): string {
-    const char = input.charAt(i)
-    return char ? `but got '${char}'` : 'but reached end of input'
   }
 
   function atEndOfBlockComment(i: number) {
