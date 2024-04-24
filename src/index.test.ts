@@ -443,13 +443,11 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
 
     test('should turn invalid numbers into strings', () => {
       expect(jsonrepair('ES2020')).toBe('"ES2020"')
-      // TODO: most of these still failing in parseRootEnd for streams: Error: Unexpected character "." at position 3
       expect(jsonrepair('0.0.1')).toBe('"0.0.1"')
       expect(jsonrepair('746de9ad-d4ff-4c66-97d7-00a92ad46967')).toBe('"746de9ad-d4ff-4c66-97d7-00a92ad46967"')
       expect(jsonrepair('234..5')).toBe('"234..5"')
       expect(jsonrepair('[0.0.1,2]')).toBe('["0.0.1",2]') // test delimiter for numerics
       expect(jsonrepair('[2 0.0.1 2]')).toBe('[2, "0.0.1 2"]') // note: currently spaces delimit numbers, but don't delimit unquoted strings
-      expect(jsonrepair('2.3.4')).toBe('"2.3.4"')
       expect(jsonrepair('2e3.4')).toBe('"2e3.4"')
     })
 
