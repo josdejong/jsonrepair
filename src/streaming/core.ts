@@ -776,6 +776,12 @@ export function jsonrepairCore({
       }
     }
 
+    // if we're not at the end of the number by this point, allow this to be parsed as another type
+    if (!atEndOfNumber()) {
+      i = start
+      return false
+    }
+
     if (i > start) {
       // repair a number with leading zeros like "00789"
       const num = input.substring(start, i)
