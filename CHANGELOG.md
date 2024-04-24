@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.7.0](https://github.com/josdejong/jsonrepair/compare/v3.6.1...v3.7.0) (2024-04-24)
+
+
+### Features
+
+* turn invalid numbers into strings ([b2c68f3](https://github.com/josdejong/jsonrepair/commit/b2c68f354e9150fc4054df0498871fec4e32a52e))
+
+
+### Bug Fixes
+
+* [#120](https://github.com/josdejong/jsonrepair/issues/120) turn invalid numbers into strings ([514ef89](https://github.com/josdejong/jsonrepair/commit/514ef89871dc02abdf5428e4603ae2d85a266747))
+* [#123](https://github.com/josdejong/jsonrepair/issues/123) repair regular expressions ([c475377](https://github.com/josdejong/jsonrepair/commit/c475377be0d722b1c578314204c488970d4e1746))
+
 ### [3.6.1](https://github.com/josdejong/jsonrepair/compare/v3.6.0...v3.6.1) (2024-04-11)
 
 
