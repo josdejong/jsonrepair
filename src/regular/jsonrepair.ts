@@ -23,6 +23,7 @@ import {
   insertBeforeLastWhitespace,
   isControlCharacter,
   isDelimiter,
+  isDelimiterExceptSlash,
   isDigit,
   isDoubleQuote,
   isDoubleQuoteLike,
@@ -653,8 +654,9 @@ export function jsonrepair(text: string): string {
    */
   function parseUnquotedString() {
     // note that the symbol can end with whitespaces: we stop at the next delimiter
+    // also, note that we allow strings to contain a slash / in order to support repairing regular expressions
     const start = i
-    while (i < text.length && !isDelimiter(text[i]) && !isQuote(text.charCodeAt(i))) {
+    while (i < text.length && !isDelimiterExceptSlash(text[i]) && !isQuote(text.charCodeAt(i))) {
       i++
     }
 

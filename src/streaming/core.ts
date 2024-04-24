@@ -24,6 +24,7 @@ import {
   codeUppercaseE,
   isControlCharacter,
   isDelimiter,
+  isDelimiterExceptSlash,
   isDigit,
   isDoubleQuote,
   isDoubleQuoteLike,
@@ -825,8 +826,9 @@ export function jsonrepairCore({
 
   function findNextDelimiter(): number | null {
     // note that the symbol can end with whitespaces: we stop at the next delimiter
+    // also, note that we allow strings to contain a slash / in order to support repairing regular expressions
     let j = i
-    while (!input.isEnd(j) && !isDelimiter(input.charAt(j)) && !isQuote(input.charCodeAt(j))) {
+    while (!input.isEnd(j) && !isDelimiterExceptSlash(input.charAt(j)) && !isQuote(input.charCodeAt(j))) {
       j++
     }
 

@@ -265,6 +265,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{} /* foo ')).toBe('{} ')
       expect(jsonrepair('\n/* foo */\n{}')).toBe('\n\n{}')
       expect(jsonrepair('{"a":"foo",/*hello*/"b":"bar"}')).toBe('{"a":"foo","b":"bar"}')
+      expect(jsonrepair('{"flag":/*boolean*/true}')).toBe('{"flag":true}')
     })
 
     test('should remove line comments', () => {
@@ -439,6 +440,10 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
         '{"greeting": "hello world",\n"next": "line"}'
       )
       expect(jsonrepair('{greeting: hello world!}')).toBe('{"greeting": "hello world!"}')
+    })
+
+    test('should repair regular expressions', () => {
+      expect(jsonrepair('{regex: /standalone-styles.css/}')).toBe('{"regex": "/standalone-styles.css/"}')
     })
 
     test('should concatenate strings', () => {
