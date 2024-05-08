@@ -44,6 +44,8 @@ Note that in the `lib` folder, there are builds for ESM, UMD, and CommonJs.
 
 ## Use
 
+### ES module
+
 Use the `jsonrepair` function using an ES modules import:
 
 ```js
@@ -62,6 +64,8 @@ try {
   console.error(err)
 }
 ```
+
+### Streaming API
 
 Use the streaming API in Node.js:
 
@@ -89,6 +93,8 @@ pipeline(inputStream, jsonrepairTransform(), outputStream, (err) => {
 //   .on('finish', () => console.log('done'))
 ```
 
+### CommonJS
+
 Use in CommonJS (not recommended):
 
 ```js
@@ -96,6 +102,8 @@ const { jsonrepair } = require('jsonrepair')
 const json = "{name: 'John'}"
 console.log(jsonrepair(json)) // '{"name": "John"}'
 ```
+
+### UMD
 
 Use with UMD in the browser (not recommended):
 
@@ -108,6 +116,24 @@ Use with UMD in the browser (not recommended):
 </script>
 ```
 
+### Python
+
+Use in Python via [`PythonMonkey`](https://github.com/Distributive-Network/PythonMonkey#pythonmonkey).
+
+1. Install `jsonrepair` via `npm install jsonrepair`
+2. Install `PythonMonkey` via `pip install pythonmonkey`
+3. Use the libraries in a Python script:
+    
+    ```python
+    import pythonmonkey
+
+    jsonrepair = pythonmonkey.require('jsonrepair').jsonrepair
+    
+    json = "[1,2,3,"
+    repaired = jsonrepair(json)
+    print(repaired) 
+    # [1,2,3]
+    ```
 
 ### API
 
