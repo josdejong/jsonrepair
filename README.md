@@ -135,9 +135,9 @@ Use in Python via [`PythonMonkey`](https://github.com/Distributive-Network/Pytho
     # [1,2,3]
     ```
 
-### API
+## API
 
-#### Regular API
+### Regular API
 
 You can use `jsonrepair` as a function or as a streaming transform. Broken JSON is passed to the function, and the function either returns the repaired JSON, or throws an `JSONRepairError` exception when an issue is encountered which could not be solved.
 
@@ -146,7 +146,7 @@ You can use `jsonrepair` as a function or as a streaming transform. Broken JSON 
 jsonrepair(json: string) : string
 ```
 
-#### Streaming API
+### Streaming API
 
 The streaming API is availabe in `jsonrepair/stream` and can be used in a [Node.js stream](https://nodejs.org/api/stream.html). It consists of a transform function that can be used in a stream pipeline.
 
@@ -158,7 +158,7 @@ The option `chunkSize` determines the size of the chunks that the transform outp
 
 The option `bufferSize` determines how many bytes of the input and output stream are kept in memory and is also `65536` bytes by default. This buffer is used as a "moving window" on the input and output. This is necessary because `jsonrepair` must look ahead or look back to see what to fix, and it must sometimes walk back the generated output to insert a missing comma for example. The `bufferSize` must be larger than the length of the largest string and whitespace in the JSON data, otherwise, and error is thrown when processing the data. Making `bufferSize` very large will result in more memory usage and less performance.
 
-### Command Line Interface (CLI)
+## Command Line Interface (CLI)
 
 When `jsonrepair` is installed globally using npm, it can be used on the command line. To install `jsonrepair` globally:
 
@@ -193,13 +193,13 @@ $ cat broken.json | jsonrepair                  # Repair data from an input stre
 $ cat broken.json | jsonrepair > repaired.json  # Repair data from an input stream, output to file
 ```
 
-### Alternatives:
+## Alternatives:
 
 Similar libraries:
 
 - https://github.com/RyanMarcus/dirty-json
 
-### Develop
+## Develop
 
 When implementing a fix or a new feature, it important to know that there are currently two implementations:
 
@@ -208,60 +208,18 @@ When implementing a fix or a new feature, it important to know that there are cu
 
 Both implementations are tested against the same suite of unit tests in `src/index.test.ts`.
 
-To build the library (ESM, CommonJs, and UMD output in the folder `lib`):
+Scripts:
 
-```
-$ npm install 
-$ npm run build
-```
-
-To run the unit tests:
-
-```
-$ npm test
-```
-
-To run the linter (eslint):
-
-```
-$ npm run lint
-```
-
-To automatically fix linter issues:
-
-```
-$ npm run format
-```
-
-To run the linter, build all, and run unit tests and integration tests:
-
-```
-$ npm run build-and-test
-```
-
-### Release
-
-To release a new version:
-
-```
-$ npm run release
-```
-
-This will:
-
-- lint 
-- test
-- build
-- increment the version number
-- push the changes to git, add a git version tag
-- publish the npm package 
-
-To try the build and see the change list without actually publishing:
-
-```
-$ npm run release-dry-run
-```
-
+Script | Description
+---------- | -----------
+`npm install` | Install the dependencies once
+`npm run build` | Build the library (ESM, CommonJs, and UMD output in the folder `lib`)
+`npm test` | Run the unit tests
+`npm run lint` | Run the linter (eslint)
+`npm run format` | Automatically fix linter issues
+`npm run build-and-test` | Run the linter, build all, and run unit tests and integration tests
+`npm run release` | Release a new version. This will lint, test, build, increment the version number, push the changes to git, add a git version tag, and publish the npm package.
+`npm run release-dry-run` | Run all release steps and see the change list without actually publishing:
 
 ## License
 
