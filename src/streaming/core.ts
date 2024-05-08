@@ -1,7 +1,4 @@
-import { createInputBuffer } from './buffer/InputBuffer.js'
-import { createOutputBuffer } from './buffer/OutputBuffer.js'
 import { JSONRepairError } from '../utils/JSONRepairError.js'
-import { Caret, createStack, StackType } from './stack.js'
 import {
   codeAsterisk,
   codeBackslash,
@@ -28,6 +25,7 @@ import {
   isDigit,
   isDoubleQuote,
   isDoubleQuoteLike,
+  isFunctionName,
   isHex,
   isQuote,
   isSingleQuote,
@@ -37,6 +35,9 @@ import {
   isValidStringCharacter,
   isWhitespace
 } from '../utils/stringUtils.js'
+import { createInputBuffer } from './buffer/InputBuffer.js'
+import { createOutputBuffer } from './buffer/OutputBuffer.js'
+import { Caret, createStack, StackType } from './stack.js'
 
 const controlCharacters: { [key: string]: string } = {
   '\b': '\\b',
@@ -233,7 +234,7 @@ export function jsonrepairCore({
       const symbol = input.substring(i, unquotedStringEnd)
       i = unquotedStringEnd
 
-      if (skipCharacter(codeOpenParenthesis)) {
+      if (skipCharacter(codeOpenParenthesis) && isFunctionName(symbol.trim())) {
         // A MongoDB function call like NumberLong("2")
         // Or a JSONP function call like callback({...});
         // we strip the function call
@@ -856,7 +857,7 @@ export function jsonrepairCore({
     return j > i ? j : null
   }
 
-  function prevNonWhitespaceIndex(start: number) : number {
+  function prevNonWhitespaceIndex(start: number): number {
     let prev = start
 
     while (prev > 0 && isWhitespace(input.charCodeAt(prev))) {

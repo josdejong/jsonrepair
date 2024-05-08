@@ -64,7 +64,7 @@ export function isDelimiter(char: string): boolean {
 
 const regexDelimiter = /^[,:[\]/{}()\n+]$/
 
-export function isDelimiterExceptSlash(char: string) : boolean {
+export function isDelimiterExceptSlash(char: string): boolean {
   return isDelimiter(char) && char !== '/'
 }
 
@@ -193,4 +193,8 @@ export function removeAtIndex(text: string, start: number, count: number) {
  */
 export function endsWithCommaOrNewline(text: string): boolean {
   return /[,\n][ \t\r]*$/.test(text)
+}
+
+export function isFunctionName(text: string): boolean {
+  return /^\w+$/.test(text)
 }

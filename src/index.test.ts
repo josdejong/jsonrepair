@@ -104,6 +104,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     test('should add missing quotes', () => {
       expect(jsonrepair('abc')).toBe('"abc"')
       expect(jsonrepair('hello   world')).toBe('"hello   world"')
+      expect(jsonrepair('{\nmessage: hello world\n}')).toBe('{\n"message": "hello world"\n}')
       expect(jsonrepair('{a:2}')).toBe('{"a":2}')
       expect(jsonrepair('{a: 2}')).toBe('{"a": 2}')
       expect(jsonrepair('{2: 2}')).toBe('{"2": 2}')
@@ -421,6 +422,15 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
         '}'
 
       expect(jsonrepair(mongoDocument)).toBe(expectedJson)
+    })
+
+    test('should not match MongoDB-like functions in an unquoted string', () => {
+      expect(() => jsonrepair('["This is C(2)", "This is F(3)]')).toThrow(/Unexpected character/)
+      expect(() => jsonrepair('["This is C(2)", This is F(3)]')).toThrow(/Unexpected character/)
+
+      // TODO: ideally, we should be able to repair an unquoted string containing ( and )
+      // expect(jsonrepair('["This is C(2)", "This is F(3)]')).toBe('["This is C(2)", "This is F(3)"]')
+      // expect(jsonrepair('["This is C(2)", This is F(3)]')).toBe('["This is C(2)", "This is F(3)"]')
     })
 
     test('should replace Python constants None, True, False', () => {

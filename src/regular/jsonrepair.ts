@@ -27,6 +27,7 @@ import {
   isDigit,
   isDoubleQuote,
   isDoubleQuoteLike,
+  isFunctionName,
   isHex,
   isQuote,
   isSingleQuote,
@@ -682,7 +683,7 @@ export function jsonrepair(text: string): string {
     }
 
     if (i > start) {
-      if (text.charCodeAt(i) === codeOpenParenthesis) {
+      if (text.charCodeAt(i) === codeOpenParenthesis && isFunctionName(text.slice(start, i).trim())) {
         // repair a MongoDB function call like NumberLong("2")
         // repair a JSONP function call like callback({...});
         i++
@@ -721,7 +722,7 @@ export function jsonrepair(text: string): string {
     }
   }
 
-  function prevNonWhitespaceIndex(start: number) : number {
+  function prevNonWhitespaceIndex(start: number): number {
     let prev = start
 
     while (prev > 0 && isWhitespace(text.charCodeAt(prev))) {
