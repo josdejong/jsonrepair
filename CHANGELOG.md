@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.7.1](https://github.com/josdejong/jsonrepair/compare/v3.7.0...v3.7.1) (2024-05-09)
+
+
+### Bug Fixes
+
+* [#126](https://github.com/josdejong/jsonrepair/issues/126) more robust detection of MongoDB data types and JSONP callbacks ([58fe64c](https://github.com/josdejong/jsonrepair/commit/58fe64ce62d7a3840f427df2dabb1fa748e540de))
+
 ## [3.7.0](https://github.com/josdejong/jsonrepair/compare/v3.6.1...v3.7.0) (2024-04-24)
 
 
