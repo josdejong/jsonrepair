@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.8.0](https://github.com/josdejong/jsonrepair/compare/v3.7.1...v3.8.0) (2024-05-15)
+
+
+### Features
+
+* [#125](https://github.com/josdejong/jsonrepair/issues/125) strip leading commas in objects and arrays ([0ee8597](https://github.com/josdejong/jsonrepair/commit/0ee859789d1bfbb1ab2f593367570489ad172569))
+* [#127](https://github.com/josdejong/jsonrepair/issues/127) skip ellipsis in arrays and objects ([019e509](https://github.com/josdejong/jsonrepair/commit/019e509576e0e47a7aface746498b8315c0f9489))
+* strip ellipsis from empty objects and arrays ([5731996](https://github.com/josdejong/jsonrepair/commit/57319969b165e580e0485f1ae31c307fd7eb5bd8))
+
 ### [3.7.1](https://github.com/josdejong/jsonrepair/compare/v3.7.0...v3.7.1) (2024-05-09)
 
 
