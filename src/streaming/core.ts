@@ -207,6 +207,8 @@ export function jsonrepairCore({
     if (parseCharacter(codeOpeningBrace)) {
       parseWhitespaceAndSkipComments()
 
+      skipEllipsis()
+
       if (skipCharacter(codeComma)) {
         parseWhitespaceAndSkipComments()
       }
@@ -224,6 +226,8 @@ export function jsonrepairCore({
   function parseArrayStart(): boolean {
     if (parseCharacter(codeOpeningBracket)) {
       parseWhitespaceAndSkipComments()
+
+      skipEllipsis()
 
       if (skipCharacter(codeComma)) {
         parseWhitespaceAndSkipComments()

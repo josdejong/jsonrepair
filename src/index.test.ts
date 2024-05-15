@@ -23,6 +23,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
 
     test('parse object', function () {
       assertRepair('{}')
+      assertRepair('{  }')
       assertRepair('{"a": {}}')
       assertRepair('{"a": "b"}')
       assertRepair('{"a": 2}')
@@ -30,6 +31,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
 
     test('parse array', function () {
       assertRepair('[]')
+      assertRepair('[  ]')
       assertRepair('[1,2,3]')
       assertRepair('[ 1 , 2 , 3 ]')
       assertRepair('[1,2,[3,4,5]]')
@@ -160,6 +162,8 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[1,2,3,...,9]')).toBe('[1,2,3,9]')
       expect(jsonrepair('[...,7,8,9]')).toBe('[7,8,9]')
       expect(jsonrepair('[..., 7,8,9]')).toBe('[ 7,8,9]')
+      expect(jsonrepair('[...]')).toBe('[]')
+      expect(jsonrepair('[ ... ]')).toBe('[  ]')
     })
 
     test('should repair ellipsis in an object', () => {
@@ -170,6 +174,8 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{"nested":{"a":2,"b":3, ... }}')).toBe('{"nested":{"a":2,"b":3  }}')
       expect(jsonrepair('{"a":2,"b":3,...,"z":26}')).toBe('{"a":2,"b":3,"z":26}')
       expect(jsonrepair('{"a":2,"b":3,...}')).toBe('{"a":2,"b":3}')
+      expect(jsonrepair('{...}')).toBe('{}')
+      expect(jsonrepair('{ ... }')).toBe('{  }')
     })
 
     test('should add missing start quote', () => {
