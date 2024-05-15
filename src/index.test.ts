@@ -347,6 +347,20 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('\\"hello"')).toBe('"hello"')
     })
 
+    test('should strip a leading comma from an array', () => {
+      expect(jsonrepair('[,1,2,3]')).toBe('[1,2,3]')
+      expect(jsonrepair('[/* a */,/* b */1,2,3]')).toBe('[1,2,3]')
+      expect(jsonrepair('[, 1,2,3]')).toBe('[ 1,2,3]')
+      expect(jsonrepair('[ , 1,2,3]')).toBe('[  1,2,3]')
+    })
+
+    test('should strip a leading comma from an object', () => {
+      expect(jsonrepair('{,"message": "hi"}')).toBe('{"message": "hi"}')
+      expect(jsonrepair('{/* a */,/* b */"message": "hi"}')).toBe('{"message": "hi"}')
+      expect(jsonrepair('{ ,"message": "hi"}')).toBe('{ "message": "hi"}')
+      expect(jsonrepair('{, "message": "hi"}')).toBe('{ "message": "hi"}')
+    })
+
     test('should strip trailing commas from an array', () => {
       expect(jsonrepair('[1,2,3,]')).toBe('[1,2,3]')
       expect(jsonrepair('[1,2,3,\n]')).toBe('[1,2,3\n]')

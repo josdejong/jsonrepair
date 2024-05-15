@@ -206,6 +206,11 @@ export function jsonrepairCore({
   function parseObjectStart(): boolean {
     if (parseCharacter(codeOpeningBrace)) {
       parseWhitespaceAndSkipComments()
+
+      if (skipCharacter(codeComma)) {
+        parseWhitespaceAndSkipComments()
+      }
+
       if (parseCharacter(codeClosingBrace)) {
         return stack.update(Caret.afterValue)
       }
@@ -219,6 +224,11 @@ export function jsonrepairCore({
   function parseArrayStart(): boolean {
     if (parseCharacter(codeOpeningBracket)) {
       parseWhitespaceAndSkipComments()
+
+      if (skipCharacter(codeComma)) {
+        parseWhitespaceAndSkipComments()
+      }
+
       if (parseCharacter(codeClosingBracket)) {
         return stack.update(Caret.afterValue)
       }

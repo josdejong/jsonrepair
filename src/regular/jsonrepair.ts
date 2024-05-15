@@ -248,6 +248,11 @@ export function jsonrepair(text: string): string {
       i++
       parseWhitespaceAndSkipComments()
 
+      // repair: skip leading comma like in {, message: "hi"}
+      if (skipCharacter(codeComma)) {
+        parseWhitespaceAndSkipComments()
+      }
+
       let initial = true
       while (i < text.length && text.charCodeAt(i) !== codeClosingBrace) {
         let processedComma
@@ -326,6 +331,11 @@ export function jsonrepair(text: string): string {
       output += '['
       i++
       parseWhitespaceAndSkipComments()
+
+      // repair: skip leading comma like in [,1,2,3]
+      if (skipCharacter(codeComma)) {
+        parseWhitespaceAndSkipComments()
+      }
 
       let initial = true
       while (i < text.length && text.charCodeAt(i) !== codeClosingBracket) {
