@@ -123,6 +123,7 @@ export function jsonrepairCore({
         switch (stack.caret) {
           case Caret.beforeKey:
             return (
+              skipEllipsis() ||
               parseObjectKey() ||
               parseUnexpectedColon() ||
               parseRepairTrailingComma() ||
@@ -140,7 +141,7 @@ export function jsonrepairCore({
       case StackType.array: {
         switch (stack.caret) {
           case Caret.beforeValue:
-            return parseValue() || parseRepairTrailingComma() || parseRepairArrayEnd()
+            return skipEllipsis() || parseValue() || parseRepairTrailingComma() || parseRepairArrayEnd()
           case Caret.afterValue:
             return (
               parseArrayComma() ||
@@ -522,6 +523,29 @@ export function jsonrepairCore({
 
   function skipEscapeCharacter(): boolean {
     return skipCharacter(codeBackslash)
+  }
+
+  /**
+   * Skip ellipsis like "[1,2,3,...]" or "[1,2,3,...,9]" or "[...,7,8,9]"
+   * or a similar construct in objects.
+   */
+  function skipEllipsis(): boolean {
+    parseWhitespaceAndSkipComments()
+
+    if (
+      input.charCodeAt(i) === codeDot &&
+      input.charCodeAt(i + 1) === codeDot &&
+      input.charCodeAt(i + 2) === codeDot
+    ) {
+      // repair: remove the ellipsis (three dots) and optionally a comma
+      i += 3
+      parseWhitespaceAndSkipComments()
+      skipCharacter(codeComma)
+
+      return true
+    }
+
+    return false
   }
 
   /**

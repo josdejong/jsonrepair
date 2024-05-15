@@ -151,6 +151,27 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{"message": "with, multiple, commma\'s, you see?')).toBe('{"message": "with, multiple, commma\'s, you see?"}')
     })
 
+    test('should repair ellipsis in an array', () => {
+      expect(jsonrepair('[1,2,3,...]')).toBe('[1,2,3]')
+      expect(jsonrepair('[1, 2, 3, ... ]')).toBe('[1, 2, 3  ]')
+      expect(jsonrepair('[1,2,3,/*comment1*/.../*comment2*/]')).toBe('[1,2,3]')
+      expect(jsonrepair('[\n  1,\n  2,\n  3,\n  /*comment1*/  .../*comment2*/\n]')).toBe('[\n  1,\n  2,\n  3\n    \n]')
+      expect(jsonrepair('{"array":[1,2,3,...]}')).toBe('{"array":[1,2,3]}')
+      expect(jsonrepair('[1,2,3,...,9]')).toBe('[1,2,3,9]')
+      expect(jsonrepair('[...,7,8,9]')).toBe('[7,8,9]')
+      expect(jsonrepair('[..., 7,8,9]')).toBe('[ 7,8,9]')
+    })
+
+    test('should repair ellipsis in an object', () => {
+      expect(jsonrepair('{"a":2,"b":3,...}')).toBe('{"a":2,"b":3}')
+      expect(jsonrepair('{"a":2,"b":3,/*comment1*/.../*comment2*/}')).toBe('{"a":2,"b":3}')
+      expect(jsonrepair('{\n  "a":2,\n  "b":3,\n  /*comment1*/.../*comment2*/\n}')).toBe('{\n  "a":2,\n  "b":3\n  \n}')
+      expect(jsonrepair('{"a":2,"b":3, ... }')).toBe('{"a":2,"b":3  }')
+      expect(jsonrepair('{"nested":{"a":2,"b":3, ... }}')).toBe('{"nested":{"a":2,"b":3  }}')
+      expect(jsonrepair('{"a":2,"b":3,...,"z":26}')).toBe('{"a":2,"b":3,"z":26}')
+      expect(jsonrepair('{"a":2,"b":3,...}')).toBe('{"a":2,"b":3}')
+    })
+
     test('should add missing start quote', () => {
       expect(jsonrepair('abc"')).toBe('"abc"')
       expect(jsonrepair('[a","b"]')).toBe('["a","b"]')

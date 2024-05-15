@@ -217,6 +217,29 @@ export function jsonrepair(text: string): string {
   }
 
   /**
+   * Skip ellipsis like "[1,2,3,...]" or "[1,2,3,...,9]" or "[...,7,8,9]"
+   * or a similar construct in objects.
+   */
+  function skipEllipsis(): boolean {
+    parseWhitespaceAndSkipComments()
+
+    if (
+      text.charCodeAt(i) === codeDot &&
+      text.charCodeAt(i + 1) === codeDot &&
+      text.charCodeAt(i + 2) === codeDot
+    ) {
+      // repair: remove the ellipsis (three dots) and optionally a comma
+      i += 3
+      parseWhitespaceAndSkipComments()
+      skipCharacter(codeComma)
+
+      return true
+    }
+
+    return false
+  }
+
+  /**
    * Parse an object like '{"key": "value"}'
    */
   function parseObject(): boolean {
@@ -239,6 +262,8 @@ export function jsonrepair(text: string): string {
           processedComma = true
           initial = false
         }
+
+        skipEllipsis()
 
         const processedKey = parseString() || parseUnquotedString()
         if (!processedKey) {
@@ -313,6 +338,8 @@ export function jsonrepair(text: string): string {
         } else {
           initial = false
         }
+
+        skipEllipsis()
 
         const processedValue = parseValue()
         if (!processedValue) {

@@ -21,6 +21,7 @@ The following issues can be fixed:
 - Replace Python constants `None`, `True`, and `False` with `null`, `true`, and `false`
 - Strip trailing commas
 - Strip comments like `/* ... */` and `// ...`
+- Strip ellipsis in arrays and objects like `[1, 2, 3, ...]`
 - Strip JSONP notation like `callback({ ... })`
 - Strip escape characters from an escaped string like `{\"stringified\": \"content\"}`
 - Strip MongoDB data types like `NumberLong(2)` and `ISODate("2012-12-19T06:01:17.171Z")`
