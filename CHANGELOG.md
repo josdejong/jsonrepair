@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.8.1](https://github.com/josdejong/jsonrepair/compare/v3.8.0...v3.8.1) (2024-09-18)
+
+
+### Bug Fixes
+
+* code style adjustments, use template literals consistently ([594f535](https://github.com/josdejong/jsonrepair/commit/594f535531ac14f509f78435407fb1b25d72fed4))
+
 ## [3.8.0](https://github.com/josdejong/jsonrepair/compare/v3.7.1...v3.8.0) (2024-05-15)
 
 
