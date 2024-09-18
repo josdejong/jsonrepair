@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createReadStream, createWriteStream, readFileSync, renameSync } from 'node:fs'
-import { pipeline as pipelineCallback } from 'node:stream'
 import { dirname, join } from 'node:path'
+import { pipeline as pipelineCallback } from 'node:stream'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { jsonrepairTransform } from '../lib/esm/stream.js'
@@ -55,7 +55,7 @@ function processArgs(args) {
         if (options.inputFile == null) {
           options.inputFile = arg
         } else {
-          throw new Error('Unexpected argument "' + arg + '"')
+          throw new Error(`Unexpected argument "${arg}"`)
         }
     }
 
@@ -86,7 +86,8 @@ async function run(options) {
       process.exit(1)
     }
 
-    const tempFileSuffix = '.repair-' + new Date().toISOString().replace(/\W/g, '-') + '.json'
+    const dateStr = new Date().toISOString().replace(/\W/g, '-')
+    const tempFileSuffix = `.repair-${dateStr}.json`
     const tempFile = options.inputFile + tempFileSuffix
 
     try {
@@ -130,7 +131,7 @@ function parseSize(size) {
     throw new Error(`Buffer size "${size}" not recognized. Examples: 65536, 512K, 2M`)
   }
 
-  const num = parseInt(match[1])
+  const num = Number.parseInt(match[1])
   const suffix = match[2] // K, M, or G
 
   switch (suffix) {

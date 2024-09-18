@@ -72,7 +72,7 @@ export function createOutputBuffer({
     }
   }
 
-  function insertAt (index: number, text: string) {
+  function insertAt(index: number, text: string) {
     if (index < offset) {
       throw new Error(`Cannot insert: ${flushedMessage}`)
     }

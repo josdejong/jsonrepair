@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import { JSONRepairError } from './utils/JSONRepairError'
 import { jsonrepair as jsonRepairRegular } from './index'
 import { jsonrepairCore } from './streaming/core'
+import { JSONRepairError } from './utils/JSONRepairError'
 
 const implementations = [
   { name: 'regular', jsonrepair: jsonRepairRegular },
@@ -10,18 +10,18 @@ const implementations = [
 
 describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
   describe('parse valid JSON', () => {
-    test('parse full JSON object', function () {
+    test('parse full JSON object', () => {
       const text = '{"a":2.3e100,"b":"str","c":null,"d":false,"e":[1,2,3]}'
       const parsed = jsonrepair(text)
 
       expect(parsed).toBe(text)
     })
 
-    test('parse whitespace', function () {
+    test('parse whitespace', () => {
       assertRepair('  { \n } \t ')
     })
 
-    test('parse object', function () {
+    test('parse object', () => {
       assertRepair('{}')
       assertRepair('{  }')
       assertRepair('{"a": {}}')
@@ -29,7 +29,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       assertRepair('{"a": 2}')
     })
 
-    test('parse array', function () {
+    test('parse array', () => {
       assertRepair('[]')
       assertRepair('[  ]')
       assertRepair('[1,2,3]')
@@ -40,7 +40,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       assertRepair('[1, "hi", true, false, null, {}, []]')
     })
 
-    test('parse number', function () {
+    test('parse number', () => {
       assertRepair('23')
       assertRepair('0')
       assertRepair('0e+2')
@@ -55,19 +55,19 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       assertRepair('2.3e-3')
     })
 
-    test('parse string', function () {
+    test('parse string', () => {
       assertRepair('"str"')
       assertRepair('"\\"\\\\\\/\\b\\f\\n\\r\\t"')
       assertRepair('"\\u260E"')
     })
 
-    test('parse keywords', function () {
+    test('parse keywords', () => {
       assertRepair('true')
       assertRepair('false')
       assertRepair('null')
     })
 
-    test('correctly handle strings equaling a JSON delimiter', function () {
+    test('correctly handle strings equaling a JSON delimiter', () => {
       assertRepair('""')
       assertRepair('"["')
       assertRepair('"]"')
@@ -150,14 +150,18 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{"s \\ud')).toBe('{"s": null}')
       expect(jsonrepair('{"message": "it\'s working')).toBe('{"message": "it\'s working"}')
       expect(jsonrepair('{"text":"Hello Sergey,I hop')).toBe('{"text":"Hello Sergey,I hop"}')
-      expect(jsonrepair('{"message": "with, multiple, commma\'s, you see?')).toBe('{"message": "with, multiple, commma\'s, you see?"}')
+      expect(jsonrepair('{"message": "with, multiple, commma\'s, you see?')).toBe(
+        '{"message": "with, multiple, commma\'s, you see?"}'
+      )
     })
 
     test('should repair ellipsis in an array', () => {
       expect(jsonrepair('[1,2,3,...]')).toBe('[1,2,3]')
       expect(jsonrepair('[1, 2, 3, ... ]')).toBe('[1, 2, 3  ]')
       expect(jsonrepair('[1,2,3,/*comment1*/.../*comment2*/]')).toBe('[1,2,3]')
-      expect(jsonrepair('[\n  1,\n  2,\n  3,\n  /*comment1*/  .../*comment2*/\n]')).toBe('[\n  1,\n  2,\n  3\n    \n]')
+      expect(jsonrepair('[\n  1,\n  2,\n  3,\n  /*comment1*/  .../*comment2*/\n]')).toBe(
+        '[\n  1,\n  2,\n  3\n    \n]'
+      )
       expect(jsonrepair('{"array":[1,2,3,...]}')).toBe('{"array":[1,2,3]}')
       expect(jsonrepair('[1,2,3,...,9]')).toBe('[1,2,3,9]')
       expect(jsonrepair('[...,7,8,9]')).toBe('[7,8,9]')
@@ -169,7 +173,9 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     test('should repair ellipsis in an object', () => {
       expect(jsonrepair('{"a":2,"b":3,...}')).toBe('{"a":2,"b":3}')
       expect(jsonrepair('{"a":2,"b":3,/*comment1*/.../*comment2*/}')).toBe('{"a":2,"b":3}')
-      expect(jsonrepair('{\n  "a":2,\n  "b":3,\n  /*comment1*/.../*comment2*/\n}')).toBe('{\n  "a":2,\n  "b":3\n  \n}')
+      expect(jsonrepair('{\n  "a":2,\n  "b":3,\n  /*comment1*/.../*comment2*/\n}')).toBe(
+        '{\n  "a":2,\n  "b":3\n  \n}'
+      )
       expect(jsonrepair('{"a":2,"b":3, ... }')).toBe('{"a":2,"b":3  }')
       expect(jsonrepair('{"nested":{"a":2,"b":3, ... }}')).toBe('{"nested":{"a":2,"b":3  }}')
       expect(jsonrepair('{"a":2,"b":3,...,"z":26}')).toBe('{"a":2,"b":3,"z":26}')
@@ -496,7 +502,9 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     test('should turn invalid numbers into strings', () => {
       expect(jsonrepair('ES2020')).toBe('"ES2020"')
       expect(jsonrepair('0.0.1')).toBe('"0.0.1"')
-      expect(jsonrepair('746de9ad-d4ff-4c66-97d7-00a92ad46967')).toBe('"746de9ad-d4ff-4c66-97d7-00a92ad46967"')
+      expect(jsonrepair('746de9ad-d4ff-4c66-97d7-00a92ad46967')).toBe(
+        '"746de9ad-d4ff-4c66-97d7-00a92ad46967"'
+      )
       expect(jsonrepair('234..5')).toBe('"234..5"')
       expect(jsonrepair('[0.0.1,2]')).toBe('["0.0.1",2]') // test delimiter for numerics
       expect(jsonrepair('[2 0.0.1 2]')).toBe('[2, "0.0.1 2"]') // note: currently spaces delimit numbers, but don't delimit unquoted strings
@@ -504,7 +512,9 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     })
 
     test('should repair regular expressions', () => {
-      expect(jsonrepair('{regex: /standalone-styles.css/}')).toBe('{"regex": "/standalone-styles.css/"}')
+      expect(jsonrepair('{regex: /standalone-styles.css/}')).toBe(
+        '{"regex": "/standalone-styles.css/"}'
+      )
     })
 
     test('should concatenate strings', () => {
@@ -611,44 +621,44 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     })
   })
 
-  test('should throw an exception in case of non-repairable issues', function () {
-    expect(function () {
+  test('should throw an exception in case of non-repairable issues', () => {
+    expect(() => {
       console.log({ output: jsonrepair('') })
     }).toThrow(new JSONRepairError('Unexpected end of json string', 0))
 
-    expect(function () {
+    expect(() => {
       console.log({ output: jsonrepair('{"a",') })
     }).toThrow(new JSONRepairError('Colon expected', 4))
 
-    expect(function () {
+    expect(() => {
       console.log({ output: jsonrepair('{:2}') })
     }).toThrow(new JSONRepairError('Object key expected', 1))
 
-    expect(function () {
+    expect(() => {
       console.log({ output: jsonrepair('{"a":2}{}') })
     }).toThrow(new JSONRepairError('Unexpected character "{"', 7))
 
-    expect(function () {
+    expect(() => {
       console.log({ output: jsonrepair('{"a" ]') })
     }).toThrow(new JSONRepairError('Colon expected', 5))
 
-    expect(function () {
+    expect(() => {
       console.log({ output: jsonrepair('{"a":2}foo') })
     }).toThrow(new JSONRepairError('Unexpected character "f"', 7))
 
-    expect(function () {
+    expect(() => {
       console.log({ output: jsonrepair('foo [') })
     }).toThrow(new JSONRepairError('Unexpected character "["', 4))
 
-    expect(function () {
+    expect(() => {
       console.log({ output: jsonrepair('"\\u26"') })
     }).toThrow(new JSONRepairError('Invalid unicode character "\\u26""', 1))
 
-    expect(function () {
+    expect(() => {
       console.log({ output: jsonrepair('"\\uZ000"') })
     }).toThrow(new JSONRepairError('Invalid unicode character "\\uZ000"', 1))
 
-    expect(function () {
+    expect(() => {
       console.log({ output: jsonrepair('"\\uZ000') })
     }).toThrow(new JSONRepairError('Invalid unicode character "\\uZ000"', 1))
   })
@@ -666,9 +676,11 @@ function createStreamingRepairWrapper(): (input: string) => string {
     // is faster, but it can potentially through an "Index out of range"
     // error, and we do not want that.
     const { transform, flush } = jsonrepairCore({
-      onData: (chunk) => (output += chunk),
-      bufferSize: Infinity,
-      chunkSize: Infinity
+      onData: (chunk) => {
+        output += chunk
+      },
+      bufferSize: Number.POSITIVE_INFINITY,
+      chunkSize: Number.POSITIVE_INFINITY
     })
 
     transform(text)

@@ -1,7 +1,7 @@
-import { describe, test, expect } from 'vitest'
-import cp from 'child_process'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
+import cp from 'node:child_process'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { describe, expect, test } from 'vitest'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -46,7 +46,7 @@ describe('lib', () => {
 
 function run(command) {
   return new Promise((resolve, reject) => {
-    cp.exec(command, function (error, result) {
+    cp.exec(command, (error, result) => {
       if (error) {
         reject(error)
       } else {

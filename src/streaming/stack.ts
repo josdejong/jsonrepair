@@ -1,10 +1,10 @@
-export const enum Caret {
+export enum Caret {
   beforeValue = 'beforeValue',
   afterValue = 'afterValue',
   beforeKey = 'beforeKey'
 }
 
-export const enum StackType {
+export enum StackType {
   root = 'root',
   object = 'object',
   array = 'array',

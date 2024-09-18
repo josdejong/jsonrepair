@@ -12,9 +12,9 @@ import {
   codeLowercaseE,
   codeMinus,
   codeNewline,
+  codeOpenParenthesis,
   codeOpeningBrace,
   codeOpeningBracket,
-  codeOpenParenthesis,
   codePlus,
   codeSemicolon,
   codeSlash,
@@ -37,7 +37,7 @@ import {
 } from '../utils/stringUtils.js'
 import { createInputBuffer } from './buffer/InputBuffer.js'
 import { createOutputBuffer } from './buffer/OutputBuffer.js'
-import { Caret, createStack, StackType } from './stack.js'
+import { Caret, StackType, createStack } from './stack.js'
 
 const controlCharacters: { [key: string]: string } = {
   '\b': '\\b',
@@ -141,7 +141,9 @@ export function jsonrepairCore({
       case StackType.array: {
         switch (stack.caret) {
           case Caret.beforeValue:
-            return skipEllipsis() || parseValue() || parseRepairTrailingComma() || parseRepairArrayEnd()
+            return (
+              skipEllipsis() || parseValue() || parseRepairTrailingComma() || parseRepairArrayEnd()
+            )
           case Caret.afterValue:
             return (
               parseArrayComma() ||
@@ -398,10 +400,10 @@ export function jsonrepairCore({
     if (input.isEnd(i)) {
       output.push('\n]')
       return stack.pop()
-    } else {
-      throwUnexpectedEnd()
-      return false // just to make TS happy
     }
+
+    throwUnexpectedEnd()
+    return false // just to make TS happy
   }
 
   function parseFunctionCallEnd(): true {
@@ -470,6 +472,7 @@ export function jsonrepairCore({
     let whitespace = ''
     let normal: boolean
     while (
+      // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
       (normal = isWhitespace(input.charCodeAt(i))) ||
       isSpecialWhitespace(input.charCodeAt(i))
     ) {
@@ -620,6 +623,7 @@ export function jsonrepairCore({
           output.insertBeforeLastWhitespace('"')
 
           return stack.update(Caret.afterValue)
+          // biome-ignore lint/style/noUselessElse: <explanation>
         } else if (isEndQuote(input.charCodeAt(i))) {
           // end quote
           // let us check what is before and after the quote to verify whether this is a legit end quote
@@ -705,7 +709,7 @@ export function jsonrepairCore({
 
           if (code === codeDoubleQuote && input.charCodeAt(i - 1) !== codeBackslash) {
             // repair unescaped double quote
-            output.push('\\' + char)
+            output.push(`\\${char}`)
             i++
           } else if (isControlCharacter(code)) {
             // unescaped control character
@@ -888,7 +892,11 @@ export function jsonrepairCore({
     // note that the symbol can end with whitespaces: we stop at the next delimiter
     // also, note that we allow strings to contain a slash / in order to support repairing regular expressions
     let j = i
-    while (!input.isEnd(j) && !isDelimiterExceptSlash(input.charAt(j)) && !isQuote(input.charCodeAt(j))) {
+    while (
+      !input.isEnd(j) &&
+      !isDelimiterExceptSlash(input.charAt(j)) &&
+      !isQuote(input.charCodeAt(j))
+    ) {
       j++
     }
 
@@ -913,15 +921,15 @@ export function jsonrepairCore({
     // repair numbers cut off at the end
     // this will only be called when we end after a '.', '-', or 'e' and does not
     // change the number more than it needs to make it valid JSON
-    output.push(input.substring(start, i) + '0')
+    output.push(`${input.substring(start, i)}0`)
   }
 
   function throwInvalidCharacter(char: string) {
-    throw new JSONRepairError('Invalid character ' + JSON.stringify(char), i)
+    throw new JSONRepairError(`Invalid character ${JSON.stringify(char)}`, i)
   }
 
   function throwUnexpectedCharacter() {
-    throw new JSONRepairError('Unexpected character ' + JSON.stringify(input.charAt(i)), i)
+    throw new JSONRepairError(`Unexpected character ${JSON.stringify(input.charAt(i))}`, i)
   }
 
   function throwUnexpectedEnd() {

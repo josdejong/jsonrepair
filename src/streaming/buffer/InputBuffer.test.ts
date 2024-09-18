@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { createInputBuffer } from './InputBuffer'
 
 describe('InputBuffer', () => {
@@ -30,7 +30,7 @@ describe('InputBuffer', () => {
 
     expect(buffer.charCodeAt(3)).toBe('3'.charCodeAt(0))
     expect(buffer.charCodeAt(8)).toBe('8'.charCodeAt(0))
-    expect(buffer.charCodeAt(12)).toBe(NaN)
+    expect(buffer.charCodeAt(12)).toBe(Number.NaN)
   })
 
   test('should get a substring', () => {

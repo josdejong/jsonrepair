@@ -1,15 +1,15 @@
 // Only use native node.js API's and references to ./lib here, this file is not transpiled!
-import cp from 'child_process'
-import { copyFileSync, existsSync, readFileSync, rmSync } from 'fs'
+import cp from 'node:child_process'
+import { copyFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { unlinkSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
-import { describe, test, expect, beforeEach, afterEach } from 'vitest'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-describe('command line interface', function () {
+describe('command line interface', () => {
   const binFile = join(__dirname, '..', 'bin', 'cli.js')
   const inputFile = join(__dirname, 'data', 'invalid.json')
   const replaceFile = join(__dirname, 'output', 'replace.json')
@@ -33,7 +33,7 @@ describe('command line interface', function () {
   })
 
   test('should write to the console', async () => {
-    const result = await run(`node "${binFile}" "` + inputFile + '"')
+    const result = await run(`node "${binFile}" "${inputFile}"`)
     expect(stripNewlines(result)).toBe('{"hello":"world"}')
   })
 
@@ -56,7 +56,7 @@ describe('command line interface', function () {
   test('should configure buffer size', async () => {
     // create a document that is larger than the 64K chunk size of the library
     const largeDoc = new Array(10_000).fill('test test test ')
-    const str = '{"a": ["' + largeDoc.join('')
+    const str = `{"a": ["${largeDoc.join('')}`
     expect(str.length).toBeGreaterThan(65536)
     writeFileSync(largeFile, str)
 
@@ -78,7 +78,7 @@ describe('command line interface', function () {
 
 function run(command) {
   return new Promise((resolve, reject) => {
-    cp.exec(command, function (error, result) {
+    cp.exec(command, (error, result) => {
       if (error) {
         reject(error)
       } else {

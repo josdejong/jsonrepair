@@ -12,9 +12,9 @@ import {
   codeLowercaseE,
   codeMinus,
   codeNewline,
+  codeOpenParenthesis,
   codeOpeningBrace,
   codeOpeningBracket,
-  codeOpenParenthesis,
   codePlus,
   codeSemicolon,
   codeSlash,
@@ -149,6 +149,7 @@ export function jsonrepair(text: string): string {
   function parseWhitespace(): boolean {
     let whitespace = ''
     let normal: boolean
+    // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
     while ((normal = isWhitespace(text.charCodeAt(i))) || isSpecialWhitespace(text.charCodeAt(i))) {
       if (normal) {
         whitespace += text[i]
@@ -255,7 +256,7 @@ export function jsonrepair(text: string): string {
 
       let initial = true
       while (i < text.length && text.charCodeAt(i) !== codeClosingBrace) {
-        let processedComma
+        let processedComma: boolean
         if (!initial) {
           processedComma = parseCharacter(codeComma)
           if (!processedComma) {
@@ -464,6 +465,7 @@ export function jsonrepair(text: string): string {
           output += str
 
           return true
+          // biome-ignore lint/style/noUselessElse: <explanation>
         } else if (isEndQuote(text.charCodeAt(i))) {
           // end quote
           // let us check what is before and after the quote to verify whether this is a legit end quote
@@ -504,7 +506,7 @@ export function jsonrepair(text: string): string {
           i = iQuote + 1
 
           // repair unescaped quote
-          str = str.substring(0, oQuote) + '\\' + str.substring(oQuote)
+          str = `${str.substring(0, oQuote)}\\${str.substring(oQuote)}`
         } else if (stopAtDelimiter && isDelimiter(text[i])) {
           // we're in the mode to stop the string at the first delimiter
           // because there is an end quote missing
@@ -551,7 +553,7 @@ export function jsonrepair(text: string): string {
 
           if (code === codeDoubleQuote && text.charCodeAt(i - 1) !== codeBackslash) {
             // repair unescaped double quote
-            str += '\\' + char
+            str += `\\${char}`
             i++
           } else if (isControlCharacter(code)) {
             // unescaped control character
@@ -720,7 +722,10 @@ export function jsonrepair(text: string): string {
     }
 
     if (i > start) {
-      if (text.charCodeAt(i) === codeOpenParenthesis && isFunctionName(text.slice(start, i).trim())) {
+      if (
+        text.charCodeAt(i) === codeOpenParenthesis &&
+        isFunctionName(text.slice(start, i).trim())
+      ) {
         // repair a MongoDB function call like NumberLong("2")
         // repair a JSONP function call like callback({...});
         i++
@@ -737,6 +742,7 @@ export function jsonrepair(text: string): string {
         }
 
         return true
+        // biome-ignore lint/style/noUselessElse: <explanation>
       } else {
         // repair unquoted string
         // also, repair undefined into null
@@ -777,15 +783,15 @@ export function jsonrepair(text: string): string {
     // repair numbers cut off at the end
     // this will only be called when we end after a '.', '-', or 'e' and does not
     // change the number more than it needs to make it valid JSON
-    output += text.slice(start, i) + '0'
+    output += `${text.slice(start, i)}0`
   }
 
   function throwInvalidCharacter(char: string) {
-    throw new JSONRepairError('Invalid character ' + JSON.stringify(char), i)
+    throw new JSONRepairError(`Invalid character ${JSON.stringify(char)}`, i)
   }
 
   function throwUnexpectedCharacter() {
-    throw new JSONRepairError('Unexpected character ' + JSON.stringify(text[i]), i)
+    throw new JSONRepairError(`Unexpected character ${JSON.stringify(text[i])}`, i)
   }
 
   function throwUnexpectedEnd() {
