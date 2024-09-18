@@ -8,7 +8,5 @@
     ],
     ["@babel/preset-typescript"]
   ],
-  "ignore": [
-    "src/**/*.test.ts"
-  ]
+  "ignore": ["src/**/*.test.ts"]
 }

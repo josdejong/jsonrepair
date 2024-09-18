@@ -24,15 +24,7 @@
       "types": "./lib/types/stream.d.ts"
     }
   },
-  "keywords": [
-    "simple",
-    "json",
-    "repair",
-    "fix",
-    "invalid",
-    "stream",
-    "streaming"
-  ],
+  "keywords": ["simple", "json", "repair", "fix", "invalid", "stream", "streaming"],
   "bin": {
     "jsonrepair": "./bin/cli.js"
   },
@@ -47,8 +39,8 @@
     "build:umd:min": "uglifyjs --compress --mangle --source-map --comments --output lib/umd/jsonrepair.min.js -- lib/umd/jsonrepair.js",
     "build:types": "tsc --project tsconfig-types.json",
     "build:validate": "vitest run test-lib",
-    "lint": "eslint src/**/*.ts",
-    "format": "npm run lint -- --fix",
+    "lint": "biome check",
+    "format": "biome check --write",
     "benchmark": "npm run build:esm && node tools/benchmark/run.mjs",
     "build-and-test": "npm run lint && npm run test:it && npm run build",
     "release": "npm-run-all release:**",
@@ -59,11 +51,7 @@
     "release-dry-run": "npm run build-and-test && standard-version --dry-run",
     "prepare": "husky"
   },
-  "files": [
-    "README.md",
-    "LICENSE.md",
-    "lib"
-  ],
+  "files": ["README.md", "LICENSE.md", "lib"],
   "author": "Jos de Jong",
   "license": "ISC",
   "devDependencies": {
@@ -72,20 +60,13 @@
     "@babel/plugin-transform-typescript": "7.24.7",
     "@babel/preset-env": "7.24.7",
     "@babel/preset-typescript": "7.24.7",
+    "@biomejs/biome": "1.9.1",
     "@commitlint/cli": "19.3.0",
     "@commitlint/config-conventional": "19.2.2",
     "@types/node": "20.14.9",
-    "@typescript-eslint/eslint-plugin": "7.15.0",
-    "@typescript-eslint/parser": "7.15.0",
     "benchmark": "2.1.4",
     "cpy-cli": "5.0.0",
     "del-cli": "5.1.0",
-    "eslint": "8.57.0",
-    "eslint-config-standard": "17.1.0",
-    "eslint-plugin-import": "2.29.1",
-    "eslint-plugin-n": "16.6.2",
-    "eslint-plugin-node": "11.1.0",
-    "eslint-plugin-promise": "6.4.0",
     "husky": "9.0.11",
     "npm-run-all": "4.1.5",
     "rollup": "4.18.0",
