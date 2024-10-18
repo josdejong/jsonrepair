@@ -63,9 +63,12 @@ export function isDelimiter(char: string): boolean {
 }
 
 const regexDelimiter = /^[,:[\]/{}()\n+]$/
+const regexUnquotedStringDelimiter = /^[,[\]/{}\n+]$/
+export const regexFunctionNameCharStart = /^[a-zA-Z_$]$/
+export const regexFunctionNameChar = /^[a-zA-Z_$0-9]$/
 
-export function isDelimiterExceptSlash(char: string): boolean {
-  return isDelimiter(char) && char !== '/'
+export function isUnquotedStringDelimiter(char: string): boolean {
+  return regexUnquotedStringDelimiter.test(char)
 }
 
 export function isStartOfValue(char: string): boolean {

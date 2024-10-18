@@ -119,6 +119,16 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     test('should add missing end quote', () => {
       expect(jsonrepair('"abc')).toBe('"abc"')
       expect(jsonrepair("'abc")).toBe('"abc"')
+
+      expect(jsonrepair('"12:20')).toBe('"12:20"')
+      expect(jsonrepair('{"time":"12:20}')).toBe('{"time":"12:20"}')
+      expect(jsonrepair('{"date":2024-10-18T18:35:22.229Z}')).toBe(
+        '{"date":"2024-10-18T18:35:22.229Z"}'
+      )
+      expect(jsonrepair('"She said:')).toBe('"She said:"')
+      expect(jsonrepair('{"text": "She said:')).toBe('{"text": "She said:"}')
+      expect(jsonrepair('["hello, world]')).toBe('["hello", "world"]')
+
       expect(jsonrepair('\u2018abc')).toBe('"abc"')
       expect(jsonrepair('"it\'s working')).toBe('"it\'s working"')
       expect(jsonrepair('["abc+/*comment*/"def"]')).toBe('["abcdef"]')
@@ -471,13 +481,11 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair(mongoDocument)).toBe(expectedJson)
     })
 
-    test('should not match MongoDB-like functions in an unquoted string', () => {
-      expect(() => jsonrepair('["This is C(2)", "This is F(3)]')).toThrow(/Unexpected character/)
-      expect(() => jsonrepair('["This is C(2)", This is F(3)]')).toThrow(/Unexpected character/)
-
-      // TODO: ideally, we should be able to repair an unquoted string containing ( and )
-      // expect(jsonrepair('["This is C(2)", "This is F(3)]')).toBe('["This is C(2)", "This is F(3)"]')
-      // expect(jsonrepair('["This is C(2)", This is F(3)]')).toBe('["This is C(2)", "This is F(3)"]')
+    test('should parse an unquoted string', () => {
+      expect(jsonrepair('hello world')).toBe('"hello world"')
+      expect(jsonrepair('She said: no way')).toBe('"She said: no way"')
+      expect(jsonrepair('["This is C(2)", "This is F(3)]')).toBe('["This is C(2)", "This is F(3)"]')
+      expect(jsonrepair('["This is C(2)", This is F(3)]')).toBe('["This is C(2)", "This is F(3)"]')
     })
 
     test('should replace Python constants None, True, False', () => {
@@ -514,6 +522,9 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     test('should repair regular expressions', () => {
       expect(jsonrepair('{regex: /standalone-styles.css/}')).toBe(
         '{"regex": "/standalone-styles.css/"}'
+      )
+      expect(jsonrepair('{regex: /with escape char \\/ [a-z]_/}')).toBe(
+        '{"regex": "/with escape char \\/ [a-z]_/"}'
       )
     })
 
