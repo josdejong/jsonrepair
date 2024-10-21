@@ -23,19 +23,20 @@ import {
   insertBeforeLastWhitespace,
   isControlCharacter,
   isDelimiter,
-  isDelimiterExceptSlash,
   isDigit,
   isDoubleQuote,
   isDoubleQuoteLike,
-  isFunctionName,
   isHex,
   isQuote,
   isSingleQuote,
   isSingleQuoteLike,
   isSpecialWhitespace,
   isStartOfValue,
+  isUnquotedStringDelimiter,
   isValidStringCharacter,
   isWhitespace,
+  regexFunctionNameChar,
+  regexFunctionNameCharStart,
   removeAtIndex,
   stripLastOccurrence
 } from '../utils/stringUtils.js'
@@ -126,7 +127,8 @@ export function jsonrepair(text: string): string {
       parseString() ||
       parseNumber() ||
       parseKeywords() ||
-      parseUnquotedString()
+      parseUnquotedString(false) ||
+      parseRegex()
     parseWhitespaceAndSkipComments()
 
     return processed
@@ -271,7 +273,7 @@ export function jsonrepair(text: string): string {
 
         skipEllipsis()
 
-        const processedKey = parseString() || parseUnquotedString()
+        const processedKey = parseString() || parseUnquotedString(true)
         if (!processedKey) {
           if (
             text.charCodeAt(i) === codeClosingBrace ||
@@ -507,7 +509,7 @@ export function jsonrepair(text: string): string {
 
           // repair unescaped quote
           str = `${str.substring(0, oQuote)}\\${str.substring(oQuote)}`
-        } else if (stopAtDelimiter && isDelimiter(text[i])) {
+        } else if (stopAtDelimiter && isUnquotedStringDelimiter(text[i])) {
           // we're in the mode to stop the string at the first delimiter
           // because there is an end quote missing
 
@@ -713,22 +715,25 @@ export function jsonrepair(text: string): string {
    * Repair a MongoDB function call like NumberLong("2")
    * Repair a JSONP function call like callback({...});
    */
-  function parseUnquotedString() {
+  function parseUnquotedString(isKey: boolean) {
     // note that the symbol can end with whitespaces: we stop at the next delimiter
     // also, note that we allow strings to contain a slash / in order to support repairing regular expressions
     const start = i
-    while (i < text.length && !isDelimiterExceptSlash(text[i]) && !isQuote(text.charCodeAt(i))) {
-      i++
-    }
 
-    if (i > start) {
-      if (
-        text.charCodeAt(i) === codeOpenParenthesis &&
-        isFunctionName(text.slice(start, i).trim())
-      ) {
+    if (regexFunctionNameCharStart.test(text[i])) {
+      while (i < text.length && regexFunctionNameChar.test(text[i])) {
+        i++
+      }
+
+      let j = i
+      while (isWhitespace(text.charCodeAt(j))) {
+        j++
+      }
+
+      if (text[j] === '(') {
         // repair a MongoDB function call like NumberLong("2")
         // repair a JSONP function call like callback({...});
-        i++
+        i = j + 1
 
         parseValue()
 
@@ -742,26 +747,52 @@ export function jsonrepair(text: string): string {
         }
 
         return true
-        // biome-ignore lint/style/noUselessElse: <explanation>
-      } else {
-        // repair unquoted string
-        // also, repair undefined into null
-
-        // first, go back to prevent getting trailing whitespaces in the string
-        while (isWhitespace(text.charCodeAt(i - 1)) && i > 0) {
-          i--
-        }
-
-        const symbol = text.slice(start, i)
-        output += symbol === 'undefined' ? 'null' : JSON.stringify(symbol)
-
-        if (text.charCodeAt(i) === codeDoubleQuote) {
-          // we had a missing start quote, but now we encountered the end quote, so we can skip that one
-          i++
-        }
-
-        return true
       }
+    }
+
+    while (
+      i < text.length &&
+      !isUnquotedStringDelimiter(text[i]) &&
+      !isQuote(text.charCodeAt(i)) &&
+      (!isKey || text[i] !== ':')
+    ) {
+      i++
+    }
+
+    if (i > start) {
+      // repair unquoted string
+      // also, repair undefined into null
+
+      // first, go back to prevent getting trailing whitespaces in the string
+      while (isWhitespace(text.charCodeAt(i - 1)) && i > 0) {
+        i--
+      }
+
+      const symbol = text.slice(start, i)
+      output += symbol === 'undefined' ? 'null' : JSON.stringify(symbol)
+
+      if (text.charCodeAt(i) === codeDoubleQuote) {
+        // we had a missing start quote, but now we encountered the end quote, so we can skip that one
+        i++
+      }
+
+      return true
+    }
+  }
+
+  function parseRegex() {
+    if (text[i] === '/') {
+      const start = i
+      i++
+
+      while (i < text.length && (text[i] !== '/' || text[i - 1] === '\\')) {
+        i++
+      }
+      i++
+
+      output += `"${text.substring(start, i)}"`
+
+      return true
     }
   }
 

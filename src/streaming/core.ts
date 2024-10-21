@@ -21,19 +21,20 @@ import {
   codeUppercaseE,
   isControlCharacter,
   isDelimiter,
-  isDelimiterExceptSlash,
   isDigit,
   isDoubleQuote,
   isDoubleQuoteLike,
-  isFunctionName,
   isHex,
   isQuote,
   isSingleQuote,
   isSingleQuoteLike,
   isSpecialWhitespace,
   isStartOfValue,
+  isUnquotedStringDelimiter,
   isValidStringCharacter,
-  isWhitespace
+  isWhitespace,
+  regexFunctionNameChar,
+  regexFunctionNameCharStart
 } from '../utils/stringUtils.js'
 import { createInputBuffer } from './buffer/InputBuffer.js'
 import { createOutputBuffer } from './buffer/OutputBuffer.js'
@@ -201,7 +202,8 @@ export function jsonrepairCore({
       parseString() ||
       parseNumber() ||
       parseKeywords() ||
-      parseRepairUnquotedString()
+      parseRepairUnquotedString() ||
+      parseRepairRegex()
     )
   }
 
@@ -246,18 +248,31 @@ export function jsonrepairCore({
   }
 
   function parseRepairUnquotedString(): boolean {
-    const unquotedStringEnd = findNextDelimiter()
+    let j = i
+
+    if (regexFunctionNameCharStart.test(input.charAt(j))) {
+      while (!input.isEnd(j) && regexFunctionNameChar.test(input.charAt(j))) {
+        j++
+      }
+
+      let k = j
+      while (isWhitespace(input.charCodeAt(k))) {
+        k++
+      }
+
+      if (input.charCodeAt(k) === codeOpenParenthesis) {
+        // repair a MongoDB function call like NumberLong("2")
+        // repair a JSONP function call like callback({...});
+        k++
+        i = k
+        return stack.push(StackType.functionCall, Caret.beforeValue)
+      }
+    }
+
+    const unquotedStringEnd = findNextDelimiter(false, j)
     if (unquotedStringEnd !== null) {
       const symbol = input.substring(i, unquotedStringEnd)
       i = unquotedStringEnd
-
-      if (skipCharacter(codeOpenParenthesis) && isFunctionName(symbol.trim())) {
-        // A MongoDB function call like NumberLong("2")
-        // Or a JSONP function call like callback({...});
-        // we strip the function call
-
-        return stack.push(StackType.functionCall, Caret.beforeValue)
-      }
 
       output.push(symbol === 'undefined' ? 'null' : JSON.stringify(symbol))
 
@@ -270,6 +285,22 @@ export function jsonrepairCore({
     }
 
     return false
+  }
+
+  function parseRepairRegex() {
+    if (input.charAt(i) === '/') {
+      const start = i
+      i++
+
+      while (!input.isEnd(i) && (input.charAt(i) !== '/' || input.charAt(i - 1) === '\\')) {
+        i++
+      }
+      i++
+
+      output.push(`"${input.substring(start, i)}"`)
+
+      return stack.update(Caret.afterValue)
+    }
   }
 
   function parseRepairMissingObjectValue(): boolean {
@@ -664,7 +695,7 @@ export function jsonrepairCore({
 
           // repair unescaped quote
           output.insertAt(oQuote, '\\')
-        } else if (stopAtDelimiter && isDelimiter(input.charAt(i))) {
+        } else if (stopAtDelimiter && isUnquotedStringDelimiter(input.charAt(i))) {
           // we're in the mode to stop the string at the first delimiter
           // because there is an end quote missing
 
@@ -865,7 +896,7 @@ export function jsonrepairCore({
   }
 
   function parseUnquotedKey(): boolean {
-    let end = findNextDelimiter()
+    let end = findNextDelimiter(true, i)
 
     if (end !== null) {
       // first, go back to prevent getting trailing whitespaces in the string
@@ -888,14 +919,15 @@ export function jsonrepairCore({
     return false
   }
 
-  function findNextDelimiter(): number | null {
+  function findNextDelimiter(isKey: boolean, start: number): number | null {
     // note that the symbol can end with whitespaces: we stop at the next delimiter
     // also, note that we allow strings to contain a slash / in order to support repairing regular expressions
-    let j = i
+    let j = start
     while (
       !input.isEnd(j) &&
-      !isDelimiterExceptSlash(input.charAt(j)) &&
-      !isQuote(input.charCodeAt(j))
+      !isUnquotedStringDelimiter(input.charAt(j)) &&
+      !isQuote(input.charCodeAt(j)) &&
+      (!isKey || input.charAt(j) !== ':')
     ) {
       j++
     }
