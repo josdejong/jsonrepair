@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.9.0](https://github.com/josdejong/jsonrepair/compare/v3.8.1...v3.9.0) (2024-10-21)
+
+
+### Features
+
+* [#126](https://github.com/josdejong/jsonrepair/issues/126) [#130](https://github.com/josdejong/jsonrepair/issues/130) repair strings containing a colon or parenthesis ([948c571](https://github.com/josdejong/jsonrepair/commit/948c571698b58741bf0f290cf733eb96c9d9dfc7))
+* [#126](https://github.com/josdejong/jsonrepair/issues/126) [#130](https://github.com/josdejong/jsonrepair/issues/130) repair strings containing a colon or parenthesis ([99830b7](https://github.com/josdejong/jsonrepair/commit/99830b700837d856dd3da8f0f87d7cbcd1ea838b))
+
 ### [3.8.1](https://github.com/josdejong/jsonrepair/compare/v3.8.0...v3.8.1) (2024-09-18)
 
 

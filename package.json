@@ -1,6 +1,6 @@
 {
   "name": "jsonrepair",
-  "version": "3.8.1",
+  "version": "3.9.0",
   "description": "Repair broken JSON documents",
   "repository": {
     "type": "git",
@@ -24,7 +24,15 @@
       "types": "./lib/types/stream.d.ts"
     }
   },
-  "keywords": ["simple", "json", "repair", "fix", "invalid", "stream", "streaming"],
+  "keywords": [
+    "simple",
+    "json",
+    "repair",
+    "fix",
+    "invalid",
+    "stream",
+    "streaming"
+  ],
   "bin": {
     "jsonrepair": "./bin/cli.js"
   },
@@ -51,7 +59,11 @@
     "release-dry-run": "npm run build-and-test && standard-version --dry-run",
     "prepare": "husky"
   },
-  "files": ["README.md", "LICENSE.md", "lib"],
+  "files": [
+    "README.md",
+    "LICENSE.md",
+    "lib"
+  ],
   "author": "Jos de Jong",
   "license": "ISC",
   "devDependencies": {
