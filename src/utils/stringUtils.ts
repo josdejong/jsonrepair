@@ -197,7 +197,3 @@ export function removeAtIndex(text: string, start: number, count: number) {
 export function endsWithCommaOrNewline(text: string): boolean {
   return /[,\n][ \t\r]*$/.test(text)
 }
-
-export function isFunctionName(text: string): boolean {
-  return /^\w+$/.test(text)
-}

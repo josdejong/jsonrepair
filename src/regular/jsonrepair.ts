@@ -12,6 +12,7 @@ import {
   codeLowercaseE,
   codeMinus,
   codeNewline,
+  codeOpenParenthesis,
   codeOpeningBrace,
   codeOpeningBracket,
   codePlus,
