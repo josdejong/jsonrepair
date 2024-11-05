@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.10.0](https://github.com/josdejong/jsonrepair/compare/v3.9.0...v3.10.0) (2024-11-05)
+
+
+### Features
+
+* repair unquoted urls ([dfca0f6](https://github.com/josdejong/jsonrepair/commit/dfca0f6bd3a722f9aa018f133c8876332565cf84))
+
 ## [3.9.0](https://github.com/josdejong/jsonrepair/compare/v3.8.1...v3.9.0) (2024-10-21)
 
 
