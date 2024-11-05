@@ -116,6 +116,26 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[\na,\nb\n]')).toBe('[\n"a",\n"b"\n]')
     })
 
+    test('should repair an unquoted url', () => {
+      expect(jsonrepair('https://www.bible.com/')).toBe('"https://www.bible.com/"')
+      expect(jsonrepair('{url:https://www.bible.com/}')).toBe('{"url":"https://www.bible.com/"}')
+      expect(jsonrepair('{url:https://www.bible.com/,"id":2}')).toBe(
+        '{"url":"https://www.bible.com/","id":2}'
+      )
+      expect(jsonrepair('[https://www.bible.com/]')).toBe('["https://www.bible.com/"]')
+      expect(jsonrepair('[https://www.bible.com/,2]')).toBe('["https://www.bible.com/",2]')
+    })
+
+    test('should repair an url with missing end quote', () => {
+      expect(jsonrepair('"https://www.bible.com/')).toBe('"https://www.bible.com/"')
+      expect(jsonrepair('{"url":"https://www.bible.com/}')).toBe('{"url":"https://www.bible.com/"}')
+      expect(jsonrepair('{"url":"https://www.bible.com/,"id":2}')).toBe(
+        '{"url":"https://www.bible.com/","id":2}'
+      )
+      expect(jsonrepair('["https://www.bible.com/]')).toBe('["https://www.bible.com/"]')
+      expect(jsonrepair('["https://www.bible.com/,2]')).toBe('["https://www.bible.com/",2]')
+    })
+
     test('should add missing end quote', () => {
       expect(jsonrepair('"abc')).toBe('"abc"')
       expect(jsonrepair("'abc")).toBe('"abc"')

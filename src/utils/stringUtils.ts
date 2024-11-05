@@ -67,6 +67,12 @@ const regexUnquotedStringDelimiter = /^[,[\]/{}\n+]$/
 export const regexFunctionNameCharStart = /^[a-zA-Z_$]$/
 export const regexFunctionNameChar = /^[a-zA-Z_$0-9]$/
 
+// matches "https://" and other schemas
+export const regexUrlStart = /^(http|https|ftp|mailto|file|data|irc):\/\/$/
+
+// matches all valid URL characters EXCEPT "[", "]", and ",", since that are important JSON delimiters
+export const regexUrlChar = /^[A-Za-z0-9-._~:/?#@!$&'()*+;=]$/
+
 export function isUnquotedStringDelimiter(char: string): boolean {
   return regexUnquotedStringDelimiter.test(char)
 }

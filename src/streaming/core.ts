@@ -34,7 +34,9 @@ import {
   isValidStringCharacter,
   isWhitespace,
   regexFunctionNameChar,
-  regexFunctionNameCharStart
+  regexFunctionNameCharStart,
+  regexUrlChar,
+  regexUrlStart
 } from '../utils/stringUtils.js'
 import { createInputBuffer } from './buffer/InputBuffer.js'
 import { createOutputBuffer } from './buffer/OutputBuffer.js'
@@ -269,10 +271,17 @@ export function jsonrepairCore({
       }
     }
 
-    const unquotedStringEnd = findNextDelimiter(false, j)
-    if (unquotedStringEnd !== null) {
-      const symbol = input.substring(i, unquotedStringEnd)
-      i = unquotedStringEnd
+    j = findNextDelimiter(false, j)
+    if (j !== null) {
+      // test start of an url like "https://..." (this would be parsed as a comment)
+      if (input.charCodeAt(j - 1) === codeColon && regexUrlStart.test(input.substring(i, j + 2))) {
+        while (!input.isEnd(j) && regexUrlChar.test(input.charAt(j))) {
+          j++
+        }
+      }
+
+      const symbol = input.substring(i, j)
+      i = j
 
       output.push(symbol === 'undefined' ? 'null' : JSON.stringify(symbol))
 
@@ -699,6 +708,17 @@ export function jsonrepairCore({
           // we're in the mode to stop the string at the first delimiter
           // because there is an end quote missing
 
+          // test start of an url like "https://..." (this would be parsed as a comment)
+          if (
+            input.charCodeAt(i - 1) === codeColon &&
+            regexUrlStart.test(input.substring(iBefore + 1, i + 2))
+          ) {
+            while (!input.isEnd(i) && regexUrlChar.test(input.charAt(i))) {
+              output.push(input.charAt(i))
+              i++
+            }
+          }
+
           // repair missing quote
           output.insertBeforeLastWhitespace('"')
 
@@ -927,7 +947,7 @@ export function jsonrepairCore({
       !input.isEnd(j) &&
       !isUnquotedStringDelimiter(input.charAt(j)) &&
       !isQuote(input.charCodeAt(j)) &&
-      (!isKey || input.charAt(j) !== ':')
+      (!isKey || input.charCodeAt(j) !== codeColon)
     ) {
       j++
     }

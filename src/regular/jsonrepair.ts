@@ -12,7 +12,6 @@ import {
   codeLowercaseE,
   codeMinus,
   codeNewline,
-  codeOpenParenthesis,
   codeOpeningBrace,
   codeOpeningBracket,
   codePlus,
@@ -37,6 +36,8 @@ import {
   isWhitespace,
   regexFunctionNameChar,
   regexFunctionNameCharStart,
+  regexUrlChar,
+  regexUrlStart,
   removeAtIndex,
   stripLastOccurrence
 } from '../utils/stringUtils.js'
@@ -513,6 +514,17 @@ export function jsonrepair(text: string): string {
           // we're in the mode to stop the string at the first delimiter
           // because there is an end quote missing
 
+          // test start of an url like "https://..." (this would be parsed as a comment)
+          if (
+            text.charCodeAt(i - 1) === codeColon &&
+            regexUrlStart.test(text.substring(iBefore + 1, i + 2))
+          ) {
+            while (i < text.length && regexUrlChar.test(text[i])) {
+              str += text[i]
+              i++
+            }
+          }
+
           // repair missing quote
           str = insertBeforeLastWhitespace(str, '"')
           output += str
@@ -754,9 +766,16 @@ export function jsonrepair(text: string): string {
       i < text.length &&
       !isUnquotedStringDelimiter(text[i]) &&
       !isQuote(text.charCodeAt(i)) &&
-      (!isKey || text[i] !== ':')
+      (!isKey || text.charCodeAt(i) !== codeColon)
     ) {
       i++
+    }
+
+    // test start of an url like "https://..." (this would be parsed as a comment)
+    if (text.charCodeAt(i - 1) === codeColon && regexUrlStart.test(text.substring(start, i + 2))) {
+      while (i < text.length && regexUrlChar.test(text[i])) {
+        i++
+      }
     }
 
     if (i > start) {
