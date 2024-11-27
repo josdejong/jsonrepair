@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.11.0](https://github.com/josdejong/jsonrepair/compare/v3.10.0...v3.11.0) (2024-11-27)
+
+
+### Features
+
+* [#133](https://github.com/josdejong/jsonrepair/issues/133) repair the missing end quote of a string value containing commas in an object ([1899f70](https://github.com/josdejong/jsonrepair/commit/1899f7032fb510e791521c369db6821a1f98838d))
+
 ## [3.10.0](https://github.com/josdejong/jsonrepair/compare/v3.9.0...v3.10.0) (2024-11-05)
 
 
