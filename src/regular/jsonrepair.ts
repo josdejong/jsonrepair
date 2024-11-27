@@ -419,9 +419,10 @@ export function jsonrepair(text: string): string {
    * - If it turns out that the string does not have a valid end quote followed
    *   by a delimiter (which should be the case), the function runs again in a
    *   more conservative way, stopping the string at the first next delimiter
-   *   and fixing the string by inserting a quote there.
+   *   and fixing the string by inserting a quote there, or stopping at a
+   *   stop index detected in the first iteration.
    */
-  function parseString(stopAtDelimiter = false): boolean {
+  function parseString(stopAtDelimiter = false, stopAtIndex = -1): boolean {
     let skipEscapeChars = text.charCodeAt(i) === codeBackslash
     if (skipEscapeChars) {
       // repair: remove the first escape character
@@ -469,6 +470,13 @@ export function jsonrepair(text: string): string {
 
           return true
           // biome-ignore lint/style/noUselessElse: <explanation>
+        } else if (i === stopAtIndex) {
+          // use the stop index detected in the first iteration, and repair end quote
+          str = insertBeforeLastWhitespace(str, '"')
+          output += str
+
+          return true
+          // biome-ignore lint/style/noUselessElse: <explanation>
         } else if (isEndQuote(text.charCodeAt(i))) {
           // end quote
           // let us check what is before and after the quote to verify whether this is a legit end quote
@@ -487,14 +495,27 @@ export function jsonrepair(text: string): string {
             isQuote(text.charCodeAt(i)) ||
             isDigit(text.charCodeAt(i))
           ) {
-            // The quote is followed by the end of the text, a delimiter, or a next value
-            // so the quote is indeed the end of the string
+            // The quote is followed by the end of the text, a delimiter,
+            // or a next value. So the quote is indeed the end of the string.
             parseConcatenatedString()
 
             return true
           }
 
-          if (isDelimiter(text.charAt(prevNonWhitespaceIndex(iQuote - 1)))) {
+          const iPrevChar = prevNonWhitespaceIndex(iQuote - 1)
+          const prevChar = text.charAt(iPrevChar)
+
+          if (prevChar === ',') {
+            // A comma followed by a quote, like '{"a":"b,c,"d":"e"}'.
+            // We assume that the quote is a start quote, and that the end quote
+            // should have been located right before the comma but is missing.
+            i = iBefore
+            output = output.substring(0, oBefore)
+
+            return parseString(false, iPrevChar)
+          }
+
+          if (isDelimiter(prevChar)) {
             // This is not the right end quote: it is preceded by a delimiter,
             // and NOT followed by a delimiter. So, there is an end quote missing
             // parse the string again and then stop at the first next delimiter

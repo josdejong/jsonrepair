@@ -148,6 +148,15 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('"She said:')).toBe('"She said:"')
       expect(jsonrepair('{"text": "She said:')).toBe('{"text": "She said:"}')
       expect(jsonrepair('["hello, world]')).toBe('["hello", "world"]')
+      expect(jsonrepair('["hello,"world"]')).toBe('["hello","world"]')
+
+      expect(jsonrepair('{"a":"b}')).toBe('{"a":"b"}')
+      expect(jsonrepair('{"a":"b,"c":"d"}')).toBe('{"a":"b","c":"d"}')
+      expect(jsonrepair('{"a":"b,"c":"d"}')).toBe('{"a":"b","c":"d"}')
+      expect(jsonrepair('{"a":"b,c,"d":"e"}')).toBe('{"a":"b,c","d":"e"}')
+      expect(jsonrepair('{a:"b,c,"d":"e"}')).toBe('{"a":"b,c","d":"e"}')
+      // expect(jsonrepair('{a:"b,c,}')).toBe('{"a":"b,c"}') // TODO: support this case
+      expect(jsonrepair('["b,c,]')).toBe('["b","c"]')
 
       expect(jsonrepair('\u2018abc')).toBe('"abc"')
       expect(jsonrepair('"it\'s working')).toBe('"it\'s working"')

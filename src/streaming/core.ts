@@ -615,9 +615,10 @@ export function jsonrepairCore({
    * - If it turns out that the string does not have a valid end quote followed
    *   by a delimiter (which should be the case), the function runs again in a
    *   more conservative way, stopping the string at the first next delimiter
-   *   and fixing the string by inserting a quote there.
+   *   and fixing the string by inserting a quote there, or stopping at a
+   *   stop index detected in the first iteration.
    */
-  function parseString(stopAtDelimiter = false): boolean {
+  function parseString(stopAtDelimiter = false, stopAtIndex = -1): boolean {
     let skipEscapeChars = input.charCodeAt(i) === codeBackslash
     if (skipEscapeChars) {
       // repair: remove the first escape character
@@ -664,6 +665,12 @@ export function jsonrepairCore({
 
           return stack.update(Caret.afterValue)
           // biome-ignore lint/style/noUselessElse: <explanation>
+        } else if (i === stopAtIndex) {
+          // use the stop index detected in the first iteration, and repair end quote
+          output.insertBeforeLastWhitespace('"')
+
+          return stack.update(Caret.afterValue)
+          // biome-ignore lint/style/noUselessElse: <explanation>
         } else if (isEndQuote(input.charCodeAt(i))) {
           // end quote
           // let us check what is before and after the quote to verify whether this is a legit end quote
@@ -688,7 +695,20 @@ export function jsonrepairCore({
             return stack.update(Caret.afterValue)
           }
 
-          if (isDelimiter(input.charAt(prevNonWhitespaceIndex(iQuote - 1)))) {
+          const iPrevChar = prevNonWhitespaceIndex(iQuote - 1)
+          const prevChar = input.charAt(iPrevChar)
+
+          if (prevChar === ',') {
+            // A comma followed by a quote, like '{"a":"b,c,"d":"e"}'.
+            // We assume that the quote is a start quote, and that the end quote
+            // should have been located right before the comma but is missing.
+            i = iBefore
+            output.remove(oBefore)
+
+            return parseString(false, iPrevChar)
+          }
+
+          if (isDelimiter(prevChar)) {
             // This is not the right end quote: it is preceded by a delimiter,
             // and NOT followed by a delimiter. So, there is an end quote missing
             // parse the string again and then stop at the first next delimiter
