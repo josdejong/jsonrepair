@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.11.1](https://github.com/josdejong/jsonrepair/compare/v3.11.0...v3.11.1) (2024-12-03)
+
+
+### Bug Fixes
+
+* [#134](https://github.com/josdejong/jsonrepair/issues/134) broken link to browser bundle in package.json ([4553795](https://github.com/josdejong/jsonrepair/commit/45537959469b2a0a9d7de2b96d6f93b8dfef24aa))
+
 ## [3.11.0](https://github.com/josdejong/jsonrepair/compare/v3.10.0...v3.11.0) (2024-11-27)
 
 
