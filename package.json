@@ -9,7 +9,7 @@
   "type": "module",
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.js",
-  "browser": "lib/umd/index.min.js",
+  "browser": "lib/umd/jsonrepair.min.js",
   "types": "lib/types/index.d.ts",
   "sideEffects": false,
   "exports": {
