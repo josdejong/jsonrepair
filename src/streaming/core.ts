@@ -512,21 +512,19 @@ export function jsonrepairCore({
   function parseWhitespace(skipNewline: boolean): boolean {
     const _isWhiteSpace = skipNewline ? isWhitespace : isWhitespaceExceptNewline
     let whitespace = ''
-    let normal: boolean
 
-    while (
-      // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
-      (normal = _isWhiteSpace(input.charCodeAt(i))) ||
-      isSpecialWhitespace(input.charCodeAt(i))
-    ) {
-      if (normal) {
+    while (true) {
+      const c = input.charCodeAt(i)
+      if (_isWhiteSpace(c)) {
         whitespace += input.charAt(i)
-      } else {
+        i++
+      } else if (isSpecialWhitespace(c)) {
         // repair special whitespace
         whitespace += ' '
+        i++
+      } else {
+        break
       }
-
-      i++
     }
 
     if (whitespace.length > 0) {

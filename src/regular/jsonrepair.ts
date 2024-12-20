@@ -153,21 +153,19 @@ export function jsonrepair(text: string): string {
   function parseWhitespace(skipNewline: boolean): boolean {
     const _isWhiteSpace = skipNewline ? isWhitespace : isWhitespaceExceptNewline
     let whitespace = ''
-    let normal: boolean
 
-    while (
-      // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
-      (normal = _isWhiteSpace(text.charCodeAt(i))) ||
-      isSpecialWhitespace(text.charCodeAt(i))
-    ) {
-      if (normal) {
+    while (true) {
+      const c = text.charCodeAt(i)
+      if (_isWhiteSpace(c)) {
         whitespace += text[i]
-      } else {
+        i++
+      } else if (isSpecialWhitespace(c)) {
         // repair special whitespace
         whitespace += ' '
+        i++
+      } else {
+        break
       }
-
-      i++
     }
 
     if (whitespace.length > 0) {
