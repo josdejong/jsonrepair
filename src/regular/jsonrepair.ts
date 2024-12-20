@@ -34,6 +34,7 @@ import {
   isUnquotedStringDelimiter,
   isValidStringCharacter,
   isWhitespace,
+  isWhitespaceExceptNewline,
   regexFunctionNameChar,
   regexFunctionNameCharStart,
   regexUrlChar,
@@ -135,25 +136,30 @@ export function jsonrepair(text: string): string {
     return processed
   }
 
-  function parseWhitespaceAndSkipComments(): boolean {
+  function parseWhitespaceAndSkipComments(skipNewline = true): boolean {
     const start = i
 
-    let changed = parseWhitespace()
+    let changed = parseWhitespace(skipNewline)
     do {
       changed = parseComment()
       if (changed) {
-        changed = parseWhitespace()
+        changed = parseWhitespace(skipNewline)
       }
     } while (changed)
 
     return i > start
   }
 
-  function parseWhitespace(): boolean {
+  function parseWhitespace(skipNewline: boolean): boolean {
+    const _isWhiteSpace = skipNewline ? isWhitespace : isWhitespaceExceptNewline
     let whitespace = ''
     let normal: boolean
-    // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
-    while ((normal = isWhitespace(text.charCodeAt(i))) || isSpecialWhitespace(text.charCodeAt(i))) {
+
+    while (
+      // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
+      (normal = _isWhiteSpace(text.charCodeAt(i))) ||
+      isSpecialWhitespace(text.charCodeAt(i))
+    ) {
       if (normal) {
         whitespace += text[i]
       } else {
@@ -486,7 +492,7 @@ export function jsonrepair(text: string): string {
           i++
           output += str
 
-          parseWhitespaceAndSkipComments()
+          parseWhitespaceAndSkipComments(false)
 
           if (
             stopAtDelimiter ||

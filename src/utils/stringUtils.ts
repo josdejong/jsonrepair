@@ -103,6 +103,14 @@ export function isWhitespace(code: number): boolean {
 }
 
 /**
+ * Check if the given character is a whitespace character like space or tab,
+ * but NOT a newline
+ */
+export function isWhitespaceExceptNewline(code: number): boolean {
+  return code === codeSpace || code === codeTab || code === codeReturn
+}
+
+/**
  * Check if the given character is a special whitespace character, some
  * unicode variant
  */

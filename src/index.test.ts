@@ -586,6 +586,17 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     test('should repair missing comma between object properties', () => {
       expect(jsonrepair('{"a":2\n"b":3\n}')).toBe('{"a":2,\n"b":3\n}')
       expect(jsonrepair('{"a":2\n"b":3\nc:4}')).toBe('{"a":2,\n"b":3,\n"c":4}')
+      expect(jsonrepair('{\n  "firstName": "John"\n  lastName: Smith')).toBe(
+        '{\n  "firstName": "John",\n  "lastName": "Smith"}'
+      )
+      expect(jsonrepair('{\n  "firstName": "John" /* comment */ \n  lastName: Smith')).toBe(
+        '{\n  "firstName": "John",  \n  "lastName": "Smith"}'
+      )
+
+      // verify parsing a comma after a return (since in parseString we stop at a return)
+      expect(jsonrepair('{\n  "firstName": "John"\n  ,  lastName: Smith')).toBe(
+        '{\n  "firstName": "John"\n  ,  "lastName": "Smith"}'
+      )
     })
 
     test('should repair numbers at the end', () => {
