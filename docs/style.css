@@ -38,6 +38,7 @@ h1 {
   padding: 10px;
   display: flex;
   flex-direction: column;
+  overflow: auto;
 }
 
 .info {
@@ -47,6 +48,13 @@ h1 {
 .playground {
   flex: 1;
   display: flex;
+  gap: 20px;
+}
+
+@media (max-width: 650px) {
+  .playground {
+    flex-direction: column;
+  }
 }
 
 .column {
@@ -65,7 +73,6 @@ label {
 }
 
 textarea {
-  width: 100%;
   flex: 1;
   border: 1px solid #bfbfbf;
   border-radius: 3px;
@@ -73,6 +80,7 @@ textarea {
   box-sizing: border-box;
   font-family: monospace;
   max-height: 500px;
+  min-height: 150px;
 }
 
 textarea[readonly] {
