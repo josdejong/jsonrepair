@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.11.2](https://github.com/josdejong/jsonrepair/compare/v3.11.1...v3.11.2) (2024-12-20)
+
+
+### Bug Fixes
+
+* handle repairing a missing comma at a newline ([ecf9588](https://github.com/josdejong/jsonrepair/commit/ecf958896a30f770d165756d391a590154c5745a))
+
 ### [3.11.1](https://github.com/josdejong/jsonrepair/compare/v3.11.0...v3.11.1) (2024-12-03)
 
 
