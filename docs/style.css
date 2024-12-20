@@ -81,6 +81,7 @@ textarea {
   font-family: monospace;
   max-height: 500px;
   min-height: 150px;
+  resize: none;
 }
 
 textarea[readonly] {
