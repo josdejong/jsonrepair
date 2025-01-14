@@ -9,6 +9,7 @@ import {
   codeComma,
   codeDot,
   codeDoubleQuote,
+  codeGraveAccent,
   codeLowercaseE,
   codeMinus,
   codeNewline,
@@ -18,6 +19,10 @@ import {
   codeSemicolon,
   codeSlash,
   codeUppercaseE,
+  codeLowercaseJ,
+  codeLowercaseN,
+  codeLowercaseO,
+  codeLowercaseS,
   endsWithCommaOrNewline,
   insertBeforeLastWhitespace,
   isControlCharacter,
@@ -123,6 +128,7 @@ export function jsonrepair(text: string): string {
 
   function parseValue(): boolean {
     parseWhitespaceAndSkipComments()
+    skipMarkdownJsonWrapper()
     const processed =
       parseObject() ||
       parseArray() ||
@@ -132,6 +138,7 @@ export function jsonrepair(text: string): string {
       parseUnquotedString(false) ||
       parseRegex()
     parseWhitespaceAndSkipComments()
+    skipMarkdownJsonWrapper()
 
     return processed
   }
@@ -207,6 +214,40 @@ export function jsonrepair(text: string): string {
       i++
       return true
     }
+
+    return false
+  }
+
+  /**
+   * Skip markdown json wrapper like ```json or ```
+   */
+  function skipMarkdownJsonWrapper(): boolean {
+    let start = i;
+    // ```json
+    if (
+      text.charCodeAt(start) === codeGraveAccent &&
+      text.charCodeAt(start + 1) === codeGraveAccent &&
+      text.charCodeAt(start + 2) === codeGraveAccent &&
+      text.charCodeAt(start + 3) === codeLowercaseJ &&
+      text.charCodeAt(start + 4) === codeLowercaseS &&
+      text.charCodeAt(start + 5) === codeLowercaseO &&
+      text.charCodeAt(start + 6) === codeLowercaseN
+    ) {
+      i += 7
+      return true
+    }
+
+    // ```
+    if (
+      text.charCodeAt(start) === codeGraveAccent &&
+      text.charCodeAt(start + 1) === codeGraveAccent &&
+      text.charCodeAt(start + 2) === codeGraveAccent
+    ) {
+      i += 3
+      return true
+    }
+
+    parseWhitespaceAndSkipComments();
 
     return false
   }

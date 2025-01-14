@@ -670,6 +670,18 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[0789]')).toBe('["0789"]')
       expect(jsonrepair('{value:0789}')).toBe('{"value":"0789"}')
     })
+
+    test('should skip markdown json wrapper', () => {
+      // object
+      expect(jsonrepair('```json{"a":1}')).toBe('{"a":1}')
+      expect(jsonrepair('```json{"a":1}```')).toBe('{"a":1}')
+      expect(jsonrepair('```{"a":1}```')).toBe('{"a":1}')
+      expect(jsonrepair('{"b":"abc"}```')).toBe('{"b":"abc"}')
+      // array
+      expect(jsonrepair('```json[1,2,3]')).toBe('[1,2,3]')
+      expect(jsonrepair('```json[1,2,3]```')).toBe('[1,2,3]')
+      expect(jsonrepair('```[1,2,3]```')).toBe('[1,2,3]')
+    })
   })
 
   test('should throw an exception in case of non-repairable issues', () => {

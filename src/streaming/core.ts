@@ -9,7 +9,12 @@ import {
   codeComma,
   codeDot,
   codeDoubleQuote,
+  codeGraveAccent,
   codeLowercaseE,
+  codeLowercaseJ,
+  codeLowercaseN,
+  codeLowercaseO,
+  codeLowercaseS,
   codeMinus,
   codeNewline,
   codeOpenParenthesis,
@@ -121,6 +126,7 @@ export function jsonrepairCore({
 
   function parse(): boolean {
     parseWhitespaceAndSkipComments()
+    skipMarkdownJsonWrapper()
 
     switch (stack.type) {
       case StackType.object: {
@@ -564,6 +570,32 @@ export function jsonrepairCore({
     if (input.charCodeAt(i) === code) {
       output.push(input.charAt(i))
       i++
+      return true
+    }
+
+    return false
+  }
+
+  function skipMarkdownJsonWrapper(): boolean {
+    if (
+      input.charCodeAt(i) === codeGraveAccent &&
+      input.charCodeAt(i + 1) === codeGraveAccent && 
+      input.charCodeAt(i + 2) === codeGraveAccent && 
+      input.charCodeAt(i + 3) === codeLowercaseJ && 
+      input.charCodeAt(i + 4) === codeLowercaseS && 
+      input.charCodeAt(i + 5) === codeLowercaseO && 
+      input.charCodeAt(i + 6) === codeLowercaseN
+    ) {
+      i += 7
+      return true
+    }
+
+    if (
+      input.charCodeAt(i) === codeGraveAccent &&
+      input.charCodeAt(i + 1) === codeGraveAccent &&
+      input.charCodeAt(i + 2) === codeGraveAccent
+    ) {
+      i += 3
       return true
     }
 
