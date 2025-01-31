@@ -1,3 +1,14 @@
+const codeSpace = 0x20 // " "
+const codeNewline = 0xa // "\n"
+const codeTab = 0x9 // "\t"
+const codeReturn = 0xd // "\r"
+const codeNonBreakingSpace = 0xa0
+const codeEnQuad = 0x2000
+const codeHairSpace = 0x200a
+const codeNarrowNoBreakSpace = 0x202f
+const codeMediumMathematicalSpace = 0x205f
+const codeIdeographicSpace = 0x3000
+
 export function isHex(char: string): boolean {
   return (
     (char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')
@@ -56,33 +67,43 @@ export function isControlCharacter(char: string) {
   return char === '\n' || char === '\r' || char === '\t' || char === '\b' || char === '\f'
 }
 
+export interface Text {
+  charCodeAt: (index: number) => number
+}
+
 /**
  * Check if the given character is a whitespace character like space, tab, or
  * newline
  */
-export function isWhitespace(char: string): boolean {
-  return char === ' ' || char === '\n' || char === '\t' || char === '\r'
+export function isWhitespace(text: Text, index: number): boolean {
+  const code = text.charCodeAt(index)
+
+  return code === codeSpace || code === codeNewline || code === codeTab || code === codeReturn
 }
 
 /**
  * Check if the given character is a whitespace character like space or tab,
  * but NOT a newline
  */
-export function isWhitespaceExceptNewline(char: string): boolean {
-  return char === ' ' || char === '\t' || char === '\r'
+export function isWhitespaceExceptNewline(text: Text, index: number): boolean {
+  const code = text.charCodeAt(index)
+
+  return code === codeSpace || code === codeTab || code === codeReturn
 }
 
 /**
  * Check if the given character is a special whitespace character, some
  * unicode variant
  */
-export function isSpecialWhitespace(char: string): boolean {
+export function isSpecialWhitespace(text: Text, index: number): boolean {
+  const code = text.charCodeAt(index)
+
   return (
-    char === '\xa0' ||
-    (char >= '\u2000' && char <= '\u200a') ||
-    char === '\u202f' ||
-    char === '\u205f' ||
-    char === '\u3000'
+    code === codeNonBreakingSpace ||
+    (code >= codeEnQuad && code <= codeHairSpace) ||
+    code === codeNarrowNoBreakSpace ||
+    code === codeMediumMathematicalSpace ||
+    code === codeIdeographicSpace
   )
 }
 
@@ -146,12 +167,12 @@ export function stripLastOccurrence(
 export function insertBeforeLastWhitespace(text: string, textToInsert: string): string {
   let index = text.length
 
-  if (!isWhitespace(text[index - 1])) {
+  if (!isWhitespace(text, index - 1)) {
     // no trailing whitespaces
     return text + textToInsert
   }
 
-  while (isWhitespace(text[index - 1])) {
+  while (isWhitespace(text, index - 1)) {
     index--
   }
 

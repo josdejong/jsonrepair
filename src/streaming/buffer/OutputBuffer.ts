@@ -100,13 +100,13 @@ export function createOutputBuffer({
   function insertBeforeLastWhitespace(textToInsert: string) {
     let bufferIndex = buffer.length // index relative to the start of the buffer, not taking `offset` into account
 
-    if (!isWhitespace(buffer.charAt(bufferIndex - 1))) {
+    if (!isWhitespace(buffer, bufferIndex - 1)) {
       // no trailing whitespaces
       push(textToInsert)
       return
     }
 
-    while (isWhitespace(buffer.charAt(bufferIndex - 1))) {
+    while (isWhitespace(buffer, bufferIndex - 1)) {
       bufferIndex--
     }
 
@@ -126,7 +126,7 @@ export function createOutputBuffer({
         return true
       }
 
-      if (!isWhitespace(buffer.charAt(i))) {
+      if (!isWhitespace(buffer, i)) {
         return false
       }
 

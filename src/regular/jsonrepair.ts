@@ -137,11 +137,10 @@ export function jsonrepair(text: string): string {
     let whitespace = ''
 
     while (true) {
-      const c = text[i]
-      if (_isWhiteSpace(c)) {
+      if (_isWhiteSpace(text, i)) {
         whitespace += text[i]
         i++
-      } else if (isSpecialWhitespace(c)) {
+      } else if (isSpecialWhitespace(text, i)) {
         // repair special whitespace
         whitespace += ' '
         i++
@@ -737,7 +736,7 @@ export function jsonrepair(text: string): string {
       }
 
       let j = i
-      while (isWhitespace(text[j])) {
+      while (isWhitespace(text, j)) {
         j++
       }
 
@@ -782,7 +781,7 @@ export function jsonrepair(text: string): string {
       // also, repair undefined into null
 
       // first, go back to prevent getting trailing whitespaces in the string
-      while (isWhitespace(text[i - 1]) && i > 0) {
+      while (isWhitespace(text, i - 1) && i > 0) {
         i--
       }
 
@@ -817,7 +816,7 @@ export function jsonrepair(text: string): string {
   function prevNonWhitespaceIndex(start: number): number {
     let prev = start
 
-    while (prev > 0 && isWhitespace(text[prev])) {
+    while (prev > 0 && isWhitespace(text, prev)) {
       prev--
     }
 
@@ -825,7 +824,7 @@ export function jsonrepair(text: string): string {
   }
 
   function atEndOfNumber() {
-    return i >= text.length || isDelimiter(text[i]) || isWhitespace(text[i])
+    return i >= text.length || isDelimiter(text[i]) || isWhitespace(text, i)
   }
 
   function repairNumberEndingWithNumericSymbol(start: number) {
