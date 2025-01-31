@@ -42,20 +42,22 @@ const codeQuoteRight = 0x2019 // ’
 const codeGraveAccent = 0x0060 // `
 const codeAcuteAccent = 0x00b4 // ´
 
-export function isHex(code: number): boolean {
-  return (
-    (code >= codeZero && code <= codeNine) ||
-    (code >= codeUppercaseA && code <= codeUppercaseF) ||
-    (code >= codeLowercaseA && code <= codeLowercaseF)
-  )
+const regexHex = /^[0-9a-fA-F]$/
+
+export function isHex(char: string): boolean {
+  return regexHex.test(char)
 }
 
-export function isDigit(code: number): boolean {
-  return code >= codeZero && code <= codeNine
+const regexDigit = /^\d$/
+
+export function isDigit(char: string): boolean {
+  return regexDigit.test(char)
 }
 
-export function isValidStringCharacter(code: number): boolean {
-  return code >= 0x20 && code <= 0x10ffff
+const regexValidStringCharacter = /^[\u{20}-\u{10ffff}]$/u
+
+export function isValidStringCharacter(char: string): boolean {
+  return regexValidStringCharacter.test(char)
 }
 
 export function isDelimiter(char: string): boolean {
@@ -78,98 +80,91 @@ export function isUnquotedStringDelimiter(char: string): boolean {
 }
 
 export function isStartOfValue(char: string): boolean {
-  return regexStartOfValue.test(char) || (char && isQuote(char.charCodeAt(0)))
+  return regexStartOfValue.test(char) || isQuote(char)
 }
 
 // alpha, number, minus, or opening bracket or brace
 const regexStartOfValue = /^[[{\w-]$/
 
-export function isControlCharacter(code: number) {
-  return (
-    code === codeNewline ||
-    code === codeReturn ||
-    code === codeTab ||
-    code === codeBackspace ||
-    code === codeFormFeed
-  )
+const regexControlCharacter = /^[\n\r\t\b\f]$/
+
+export function isControlCharacter(char: string) {
+  return regexControlCharacter.test(char)
 }
+
+const regexWhitespace = /^[ \n\t\r]$/
 
 /**
  * Check if the given character is a whitespace character like space, tab, or
  * newline
  */
-export function isWhitespace(code: number): boolean {
-  return code === codeSpace || code === codeNewline || code === codeTab || code === codeReturn
+export function isWhitespace(char: string): boolean {
+  return regexWhitespace.test(char)
 }
+
+const regexWhitespaceExceptNewLine = /^[ \t\r]$/
 
 /**
  * Check if the given character is a whitespace character like space or tab,
  * but NOT a newline
  */
-export function isWhitespaceExceptNewline(code: number): boolean {
-  return code === codeSpace || code === codeTab || code === codeReturn
+export function isWhitespaceExceptNewline(char: string): boolean {
+  return regexWhitespaceExceptNewLine.test(char)
 }
+
+const regexSpecialWhitespace = /^[\u{a0}\u{2000}-\u{200a}\u{202f}\u{205f}\u{3000}]$/u
 
 /**
  * Check if the given character is a special whitespace character, some
  * unicode variant
  */
-export function isSpecialWhitespace(code: number): boolean {
-  return (
-    code === codeNonBreakingSpace ||
-    (code >= codeEnQuad && code <= codeHairSpace) ||
-    code === codeNarrowNoBreakSpace ||
-    code === codeMediumMathematicalSpace ||
-    code === codeIdeographicSpace
-  )
+export function isSpecialWhitespace(char: string): boolean {
+  return regexSpecialWhitespace.test(char)
 }
 
 /**
  * Test whether the given character is a quote or double quote character.
  * Also tests for special variants of quotes.
  */
-export function isQuote(code: number): boolean {
+export function isQuote(char: string): boolean {
   // the first check double quotes, since that occurs most often
-  return isDoubleQuoteLike(code) || isSingleQuoteLike(code)
+  return isDoubleQuoteLike(char) || isSingleQuoteLike(char)
 }
+
+const regexDoubleQuoteLike = /^["\u{201c}\u{201d}]$/u
 
 /**
  * Test whether the given character is a double quote character.
  * Also tests for special variants of double quotes.
  */
-export function isDoubleQuoteLike(code: number): boolean {
-  // the first check double quotes, since that occurs most often
-  return code === codeDoubleQuote || code === codeDoubleQuoteLeft || code === codeDoubleQuoteRight
+export function isDoubleQuoteLike(char: string): boolean {
+  return regexDoubleQuoteLike.test(char)
 }
 
 /**
  * Test whether the given character is a double quote character.
  * Does NOT test for special variants of double quotes.
  */
-export function isDoubleQuote(code: number): boolean {
-  return code === codeDoubleQuote
+export function isDoubleQuote(char: string): boolean {
+  return char === '"'
 }
+
+const regexQuoteLike = /^['\u{2018}\u{2019}\u{0060}\u{00b4}]$/u
 
 /**
  * Test whether the given character is a single quote character.
  * Also tests for special variants of single quotes.
  */
-export function isSingleQuoteLike(code: number): boolean {
-  return (
-    code === codeQuote ||
-    code === codeQuoteLeft ||
-    code === codeQuoteRight ||
-    code === codeGraveAccent ||
-    code === codeAcuteAccent
-  )
+export function isSingleQuoteLike(char: string): boolean {
+  return regexQuoteLike.test(char)
 }
 
 /**
  * Test whether the given character is a single quote character.
  * Does NOT test for special variants of single quotes.
  */
-export function isSingleQuote(code: number): boolean {
-  return code === codeQuote
+export function isSingleQuote(char: string): boolean {
+  return char === "'"
 }
 
 /**
@@ -189,12 +184,12 @@ export function stripLastOccurrence(
 export function insertBeforeLastWhitespace(text: string, textToInsert: string): string {
   let index = text.length
 
-  if (!isWhitespace(text.charCodeAt(index - 1))) {
+  if (!isWhitespace(text[index - 1])) {
     // no trailing whitespaces
     return text + textToInsert
   }
 
-  while (isWhitespace(text.charCodeAt(index - 1))) {
+  while (isWhitespace(text[index - 1])) {
     index--
   }
 
