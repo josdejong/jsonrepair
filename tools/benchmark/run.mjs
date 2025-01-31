@@ -1,19 +1,19 @@
 import assert from 'node:assert'
-import Benchmark from 'benchmark'
+import { Bench } from 'tinybench'
 import { jsonrepair } from '../../lib/esm/index.js'
+import { formatTaskResult } from './utils/formatTaskResult.mjs'
+import { table } from './utils/table.mjs'
 
-const text = generateText()
+const text = generateText(100)
 console.log(`Document size: ${Math.round(text.length / 1024)} kB`)
 
 assert.strictEqual(text, jsonrepair(text))
 
-const suite = new Benchmark.Suite('jsonrepair benchmark')
-suite
-  .add('jsonrepair', () => jsonrepair(text))
-  .on('cycle', (event) => {
-    console.log(String(event.target))
-  })
-  .run()
+const bench = new Bench().add('jsonrepair', () => jsonrepair(text))
+
+await bench.run()
+
+table(bench.tasks.map(formatTaskResult))
 
 /**
  * create a JSON document containing all different things that JSON can have:
