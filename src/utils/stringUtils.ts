@@ -10,9 +10,7 @@ const codeMediumMathematicalSpace = 0x205f
 const codeIdeographicSpace = 0x3000
 
 export function isHex(char: string): boolean {
-  return (
-    (char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')
-  )
+  return /^[0-9A-Fa-f]$/.test(char)
 }
 
 export function isDigit(char: string): boolean {
