@@ -712,6 +712,14 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     expect(() => {
       console.log({ output: jsonrepair('"\\uZ000') })
     }).toThrow(new JSONRepairError('Invalid unicode character "\\uZ000"', 1))
+
+    expect(() => {
+      console.log({ output: jsonrepair('"abc\u{00}"') })
+    }).toThrow(new JSONRepairError('Invalid character "\\u0000"', 4))
+
+    expect(() => {
+      console.log({ output: jsonrepair('"abc\u{1f}"') })
+    }).toThrow(new JSONRepairError('Invalid character "\\u001f"', 4))
   })
 
   function assertRepair(text: string) {

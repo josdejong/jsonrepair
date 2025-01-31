@@ -42,32 +42,40 @@ const codeQuoteRight = 0x2019 // ’
 const codeGraveAccent = 0x0060 // `
 const codeAcuteAccent = 0x00b4 // ´
 
-const regexHex = /^[0-9a-fA-F]$/
-
 export function isHex(char: string): boolean {
-  return regexHex.test(char)
+  return (
+    (char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')
+  )
 }
-
-const regexDigit = /^\d$/
 
 export function isDigit(char: string): boolean {
-  return regexDigit.test(char)
+  return char >= '0' && char <= '9'
 }
 
-const regexValidStringCharacter = /^[\u{20}-\u{10ffff}]$/u
-
 export function isValidStringCharacter(char: string): boolean {
-  return regexValidStringCharacter.test(char)
+  const code = char.codePointAt(0)
+  return code >= 0x20 && code <= 0x10ffff
 }
 
 export function isDelimiter(char: string): boolean {
-  return regexDelimiter.test(char)
+  return ',:[]/{}()\n+'.includes(char)
 }
 
-const regexDelimiter = /^[,:[\]/{}()\n+]$/
-const regexUnquotedStringDelimiter = /^[,[\]/{}\n+]$/
-export const regexFunctionNameCharStart = /^[a-zA-Z_$]$/
-export const regexFunctionNameChar = /^[a-zA-Z_$0-9]$/
+export function isFunctionNameCharStart(char: string) {
+  return (
+    (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === '_' || char === '$'
+  )
+}
+
+export function isFunctionNameChar(char: string) {
+  return (
+    (char >= 'a' && char <= 'z') ||
+    (char >= 'A' && char <= 'Z') ||
+    char === '_' ||
+    char === '$' ||
+    (char >= '0' && char <= '9')
+  )
+}
 
 // matches "https://" and other schemas
 export const regexUrlStart = /^(http|https|ftp|mailto|file|data|irc):\/\/$/
@@ -76,50 +84,48 @@ export const regexUrlStart = /^(http|https|ftp|mailto|file|data|irc):\/\/$/
 export const regexUrlChar = /^[A-Za-z0-9-._~:/?#@!$&'()*+;=]$/
 
 export function isUnquotedStringDelimiter(char: string): boolean {
-  return regexUnquotedStringDelimiter.test(char)
+  return ',[]/{}\n+'.includes(char)
 }
 
 export function isStartOfValue(char: string): boolean {
-  return regexStartOfValue.test(char) || isQuote(char)
+  return isQuote(char) || regexStartOfValue.test(char)
 }
 
 // alpha, number, minus, or opening bracket or brace
 const regexStartOfValue = /^[[{\w-]$/
 
-const regexControlCharacter = /^[\n\r\t\b\f]$/
-
 export function isControlCharacter(char: string) {
-  return regexControlCharacter.test(char)
+  return char === '\n' || char === '\r' || char === '\t' || char === '\b' || char === '\f'
 }
-
-const regexWhitespace = /^[ \n\t\r]$/
 
 /**
  * Check if the given character is a whitespace character like space, tab, or
  * newline
  */
 export function isWhitespace(char: string): boolean {
-  return regexWhitespace.test(char)
+  return char === ' ' || char === '\n' || char === '\t' || char === '\r'
 }
-
-const regexWhitespaceExceptNewLine = /^[ \t\r]$/
 
 /**
  * Check if the given character is a whitespace character like space or tab,
  * but NOT a newline
  */
 export function isWhitespaceExceptNewline(char: string): boolean {
-  return regexWhitespaceExceptNewLine.test(char)
+  return char === ' ' || char === '\t' || char === '\r'
 }
-
-const regexSpecialWhitespace = /^[\u{a0}\u{2000}-\u{200a}\u{202f}\u{205f}\u{3000}]$/u
 
 /**
  * Check if the given character is a special whitespace character, some
  * unicode variant
  */
 export function isSpecialWhitespace(char: string): boolean {
-  return regexSpecialWhitespace.test(char)
+  return (
+    char === '\xa0' ||
+    (char >= '\u2000' && char <= '\u200a') ||
+    char === '\u202f' ||
+    char === '\u205f' ||
+    char === '\u3000'
+  )
 }
 
 /**
@@ -131,14 +137,12 @@ export function isQuote(char: string): boolean {
   return isDoubleQuoteLike(char) || isSingleQuoteLike(char)
 }
 
-const regexDoubleQuoteLike = /^["\u{201c}\u{201d}]$/u
-
 /**
  * Test whether the given character is a double quote character.
  * Also tests for special variants of double quotes.
  */
 export function isDoubleQuoteLike(char: string): boolean {
-  return regexDoubleQuoteLike.test(char)
+  return char === '"' || char === '\u201c' || char === '\u201d'
 }
 
 /**
@@ -149,14 +153,14 @@ export function isDoubleQuote(char: string): boolean {
   return char === '"'
 }
 
-const regexQuoteLike = /^['\u{2018}\u{2019}\u{0060}\u{00b4}]$/u
-
 /**
  * Test whether the given character is a single quote character.
  * Also tests for special variants of single quotes.
  */
 export function isSingleQuoteLike(char: string): boolean {
-  return regexQuoteLike.test(char)
+  return (
+    char === "'" || char === '\u2018' || char === '\u2019' || char === '\u0060' || char === '\u00b4'
+  )
 }
 
 /**

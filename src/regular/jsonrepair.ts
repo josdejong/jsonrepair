@@ -7,6 +7,8 @@ import {
   isDigit,
   isDoubleQuote,
   isDoubleQuoteLike,
+  isFunctionNameChar,
+  isFunctionNameCharStart,
   isHex,
   isQuote,
   isSingleQuote,
@@ -17,8 +19,6 @@ import {
   isValidStringCharacter,
   isWhitespace,
   isWhitespaceExceptNewline,
-  regexFunctionNameChar,
-  regexFunctionNameCharStart,
   regexUrlChar,
   regexUrlStart,
   removeAtIndex,
@@ -731,8 +731,8 @@ export function jsonrepair(text: string): string {
     // also, note that we allow strings to contain a slash / in order to support repairing regular expressions
     const start = i
 
-    if (regexFunctionNameCharStart.test(text[i])) {
-      while (i < text.length && regexFunctionNameChar.test(text[i])) {
+    if (isFunctionNameCharStart(text[i])) {
+      while (i < text.length && isFunctionNameChar(text[i])) {
         i++
       }
 

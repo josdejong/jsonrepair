@@ -5,6 +5,8 @@ import {
   isDigit,
   isDoubleQuote,
   isDoubleQuoteLike,
+  isFunctionNameChar,
+  isFunctionNameCharStart,
   isHex,
   isQuote,
   isSingleQuote,
@@ -15,8 +17,6 @@ import {
   isValidStringCharacter,
   isWhitespace,
   isWhitespaceExceptNewline,
-  regexFunctionNameChar,
-  regexFunctionNameCharStart,
   regexUrlChar,
   regexUrlStart
 } from '../utils/stringUtils.js'
@@ -234,8 +234,8 @@ export function jsonrepairCore({
   function parseRepairUnquotedString(): boolean {
     let j = i
 
-    if (regexFunctionNameCharStart.test(input.charAt(j))) {
-      while (!input.isEnd(j) && regexFunctionNameChar.test(input.charAt(j))) {
+    if (isFunctionNameCharStart(input.charAt(j))) {
+      while (!input.isEnd(j) && isFunctionNameChar(input.charAt(j))) {
         j++
       }
 
