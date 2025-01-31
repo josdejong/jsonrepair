@@ -53,8 +53,10 @@ export function isDigit(char: string): boolean {
 }
 
 export function isValidStringCharacter(char: string): boolean {
-  const code = char.codePointAt(0)
-  return code >= 0x20 && code <= 0x10ffff
+  // note that the valid range is between \u{0020} and \u{10ffff},
+  // but in JavaScript it is not possible to create a code point larger than
+  // \u{10ffff}, so there is no need to test for that here.
+  return char >= '\u0020'
 }
 
 export function isDelimiter(char: string): boolean {
