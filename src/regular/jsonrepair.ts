@@ -1,23 +1,5 @@
 import { JSONRepairError } from '../utils/JSONRepairError.js'
 import {
-  codeAsterisk,
-  codeBackslash,
-  codeCloseParenthesis,
-  codeClosingBrace,
-  codeClosingBracket,
-  codeColon,
-  codeComma,
-  codeDot,
-  codeDoubleQuote,
-  codeLowercaseE,
-  codeMinus,
-  codeNewline,
-  codeOpeningBrace,
-  codeOpeningBracket,
-  codePlus,
-  codeSemicolon,
-  codeSlash,
-  codeUppercaseE,
   endsWithCommaOrNewline,
   insertBeforeLastWhitespace,
   isControlCharacter,
@@ -25,6 +7,8 @@ import {
   isDigit,
   isDoubleQuote,
   isDoubleQuoteLike,
+  isFunctionNameChar,
+  isFunctionNameCharStart,
   isHex,
   isQuote,
   isSingleQuote,
@@ -35,8 +19,6 @@ import {
   isValidStringCharacter,
   isWhitespace,
   isWhitespaceExceptNewline,
-  regexFunctionNameChar,
-  regexFunctionNameCharStart,
   regexUrlChar,
   regexUrlStart,
   removeAtIndex,
@@ -89,7 +71,7 @@ export function jsonrepair(text: string): string {
     throwUnexpectedEnd()
   }
 
-  const processedComma = parseCharacter(codeComma)
+  const processedComma = parseCharacter(',')
   if (processedComma) {
     parseWhitespaceAndSkipComments()
   }
@@ -109,7 +91,7 @@ export function jsonrepair(text: string): string {
   }
 
   // repair redundant end quotes
-  while (text.charCodeAt(i) === codeClosingBrace || text.charCodeAt(i) === codeClosingBracket) {
+  while (text[i] === '}' || text[i] === ']') {
     i++
     parseWhitespaceAndSkipComments()
   }
@@ -155,11 +137,10 @@ export function jsonrepair(text: string): string {
     let whitespace = ''
 
     while (true) {
-      const c = text.charCodeAt(i)
-      if (_isWhiteSpace(c)) {
+      if (_isWhiteSpace(text, i)) {
         whitespace += text[i]
         i++
-      } else if (isSpecialWhitespace(c)) {
+      } else if (isSpecialWhitespace(text, i)) {
         // repair special whitespace
         whitespace += ' '
         i++
@@ -178,7 +159,7 @@ export function jsonrepair(text: string): string {
 
   function parseComment(): boolean {
     // find a block comment '/* ... */'
-    if (text.charCodeAt(i) === codeSlash && text.charCodeAt(i + 1) === codeAsterisk) {
+    if (text[i] === '/' && text[i + 1] === '*') {
       // repair block comment by skipping it
       while (i < text.length && !atEndOfBlockComment(text, i)) {
         i++
@@ -189,9 +170,9 @@ export function jsonrepair(text: string): string {
     }
 
     // find a line comment '// ...'
-    if (text.charCodeAt(i) === codeSlash && text.charCodeAt(i + 1) === codeSlash) {
+    if (text[i] === '/' && text[i + 1] === '/') {
       // repair line comment by skipping it
-      while (i < text.length && text.charCodeAt(i) !== codeNewline) {
+      while (i < text.length && text[i] !== '\n') {
         i++
       }
 
@@ -201,8 +182,8 @@ export function jsonrepair(text: string): string {
     return false
   }
 
-  function parseCharacter(code: number): boolean {
-    if (text.charCodeAt(i) === code) {
+  function parseCharacter(char: string): boolean {
+    if (text[i] === char) {
       output += text[i]
       i++
       return true
@@ -211,8 +192,8 @@ export function jsonrepair(text: string): string {
     return false
   }
 
-  function skipCharacter(code: number): boolean {
-    if (text.charCodeAt(i) === code) {
+  function skipCharacter(char: string): boolean {
+    if (text[i] === char) {
       i++
       return true
     }
@@ -221,7 +202,7 @@ export function jsonrepair(text: string): string {
   }
 
   function skipEscapeCharacter(): boolean {
-    return skipCharacter(codeBackslash)
+    return skipCharacter('\\')
   }
 
   /**
@@ -231,15 +212,11 @@ export function jsonrepair(text: string): string {
   function skipEllipsis(): boolean {
     parseWhitespaceAndSkipComments()
 
-    if (
-      text.charCodeAt(i) === codeDot &&
-      text.charCodeAt(i + 1) === codeDot &&
-      text.charCodeAt(i + 2) === codeDot
-    ) {
+    if (text[i] === '.' && text[i + 1] === '.' && text[i + 2] === '.') {
       // repair: remove the ellipsis (three dots) and optionally a comma
       i += 3
       parseWhitespaceAndSkipComments()
-      skipCharacter(codeComma)
+      skipCharacter(',')
 
       return true
     }
@@ -251,21 +228,21 @@ export function jsonrepair(text: string): string {
    * Parse an object like '{"key": "value"}'
    */
   function parseObject(): boolean {
-    if (text.charCodeAt(i) === codeOpeningBrace) {
+    if (text[i] === '{') {
       output += '{'
       i++
       parseWhitespaceAndSkipComments()
 
       // repair: skip leading comma like in {, message: "hi"}
-      if (skipCharacter(codeComma)) {
+      if (skipCharacter(',')) {
         parseWhitespaceAndSkipComments()
       }
 
       let initial = true
-      while (i < text.length && text.charCodeAt(i) !== codeClosingBrace) {
+      while (i < text.length && text[i] !== '}') {
         let processedComma: boolean
         if (!initial) {
-          processedComma = parseCharacter(codeComma)
+          processedComma = parseCharacter(',')
           if (!processedComma) {
             // repair missing comma
             output = insertBeforeLastWhitespace(output, ',')
@@ -281,10 +258,10 @@ export function jsonrepair(text: string): string {
         const processedKey = parseString() || parseUnquotedString(true)
         if (!processedKey) {
           if (
-            text.charCodeAt(i) === codeClosingBrace ||
-            text.charCodeAt(i) === codeOpeningBrace ||
-            text.charCodeAt(i) === codeClosingBracket ||
-            text.charCodeAt(i) === codeOpeningBracket ||
+            text[i] === '}' ||
+            text[i] === '{' ||
+            text[i] === ']' ||
+            text[i] === '[' ||
             text[i] === undefined
           ) {
             // repair trailing comma
@@ -296,7 +273,7 @@ export function jsonrepair(text: string): string {
         }
 
         parseWhitespaceAndSkipComments()
-        const processedColon = parseCharacter(codeColon)
+        const processedColon = parseCharacter(':')
         const truncatedText = i >= text.length
         if (!processedColon) {
           if (isStartOfValue(text[i]) || truncatedText) {
@@ -317,7 +294,7 @@ export function jsonrepair(text: string): string {
         }
       }
 
-      if (text.charCodeAt(i) === codeClosingBrace) {
+      if (text[i] === '}') {
         output += '}'
         i++
       } else {
@@ -335,20 +312,20 @@ export function jsonrepair(text: string): string {
    * Parse an array like '["item1", "item2", ...]'
    */
   function parseArray(): boolean {
-    if (text.charCodeAt(i) === codeOpeningBracket) {
+    if (text[i] === '[') {
       output += '['
       i++
       parseWhitespaceAndSkipComments()
 
       // repair: skip leading comma like in [,1,2,3]
-      if (skipCharacter(codeComma)) {
+      if (skipCharacter(',')) {
         parseWhitespaceAndSkipComments()
       }
 
       let initial = true
-      while (i < text.length && text.charCodeAt(i) !== codeClosingBracket) {
+      while (i < text.length && text[i] !== ']') {
         if (!initial) {
-          const processedComma = parseCharacter(codeComma)
+          const processedComma = parseCharacter(',')
           if (!processedComma) {
             // repair missing comma
             output = insertBeforeLastWhitespace(output, ',')
@@ -367,7 +344,7 @@ export function jsonrepair(text: string): string {
         }
       }
 
-      if (text.charCodeAt(i) === codeClosingBracket) {
+      if (text[i] === ']') {
         output += ']'
         i++
       } else {
@@ -392,7 +369,7 @@ export function jsonrepair(text: string): string {
     while (processedValue) {
       if (!initial) {
         // parse optional comma, insert when missing
-        const processedComma = parseCharacter(codeComma)
+        const processedComma = parseCharacter(',')
         if (!processedComma) {
           // repair: add missing comma
           output = insertBeforeLastWhitespace(output, ',')
@@ -427,23 +404,23 @@ export function jsonrepair(text: string): string {
    *   stop index detected in the first iteration.
    */
   function parseString(stopAtDelimiter = false, stopAtIndex = -1): boolean {
-    let skipEscapeChars = text.charCodeAt(i) === codeBackslash
+    let skipEscapeChars = text[i] === '\\'
     if (skipEscapeChars) {
       // repair: remove the first escape character
       i++
       skipEscapeChars = true
     }
 
-    if (isQuote(text.charCodeAt(i))) {
+    if (isQuote(text[i])) {
       // double quotes are correct JSON,
       // single quotes come from JavaScript for example, we assume it will have a correct single end quote too
       // otherwise, we will match any double-quote-like start with a double-quote-like end,
       // or any single-quote-like start with a single-quote-like end
-      const isEndQuote = isDoubleQuote(text.charCodeAt(i))
+      const isEndQuote = isDoubleQuote(text[i])
         ? isDoubleQuote
-        : isSingleQuote(text.charCodeAt(i))
+        : isSingleQuote(text[i])
           ? isSingleQuote
-          : isSingleQuoteLike(text.charCodeAt(i))
+          : isSingleQuoteLike(text[i])
             ? isSingleQuoteLike
             : isDoubleQuoteLike
 
@@ -481,7 +458,7 @@ export function jsonrepair(text: string): string {
 
           return true
           // biome-ignore lint/style/noUselessElse: <explanation>
-        } else if (isEndQuote(text.charCodeAt(i))) {
+        } else if (isEndQuote(text[i])) {
           // end quote
           // let us check what is before and after the quote to verify whether this is a legit end quote
           const iQuote = i
@@ -495,9 +472,9 @@ export function jsonrepair(text: string): string {
           if (
             stopAtDelimiter ||
             i >= text.length ||
-            isDelimiter(text.charAt(i)) ||
-            isQuote(text.charCodeAt(i)) ||
-            isDigit(text.charCodeAt(i))
+            isDelimiter(text[i]) ||
+            isQuote(text[i]) ||
+            isDigit(text[i])
           ) {
             // The quote is followed by the end of the text, a delimiter,
             // or a next value. So the quote is indeed the end of the string.
@@ -540,10 +517,7 @@ export function jsonrepair(text: string): string {
           // because there is an end quote missing
 
           // test start of an url like "https://..." (this would be parsed as a comment)
-          if (
-            text.charCodeAt(i - 1) === codeColon &&
-            regexUrlStart.test(text.substring(iBefore + 1, i + 2))
-          ) {
+          if (text[i - 1] === ':' && regexUrlStart.test(text.substring(iBefore + 1, i + 2))) {
             while (i < text.length && regexUrlChar.test(text[i])) {
               str += text[i]
               i++
@@ -557,7 +531,7 @@ export function jsonrepair(text: string): string {
           parseConcatenatedString()
 
           return true
-        } else if (text.charCodeAt(i) === codeBackslash) {
+        } else if (text[i] === '\\') {
           // handle escaped content like \n or \u2605
           const char = text.charAt(i + 1)
           const escapeChar = escapeCharacters[char]
@@ -566,7 +540,7 @@ export function jsonrepair(text: string): string {
             i += 2
           } else if (char === 'u') {
             let j = 2
-            while (j < 6 && isHex(text.charCodeAt(i + j))) {
+            while (j < 6 && isHex(text[i + j])) {
               j++
             }
 
@@ -588,18 +562,17 @@ export function jsonrepair(text: string): string {
         } else {
           // handle regular characters
           const char = text.charAt(i)
-          const code = text.charCodeAt(i)
 
-          if (code === codeDoubleQuote && text.charCodeAt(i - 1) !== codeBackslash) {
+          if (char === '"' && text[i - 1] !== '\\') {
             // repair unescaped double quote
             str += `\\${char}`
             i++
-          } else if (isControlCharacter(code)) {
+          } else if (isControlCharacter(char)) {
             // unescaped control character
             str += controlCharacters[char]
             i++
           } else {
-            if (!isValidStringCharacter(code)) {
+            if (!isValidStringCharacter(char)) {
               throwInvalidCharacter(char)
             }
             str += char
@@ -624,7 +597,7 @@ export function jsonrepair(text: string): string {
     let processed = false
 
     parseWhitespaceAndSkipComments()
-    while (text.charCodeAt(i) === codePlus) {
+    while (text[i] === '+') {
       processed = true
       i++
       parseWhitespaceAndSkipComments()
@@ -650,13 +623,13 @@ export function jsonrepair(text: string): string {
    */
   function parseNumber(): boolean {
     const start = i
-    if (text.charCodeAt(i) === codeMinus) {
+    if (text[i] === '-') {
       i++
       if (atEndOfNumber()) {
         repairNumberEndingWithNumericSymbol(start)
         return true
       }
-      if (!isDigit(text.charCodeAt(i))) {
+      if (!isDigit(text[i])) {
         i = start
         return false
       }
@@ -666,39 +639,39 @@ export function jsonrepair(text: string): string {
     // We will allow all leading zeros here though and at the end of parseNumber
     // check against trailing zeros and repair that if needed.
     // Leading zeros can have meaning, so we should not clear them.
-    while (isDigit(text.charCodeAt(i))) {
+    while (isDigit(text[i])) {
       i++
     }
 
-    if (text.charCodeAt(i) === codeDot) {
+    if (text[i] === '.') {
       i++
       if (atEndOfNumber()) {
         repairNumberEndingWithNumericSymbol(start)
         return true
       }
-      if (!isDigit(text.charCodeAt(i))) {
+      if (!isDigit(text[i])) {
         i = start
         return false
       }
-      while (isDigit(text.charCodeAt(i))) {
+      while (isDigit(text[i])) {
         i++
       }
     }
 
-    if (text.charCodeAt(i) === codeLowercaseE || text.charCodeAt(i) === codeUppercaseE) {
+    if (text[i] === 'e' || text[i] === 'E') {
       i++
-      if (text.charCodeAt(i) === codeMinus || text.charCodeAt(i) === codePlus) {
+      if (text[i] === '-' || text[i] === '+') {
         i++
       }
       if (atEndOfNumber()) {
         repairNumberEndingWithNumericSymbol(start)
         return true
       }
-      if (!isDigit(text.charCodeAt(i))) {
+      if (!isDigit(text[i])) {
         i = start
         return false
       }
-      while (isDigit(text.charCodeAt(i))) {
+      while (isDigit(text[i])) {
         i++
       }
     }
@@ -757,13 +730,13 @@ export function jsonrepair(text: string): string {
     // also, note that we allow strings to contain a slash / in order to support repairing regular expressions
     const start = i
 
-    if (regexFunctionNameCharStart.test(text[i])) {
-      while (i < text.length && regexFunctionNameChar.test(text[i])) {
+    if (isFunctionNameCharStart(text[i])) {
+      while (i < text.length && isFunctionNameChar(text[i])) {
         i++
       }
 
       let j = i
-      while (isWhitespace(text.charCodeAt(j))) {
+      while (isWhitespace(text, j)) {
         j++
       }
 
@@ -774,10 +747,10 @@ export function jsonrepair(text: string): string {
 
         parseValue()
 
-        if (text.charCodeAt(i) === codeCloseParenthesis) {
+        if (text[i] === ')') {
           // repair: skip close bracket of function call
           i++
-          if (text.charCodeAt(i) === codeSemicolon) {
+          if (text[i] === ';') {
             // repair: skip semicolon after JSONP call
             i++
           }
@@ -790,14 +763,14 @@ export function jsonrepair(text: string): string {
     while (
       i < text.length &&
       !isUnquotedStringDelimiter(text[i]) &&
-      !isQuote(text.charCodeAt(i)) &&
-      (!isKey || text.charCodeAt(i) !== codeColon)
+      !isQuote(text[i]) &&
+      (!isKey || text[i] !== ':')
     ) {
       i++
     }
 
     // test start of an url like "https://..." (this would be parsed as a comment)
-    if (text.charCodeAt(i - 1) === codeColon && regexUrlStart.test(text.substring(start, i + 2))) {
+    if (text[i - 1] === ':' && regexUrlStart.test(text.substring(start, i + 2))) {
       while (i < text.length && regexUrlChar.test(text[i])) {
         i++
       }
@@ -808,14 +781,14 @@ export function jsonrepair(text: string): string {
       // also, repair undefined into null
 
       // first, go back to prevent getting trailing whitespaces in the string
-      while (isWhitespace(text.charCodeAt(i - 1)) && i > 0) {
+      while (isWhitespace(text, i - 1) && i > 0) {
         i--
       }
 
       const symbol = text.slice(start, i)
       output += symbol === 'undefined' ? 'null' : JSON.stringify(symbol)
 
-      if (text.charCodeAt(i) === codeDoubleQuote) {
+      if (text[i] === '"') {
         // we had a missing start quote, but now we encountered the end quote, so we can skip that one
         i++
       }
@@ -843,7 +816,7 @@ export function jsonrepair(text: string): string {
   function prevNonWhitespaceIndex(start: number): number {
     let prev = start
 
-    while (prev > 0 && isWhitespace(text.charCodeAt(prev))) {
+    while (prev > 0 && isWhitespace(text, prev)) {
       prev--
     }
 
@@ -851,7 +824,7 @@ export function jsonrepair(text: string): string {
   }
 
   function atEndOfNumber() {
-    return i >= text.length || isDelimiter(text[i]) || isWhitespace(text.charCodeAt(i))
+    return i >= text.length || isDelimiter(text[i]) || isWhitespace(text, i)
   }
 
   function repairNumberEndingWithNumericSymbol(start: number) {

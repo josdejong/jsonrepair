@@ -1,29 +1,12 @@
 import { JSONRepairError } from '../utils/JSONRepairError.js'
 import {
-  codeAsterisk,
-  codeBackslash,
-  codeCloseParenthesis,
-  codeClosingBrace,
-  codeClosingBracket,
-  codeColon,
-  codeComma,
-  codeDot,
-  codeDoubleQuote,
-  codeLowercaseE,
-  codeMinus,
-  codeNewline,
-  codeOpenParenthesis,
-  codeOpeningBrace,
-  codeOpeningBracket,
-  codePlus,
-  codeSemicolon,
-  codeSlash,
-  codeUppercaseE,
   isControlCharacter,
   isDelimiter,
   isDigit,
   isDoubleQuote,
   isDoubleQuoteLike,
+  isFunctionNameChar,
+  isFunctionNameCharStart,
   isHex,
   isQuote,
   isSingleQuote,
@@ -34,8 +17,6 @@ import {
   isValidStringCharacter,
   isWhitespace,
   isWhitespaceExceptNewline,
-  regexFunctionNameChar,
-  regexFunctionNameCharStart,
   regexUrlChar,
   regexUrlStart
 } from '../utils/stringUtils.js'
@@ -211,16 +192,16 @@ export function jsonrepairCore({
   }
 
   function parseObjectStart(): boolean {
-    if (parseCharacter(codeOpeningBrace)) {
+    if (parseCharacter('{')) {
       parseWhitespaceAndSkipComments()
 
       skipEllipsis()
 
-      if (skipCharacter(codeComma)) {
+      if (skipCharacter(',')) {
         parseWhitespaceAndSkipComments()
       }
 
-      if (parseCharacter(codeClosingBrace)) {
+      if (parseCharacter('}')) {
         return stack.update(Caret.afterValue)
       }
 
@@ -231,16 +212,16 @@ export function jsonrepairCore({
   }
 
   function parseArrayStart(): boolean {
-    if (parseCharacter(codeOpeningBracket)) {
+    if (parseCharacter('[')) {
       parseWhitespaceAndSkipComments()
 
       skipEllipsis()
 
-      if (skipCharacter(codeComma)) {
+      if (skipCharacter(',')) {
         parseWhitespaceAndSkipComments()
       }
 
-      if (parseCharacter(codeClosingBracket)) {
+      if (parseCharacter(']')) {
         return stack.update(Caret.afterValue)
       }
 
@@ -253,17 +234,17 @@ export function jsonrepairCore({
   function parseRepairUnquotedString(): boolean {
     let j = i
 
-    if (regexFunctionNameCharStart.test(input.charAt(j))) {
-      while (!input.isEnd(j) && regexFunctionNameChar.test(input.charAt(j))) {
+    if (isFunctionNameCharStart(input.charAt(j))) {
+      while (!input.isEnd(j) && isFunctionNameChar(input.charAt(j))) {
         j++
       }
 
       let k = j
-      while (isWhitespace(input.charCodeAt(k))) {
+      while (isWhitespace(input, k)) {
         k++
       }
 
-      if (input.charCodeAt(k) === codeOpenParenthesis) {
+      if (input.charAt(k) === '(') {
         // repair a MongoDB function call like NumberLong("2")
         // repair a JSONP function call like callback({...});
         k++
@@ -275,7 +256,7 @@ export function jsonrepairCore({
     j = findNextDelimiter(false, j)
     if (j !== null) {
       // test start of an url like "https://..." (this would be parsed as a comment)
-      if (input.charCodeAt(j - 1) === codeColon && regexUrlStart.test(input.substring(i, j + 2))) {
+      if (input.charAt(j - 1) === ':' && regexUrlStart.test(input.substring(i, j + 2))) {
         while (!input.isEnd(j) && regexUrlChar.test(input.charAt(j))) {
           j++
         }
@@ -286,7 +267,7 @@ export function jsonrepairCore({
 
       output.push(symbol === 'undefined' ? 'null' : JSON.stringify(symbol))
 
-      if (input.charCodeAt(i) === codeDoubleQuote) {
+      if (input.charAt(i) === '"') {
         // we had a missing start quote, but now we encountered the end quote, so we can skip that one
         i++
       }
@@ -330,7 +311,7 @@ export function jsonrepairCore({
   }
 
   function parseUnexpectedColon(): boolean {
-    if (input.charCodeAt(i) === codeColon) {
+    if (input.charAt(i) === ':') {
       throwObjectKeyExpected()
     }
 
@@ -352,7 +333,7 @@ export function jsonrepairCore({
     if (parsedKey) {
       parseWhitespaceAndSkipComments()
 
-      if (parseCharacter(codeColon)) {
+      if (parseCharacter(':')) {
         // expect a value after the :
         return stack.update(Caret.beforeValue)
       }
@@ -371,7 +352,7 @@ export function jsonrepairCore({
   }
 
   function parseObjectComma(): boolean {
-    if (parseCharacter(codeComma)) {
+    if (parseCharacter(',')) {
       return stack.update(Caret.beforeKey)
     }
 
@@ -379,7 +360,7 @@ export function jsonrepairCore({
   }
 
   function parseObjectEnd(): boolean {
-    if (parseCharacter(codeClosingBrace)) {
+    if (parseCharacter('}')) {
       return stack.pop()
     }
 
@@ -406,7 +387,7 @@ export function jsonrepairCore({
   }
 
   function parseArrayComma(): boolean {
-    if (parseCharacter(codeComma)) {
+    if (parseCharacter(',')) {
       return stack.update(Caret.beforeValue)
     }
 
@@ -414,7 +395,7 @@ export function jsonrepairCore({
   }
 
   function parseArrayEnd(): boolean {
-    if (parseCharacter(codeClosingBracket)) {
+    if (parseCharacter(']')) {
       return stack.pop()
     }
 
@@ -448,15 +429,15 @@ export function jsonrepairCore({
   }
 
   function parseFunctionCallEnd(): true {
-    if (skipCharacter(codeCloseParenthesis)) {
-      skipCharacter(codeSemicolon)
+    if (skipCharacter(')')) {
+      skipCharacter(';')
     }
 
     return stack.pop()
   }
 
   function parseRootEnd(): boolean {
-    const parsedComma = parseCharacter(codeComma)
+    const parsedComma = parseCharacter(',')
     parseWhitespaceAndSkipComments()
 
     if (
@@ -483,7 +464,7 @@ export function jsonrepairCore({
     }
 
     // repair redundant end braces and brackets
-    while (input.charCodeAt(i) === codeClosingBrace || input.charCodeAt(i) === codeClosingBracket) {
+    while (input.charAt(i) === '}' || input.charAt(i) === ']') {
       i++
       parseWhitespaceAndSkipComments()
     }
@@ -514,11 +495,10 @@ export function jsonrepairCore({
     let whitespace = ''
 
     while (true) {
-      const c = input.charCodeAt(i)
-      if (_isWhiteSpace(c)) {
+      if (_isWhiteSpace(input, i)) {
         whitespace += input.charAt(i)
         i++
-      } else if (isSpecialWhitespace(c)) {
+      } else if (isSpecialWhitespace(input, i)) {
         // repair special whitespace
         whitespace += ' '
         i++
@@ -537,7 +517,7 @@ export function jsonrepairCore({
 
   function parseComment(): boolean {
     // find a block comment '/* ... */'
-    if (input.charCodeAt(i) === codeSlash && input.charCodeAt(i + 1) === codeAsterisk) {
+    if (input.charAt(i) === '/' && input.charAt(i + 1) === '*') {
       // repair block comment by skipping it
       while (!input.isEnd(i) && !atEndOfBlockComment(i)) {
         i++
@@ -548,9 +528,9 @@ export function jsonrepairCore({
     }
 
     // find a line comment '// ...'
-    if (input.charCodeAt(i) === codeSlash && input.charCodeAt(i + 1) === codeSlash) {
+    if (input.charAt(i) === '/' && input.charAt(i + 1) === '/') {
       // repair line comment by skipping it
-      while (!input.isEnd(i) && input.charCodeAt(i) !== codeNewline) {
+      while (!input.isEnd(i) && input.charAt(i) !== '\n') {
         i++
       }
 
@@ -560,8 +540,8 @@ export function jsonrepairCore({
     return false
   }
 
-  function parseCharacter(code: number): boolean {
-    if (input.charCodeAt(i) === code) {
+  function parseCharacter(char: string): boolean {
+    if (input.charAt(i) === char) {
       output.push(input.charAt(i))
       i++
       return true
@@ -570,8 +550,8 @@ export function jsonrepairCore({
     return false
   }
 
-  function skipCharacter(code: number): boolean {
-    if (input.charCodeAt(i) === code) {
+  function skipCharacter(char: string): boolean {
+    if (input.charAt(i) === char) {
       i++
       return true
     }
@@ -580,7 +560,7 @@ export function jsonrepairCore({
   }
 
   function skipEscapeCharacter(): boolean {
-    return skipCharacter(codeBackslash)
+    return skipCharacter('\\')
   }
 
   /**
@@ -590,15 +570,11 @@ export function jsonrepairCore({
   function skipEllipsis(): boolean {
     parseWhitespaceAndSkipComments()
 
-    if (
-      input.charCodeAt(i) === codeDot &&
-      input.charCodeAt(i + 1) === codeDot &&
-      input.charCodeAt(i + 2) === codeDot
-    ) {
+    if (input.charAt(i) === '.' && input.charAt(i + 1) === '.' && input.charAt(i + 2) === '.') {
       // repair: remove the ellipsis (three dots) and optionally a comma
       i += 3
       parseWhitespaceAndSkipComments()
-      skipCharacter(codeComma)
+      skipCharacter(',')
 
       return true
     }
@@ -620,23 +596,23 @@ export function jsonrepairCore({
    *   stop index detected in the first iteration.
    */
   function parseString(stopAtDelimiter = false, stopAtIndex = -1): boolean {
-    let skipEscapeChars = input.charCodeAt(i) === codeBackslash
+    let skipEscapeChars = input.charAt(i) === '\\'
     if (skipEscapeChars) {
       // repair: remove the first escape character
       i++
       skipEscapeChars = true
     }
 
-    if (isQuote(input.charCodeAt(i))) {
+    if (isQuote(input.charAt(i))) {
       // double quotes are correct JSON,
       // single quotes come from JavaScript for example, we assume it will have a correct single end quote too
       // otherwise, we will match any double-quote-like start with a double-quote-like end,
       // or any single-quote-like start with a single-quote-like end
-      const isEndQuote = isDoubleQuote(input.charCodeAt(i))
+      const isEndQuote = isDoubleQuote(input.charAt(i))
         ? isDoubleQuote
-        : isSingleQuote(input.charCodeAt(i))
+        : isSingleQuote(input.charAt(i))
           ? isSingleQuote
-          : isSingleQuoteLike(input.charCodeAt(i))
+          : isSingleQuoteLike(input.charAt(i))
             ? isSingleQuoteLike
             : isDoubleQuoteLike
 
@@ -672,7 +648,7 @@ export function jsonrepairCore({
 
           return stack.update(Caret.afterValue)
           // biome-ignore lint/style/noUselessElse: <explanation>
-        } else if (isEndQuote(input.charCodeAt(i))) {
+        } else if (isEndQuote(input.charAt(i))) {
           // end quote
           // let us check what is before and after the quote to verify whether this is a legit end quote
           const iQuote = i
@@ -686,8 +662,8 @@ export function jsonrepairCore({
             stopAtDelimiter ||
             input.isEnd(i) ||
             isDelimiter(input.charAt(i)) ||
-            isQuote(input.charCodeAt(i)) ||
-            isDigit(input.charCodeAt(i))
+            isQuote(input.charAt(i)) ||
+            isDigit(input.charAt(i))
           ) {
             // The quote is followed by the end of the text, a delimiter, or a next value
             // so the quote is indeed the end of the string
@@ -731,7 +707,7 @@ export function jsonrepairCore({
 
           // test start of an url like "https://..." (this would be parsed as a comment)
           if (
-            input.charCodeAt(i - 1) === codeColon &&
+            input.charAt(i - 1) === ':' &&
             regexUrlStart.test(input.substring(iBefore + 1, i + 2))
           ) {
             while (!input.isEnd(i) && regexUrlChar.test(input.charAt(i))) {
@@ -746,7 +722,7 @@ export function jsonrepairCore({
           parseConcatenatedString()
 
           return stack.update(Caret.afterValue)
-        } else if (input.charCodeAt(i) === codeBackslash) {
+        } else if (input.charAt(i) === '\\') {
           // handle escaped content like \n or \u2605
           const char = input.charAt(i + 1)
           const escapeChar = escapeCharacters[char]
@@ -755,7 +731,7 @@ export function jsonrepairCore({
             i += 2
           } else if (char === 'u') {
             let j = 2
-            while (j < 6 && isHex(input.charCodeAt(i + j))) {
+            while (j < 6 && isHex(input.charAt(i + j))) {
               j++
             }
 
@@ -777,18 +753,17 @@ export function jsonrepairCore({
         } else {
           // handle regular characters
           const char = input.charAt(i)
-          const code = char.charCodeAt(0)
 
-          if (code === codeDoubleQuote && input.charCodeAt(i - 1) !== codeBackslash) {
+          if (char === '"' && input.charAt(i - 1) !== '\\') {
             // repair unescaped double quote
             output.push(`\\${char}`)
             i++
-          } else if (isControlCharacter(code)) {
+          } else if (isControlCharacter(char)) {
             // unescaped control character
             output.push(controlCharacters[char])
             i++
           } else {
-            if (!isValidStringCharacter(code)) {
+            if (!isValidStringCharacter(char)) {
               throwInvalidCharacter(char)
             }
             output.push(char)
@@ -813,7 +788,7 @@ export function jsonrepairCore({
     let parsed = false
 
     parseWhitespaceAndSkipComments()
-    while (input.charCodeAt(i) === codePlus) {
+    while (input.charAt(i) === '+') {
       parsed = true
       i++
       parseWhitespaceAndSkipComments()
@@ -839,13 +814,13 @@ export function jsonrepairCore({
    */
   function parseNumber(): boolean {
     const start = i
-    if (input.charCodeAt(i) === codeMinus) {
+    if (input.charAt(i) === '-') {
       i++
       if (atEndOfNumber()) {
         repairNumberEndingWithNumericSymbol(start)
         return stack.update(Caret.afterValue)
       }
-      if (!isDigit(input.charCodeAt(i))) {
+      if (!isDigit(input.charAt(i))) {
         i = start
         return false
       }
@@ -855,39 +830,39 @@ export function jsonrepairCore({
     // We will allow all leading zeros here though and at the end of parseNumber
     // check against trailing zeros and repair that if needed.
     // Leading zeros can have meaning, so we should not clear them.
-    while (isDigit(input.charCodeAt(i))) {
+    while (isDigit(input.charAt(i))) {
       i++
     }
 
-    if (input.charCodeAt(i) === codeDot) {
+    if (input.charAt(i) === '.') {
       i++
       if (atEndOfNumber()) {
         repairNumberEndingWithNumericSymbol(start)
         return stack.update(Caret.afterValue)
       }
-      if (!isDigit(input.charCodeAt(i))) {
+      if (!isDigit(input.charAt(i))) {
         i = start
         return false
       }
-      while (isDigit(input.charCodeAt(i))) {
+      while (isDigit(input.charAt(i))) {
         i++
       }
     }
 
-    if (input.charCodeAt(i) === codeLowercaseE || input.charCodeAt(i) === codeUppercaseE) {
+    if (input.charAt(i) === 'e' || input.charAt(i) === 'E') {
       i++
-      if (input.charCodeAt(i) === codeMinus || input.charCodeAt(i) === codePlus) {
+      if (input.charAt(i) === '-' || input.charAt(i) === '+') {
         i++
       }
       if (atEndOfNumber()) {
         repairNumberEndingWithNumericSymbol(start)
         return stack.update(Caret.afterValue)
       }
-      if (!isDigit(input.charCodeAt(i))) {
+      if (!isDigit(input.charAt(i))) {
         i = start
         return false
       }
-      while (isDigit(input.charCodeAt(i))) {
+      while (isDigit(input.charAt(i))) {
         i++
       }
     }
@@ -941,7 +916,7 @@ export function jsonrepairCore({
 
     if (end !== null) {
       // first, go back to prevent getting trailing whitespaces in the string
-      while (isWhitespace(input.charCodeAt(end - 1)) && end > i) {
+      while (isWhitespace(input, end - 1) && end > i) {
         end--
       }
 
@@ -949,7 +924,7 @@ export function jsonrepairCore({
       output.push(JSON.stringify(symbol))
       i = end
 
-      if (input.charCodeAt(i) === codeDoubleQuote) {
+      if (input.charAt(i) === '"') {
         // we had a missing start quote, but now we encountered the end quote, so we can skip that one
         i++
       }
@@ -967,8 +942,8 @@ export function jsonrepairCore({
     while (
       !input.isEnd(j) &&
       !isUnquotedStringDelimiter(input.charAt(j)) &&
-      !isQuote(input.charCodeAt(j)) &&
-      (!isKey || input.charCodeAt(j) !== codeColon)
+      !isQuote(input.charAt(j)) &&
+      (!isKey || input.charAt(j) !== ':')
     ) {
       j++
     }
@@ -979,7 +954,7 @@ export function jsonrepairCore({
   function prevNonWhitespaceIndex(start: number): number {
     let prev = start
 
-    while (prev > 0 && isWhitespace(input.charCodeAt(prev))) {
+    while (prev > 0 && isWhitespace(input, prev)) {
       prev--
     }
 
@@ -987,7 +962,7 @@ export function jsonrepairCore({
   }
 
   function atEndOfNumber() {
-    return input.isEnd(i) || isDelimiter(input.charAt(i)) || isWhitespace(input.charCodeAt(i))
+    return input.isEnd(i) || isDelimiter(input.charAt(i)) || isWhitespace(input, i)
   }
 
   function repairNumberEndingWithNumericSymbol(start: number) {

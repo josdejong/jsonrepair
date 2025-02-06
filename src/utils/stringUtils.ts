@@ -1,71 +1,48 @@
-export const codeBackslash = 0x5c // "\"
-export const codeSlash = 0x2f // "/"
-export const codeAsterisk = 0x2a // "*"
-export const codeOpeningBrace = 0x7b // "{"
-export const codeClosingBrace = 0x7d // "}"
-export const codeOpeningBracket = 0x5b // "["
-export const codeClosingBracket = 0x5d // "]"
-export const codeOpenParenthesis = 0x28 // "("
-export const codeCloseParenthesis = 0x29 // ")"
-export const codeSpace = 0x20 // " "
-export const codeNewline = 0xa // "\n"
-export const codeTab = 0x9 // "\t"
-export const codeReturn = 0xd // "\r"
-export const codeBackspace = 0x08 // "\b"
-export const codeFormFeed = 0x0c // "\f"
-export const codeDoubleQuote = 0x0022 // "
-export const codePlus = 0x2b // "+"
-export const codeMinus = 0x2d // "-"
-export const codeQuote = 0x27 // "'"
-export const codeZero = 0x30 // "0"
-export const codeNine = 0x39 // "9"
-export const codeComma = 0x2c // ","
-export const codeDot = 0x2e // "." (dot, period)
-export const codeColon = 0x3a // ":"
-export const codeSemicolon = 0x3b // ";"
-export const codeUppercaseA = 0x41 // "A"
-export const codeLowercaseA = 0x61 // "a"
-export const codeUppercaseE = 0x45 // "E"
-export const codeLowercaseE = 0x65 // "e"
-export const codeUppercaseF = 0x46 // "F"
-export const codeLowercaseF = 0x66 // "f"
+const codeSpace = 0x20 // " "
+const codeNewline = 0xa // "\n"
+const codeTab = 0x9 // "\t"
+const codeReturn = 0xd // "\r"
 const codeNonBreakingSpace = 0xa0
 const codeEnQuad = 0x2000
 const codeHairSpace = 0x200a
 const codeNarrowNoBreakSpace = 0x202f
 const codeMediumMathematicalSpace = 0x205f
 const codeIdeographicSpace = 0x3000
-const codeDoubleQuoteLeft = 0x201c // “
-const codeDoubleQuoteRight = 0x201d // ”
-const codeQuoteLeft = 0x2018 // ‘
-const codeQuoteRight = 0x2019 // ’
-const codeGraveAccent = 0x0060 // `
-const codeAcuteAccent = 0x00b4 // ´
 
-export function isHex(code: number): boolean {
-  return (
-    (code >= codeZero && code <= codeNine) ||
-    (code >= codeUppercaseA && code <= codeUppercaseF) ||
-    (code >= codeLowercaseA && code <= codeLowercaseF)
-  )
+export function isHex(char: string): boolean {
+  return /^[0-9A-Fa-f]$/.test(char)
 }
 
-export function isDigit(code: number): boolean {
-  return code >= codeZero && code <= codeNine
+export function isDigit(char: string): boolean {
+  return char >= '0' && char <= '9'
 }
 
-export function isValidStringCharacter(code: number): boolean {
-  return code >= 0x20 && code <= 0x10ffff
+export function isValidStringCharacter(char: string): boolean {
+  // note that the valid range is between \u{0020} and \u{10ffff},
+  // but in JavaScript it is not possible to create a code point larger than
+  // \u{10ffff}, so there is no need to test for that here.
+  return char >= '\u0020'
 }
 
 export function isDelimiter(char: string): boolean {
-  return regexDelimiter.test(char)
+  return ',:[]/{}()\n+'.includes(char)
 }
 
-const regexDelimiter = /^[,:[\]/{}()\n+]$/
-const regexUnquotedStringDelimiter = /^[,[\]/{}\n+]$/
-export const regexFunctionNameCharStart = /^[a-zA-Z_$]$/
-export const regexFunctionNameChar = /^[a-zA-Z_$0-9]$/
+export function isFunctionNameCharStart(char: string) {
+  return (
+    (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === '_' || char === '$'
+  )
+}
+
+export function isFunctionNameChar(char: string) {
+  return (
+    (char >= 'a' && char <= 'z') ||
+    (char >= 'A' && char <= 'Z') ||
+    char === '_' ||
+    char === '$' ||
+    (char >= '0' && char <= '9')
+  )
+}
 
 // matches "https://" and other schemas
 export const regexUrlStart = /^(http|https|ftp|mailto|file|data|irc):\/\/$/
@@ -74,31 +51,31 @@ export const regexUrlStart = /^(http|https|ftp|mailto|file|data|irc):\/\/$/
 export const regexUrlChar = /^[A-Za-z0-9-._~:/?#@!$&'()*+;=]$/
 
 export function isUnquotedStringDelimiter(char: string): boolean {
-  return regexUnquotedStringDelimiter.test(char)
+  return ',[]/{}\n+'.includes(char)
 }
 
 export function isStartOfValue(char: string): boolean {
-  return regexStartOfValue.test(char) || (char && isQuote(char.charCodeAt(0)))
+  return isQuote(char) || regexStartOfValue.test(char)
 }
 
 // alpha, number, minus, or opening bracket or brace
 const regexStartOfValue = /^[[{\w-]$/
 
-export function isControlCharacter(code: number) {
-  return (
-    code === codeNewline ||
-    code === codeReturn ||
-    code === codeTab ||
-    code === codeBackspace ||
-    code === codeFormFeed
-  )
+export function isControlCharacter(char: string) {
+  return char === '\n' || char === '\r' || char === '\t' || char === '\b' || char === '\f'
+}
+
+export interface Text {
+  charCodeAt: (index: number) => number
 }
 
 /**
  * Check if the given character is a whitespace character like space, tab, or
  * newline
  */
-export function isWhitespace(code: number): boolean {
+export function isWhitespace(text: Text, index: number): boolean {
+  const code = text.charCodeAt(index)
+
   return code === codeSpace || code === codeNewline || code === codeTab || code === codeReturn
 }
 
@@ -106,7 +83,9 @@ export function isWhitespace(code: number): boolean {
  * Check if the given character is a whitespace character like space or tab,
  * but NOT a newline
  */
-export function isWhitespaceExceptNewline(code: number): boolean {
+export function isWhitespaceExceptNewline(text: Text, index: number): boolean {
+  const code = text.charCodeAt(index)
+
   return code === codeSpace || code === codeTab || code === codeReturn
 }
 
@@ -114,7 +93,9 @@ export function isWhitespaceExceptNewline(code: number): boolean {
  * Check if the given character is a special whitespace character, some
  * unicode variant
  */
-export function isSpecialWhitespace(code: number): boolean {
+export function isSpecialWhitespace(text: Text, index: number): boolean {
+  const code = text.charCodeAt(index)
+
   return (
     code === codeNonBreakingSpace ||
     (code >= codeEnQuad && code <= codeHairSpace) ||
@@ -128,39 +109,34 @@ export function isSpecialWhitespace(code: number): boolean {
  * Test whether the given character is a quote or double quote character.
  * Also tests for special variants of quotes.
  */
-export function isQuote(code: number): boolean {
+export function isQuote(char: string): boolean {
   // the first check double quotes, since that occurs most often
-  return isDoubleQuoteLike(code) || isSingleQuoteLike(code)
+  return isDoubleQuoteLike(char) || isSingleQuoteLike(char)
 }
 
 /**
  * Test whether the given character is a double quote character.
  * Also tests for special variants of double quotes.
  */
-export function isDoubleQuoteLike(code: number): boolean {
-  // the first check double quotes, since that occurs most often
-  return code === codeDoubleQuote || code === codeDoubleQuoteLeft || code === codeDoubleQuoteRight
+export function isDoubleQuoteLike(char: string): boolean {
+  return char === '"' || char === '\u201c' || char === '\u201d'
 }
 
 /**
  * Test whether the given character is a double quote character.
  * Does NOT test for special variants of double quotes.
  */
-export function isDoubleQuote(code: number): boolean {
-  return code === codeDoubleQuote
+export function isDoubleQuote(char: string): boolean {
+  return char === '"'
 }
 
 /**
  * Test whether the given character is a single quote character.
  * Also tests for special variants of single quotes.
  */
-export function isSingleQuoteLike(code: number): boolean {
+export function isSingleQuoteLike(char: string): boolean {
   return (
-    code === codeQuote ||
-    code === codeQuoteLeft ||
-    code === codeQuoteRight ||
-    code === codeGraveAccent ||
-    code === codeAcuteAccent
+    char === "'" || char === '\u2018' || char === '\u2019' || char === '\u0060' || char === '\u00b4'
   )
 }
 
@@ -168,8 +144,8 @@ export function isSingleQuoteLike(code: number): boolean {
  * Test whether the given character is a single quote character.
  * Does NOT test for special variants of single quotes.
  */
-export function isSingleQuote(code: number): boolean {
-  return code === codeQuote
+export function isSingleQuote(char: string): boolean {
+  return char === "'"
 }
 
 /**
@@ -189,12 +165,12 @@ export function stripLastOccurrence(
 export function insertBeforeLastWhitespace(text: string, textToInsert: string): string {
   let index = text.length
 
-  if (!isWhitespace(text.charCodeAt(index - 1))) {
+  if (!isWhitespace(text, index - 1)) {
     // no trailing whitespaces
     return text + textToInsert
   }
 
-  while (isWhitespace(text.charCodeAt(index - 1))) {
+  while (isWhitespace(text, index - 1)) {
     index--
   }
 
