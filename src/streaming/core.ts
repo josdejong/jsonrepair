@@ -166,7 +166,7 @@ export function jsonrepairCore({
       case StackType.root: {
         switch (stack.caret) {
           case Caret.beforeValue:
-            return parseValue() || parseUnexpectedEnd()
+            return parseRootStart()
           case Caret.afterValue:
             return parseRootEnd()
           default:
@@ -436,7 +436,15 @@ export function jsonrepairCore({
     return stack.pop()
   }
 
+  function parseRootStart(): boolean {
+    parseMarkdownCodeBlock()
+
+    return parseValue() || parseUnexpectedEnd()
+  }
+
   function parseRootEnd(): boolean {
+    parseMarkdownCodeBlock()
+
     const parsedComma = parseCharacter(',')
     parseWhitespaceAndSkipComments()
 
@@ -533,6 +541,29 @@ export function jsonrepairCore({
       while (!input.isEnd(i) && input.charAt(i) !== '\n') {
         i++
       }
+
+      return true
+    }
+
+    return false
+  }
+
+  function parseMarkdownCodeBlock(): boolean {
+    // find and skip over a Markdown fenced code block:
+    //     ``` ... ```
+    // or
+    //     ```json ... ```
+    if (input.substring(i, i + 3) === '```') {
+      i += 3
+
+      if (isFunctionNameCharStart(input.charAt(i))) {
+        // strip the optional language specifier like "json"
+        while (!input.isEnd(i) && isFunctionNameChar(input.charAt(i))) {
+          i++
+        }
+      }
+
+      parseWhitespaceAndSkipComments()
 
       return true
     }

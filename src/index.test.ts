@@ -381,6 +381,16 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       )
     })
 
+    test('should strip markdown fenced code blocks', () => {
+      expect(jsonrepair('```\n{"a":"b"}\n```')).toBe('\n{"a":"b"}\n')
+      expect(jsonrepair('```json\n{"a":"b"}\n```')).toBe('\n{"a":"b"}\n')
+      expect(jsonrepair('```\n{"a":"b"}\n')).toBe('\n{"a":"b"}\n')
+      expect(jsonrepair('\n{"a":"b"}\n```')).toBe('\n{"a":"b"}\n')
+      expect(jsonrepair('```{"a":"b"}```')).toBe('{"a":"b"}')
+      expect(jsonrepair('```\n[1,2,3]\n```')).toBe('\n[1,2,3]\n')
+      expect(jsonrepair('```python\n{"a":"b"}\n```')).toBe('\n{"a":"b"}\n')
+    })
+
     test('should repair escaped string contents', () => {
       expect(jsonrepair('\\"hello world\\"')).toBe('"hello world"')
       expect(jsonrepair('\\"hello world\\')).toBe('"hello world"')
