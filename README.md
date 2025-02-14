@@ -21,6 +21,7 @@ The following issues can be fixed:
 - Replace Python constants `None`, `True`, and `False` with `null`, `true`, and `false`
 - Strip trailing commas
 - Strip comments like `/* ... */` and `// ...`
+- Strip fenced code blocks like `` ```json`` and `` ``` ``
 - Strip ellipsis in arrays and objects like `[1, 2, 3, ...]`
 - Strip JSONP notation like `callback({ ... })`
 - Strip escape characters from an escaped string like `{\"stringified\": \"content\"}`
