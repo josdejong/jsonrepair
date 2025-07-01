@@ -22,7 +22,7 @@ import {
 } from '../utils/stringUtils.js'
 import { createInputBuffer } from './buffer/InputBuffer.js'
 import { createOutputBuffer } from './buffer/OutputBuffer.js'
-import { Caret, StackType, createStack } from './stack.js'
+import { Caret, createStack, StackType } from './stack.js'
 
 const controlCharacters: { [key: string]: string } = {
   '\b': '\\b',
@@ -672,14 +672,16 @@ export function jsonrepairCore({
           output.insertBeforeLastWhitespace('"')
 
           return stack.update(Caret.afterValue)
-          // biome-ignore lint/style/noUselessElse: <explanation>
-        } else if (i === stopAtIndex) {
+        }
+
+        if (i === stopAtIndex) {
           // use the stop index detected in the first iteration, and repair end quote
           output.insertBeforeLastWhitespace('"')
 
           return stack.update(Caret.afterValue)
-          // biome-ignore lint/style/noUselessElse: <explanation>
-        } else if (isEndQuote(input.charAt(i))) {
+        }
+
+        if (isEndQuote(input.charAt(i))) {
           // end quote
           // let us check what is before and after the quote to verify whether this is a legit end quote
           const iQuote = i

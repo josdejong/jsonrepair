@@ -477,15 +477,17 @@ export function jsonrepair(text: string): string {
           output += str
 
           return true
-          // biome-ignore lint/style/noUselessElse: <explanation>
-        } else if (i === stopAtIndex) {
+        }
+
+        if (i === stopAtIndex) {
           // use the stop index detected in the first iteration, and repair end quote
           str = insertBeforeLastWhitespace(str, '"')
           output += str
 
           return true
-          // biome-ignore lint/style/noUselessElse: <explanation>
-        } else if (isEndQuote(text[i])) {
+        }
+
+        if (isEndQuote(text[i])) {
           // end quote
           // let us check what is before and after the quote to verify whether this is a legit end quote
           const iQuote = i

@@ -1,6 +1,3 @@
-const durationWidth = 10
-const varianceWidth = 8
-
 /**
  * Format a result like:
  *

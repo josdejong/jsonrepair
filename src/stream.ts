@@ -1,2 +1,2 @@
 // Node.js streaming API
-export { jsonrepairTransform, type JsonRepairTransformOptions } from './streaming/stream.js'
+export { type JsonRepairTransformOptions, jsonrepairTransform } from './streaming/stream.js'

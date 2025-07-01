@@ -1,7 +1,6 @@
 // Only use native node.js API's and references to ./lib here, this file is not transpiled!
 import cp from 'node:child_process'
-import { copyFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
-import { unlinkSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
