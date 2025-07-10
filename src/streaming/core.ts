@@ -437,13 +437,13 @@ export function jsonrepairCore({
   }
 
   function parseRootStart(): boolean {
-    parseMarkdownCodeBlock()
+    parseMarkdownCodeBlock(['```', '[```', '{```'])
 
     return parseValue() || parseUnexpectedEnd()
   }
 
   function parseRootEnd(): boolean {
-    parseMarkdownCodeBlock()
+    parseMarkdownCodeBlock(['```', '```]', '```}'])
 
     const parsedComma = parseCharacter(',')
     parseWhitespaceAndSkipComments()
@@ -548,14 +548,12 @@ export function jsonrepairCore({
     return false
   }
 
-  function parseMarkdownCodeBlock(): boolean {
+  function parseMarkdownCodeBlock(blocks: string[]): boolean {
     // find and skip over a Markdown fenced code block:
     //     ``` ... ```
     // or
     //     ```json ... ```
-    if (input.substring(i, i + 3) === '```') {
-      i += 3
-
+    if (skipMarkdownCodeBlock(blocks)) {
       if (isFunctionNameCharStart(input.charAt(i))) {
         // strip the optional language specifier like "json"
         while (!input.isEnd(i) && isFunctionNameChar(input.charAt(i))) {
@@ -566,6 +564,18 @@ export function jsonrepairCore({
       parseWhitespaceAndSkipComments()
 
       return true
+    }
+
+    return false
+  }
+
+  function skipMarkdownCodeBlock(blocks: string[]): boolean {
+    for (const block of blocks) {
+      const end = i + block.length
+      if (input.substring(i, end) === block) {
+        i = end
+        return true
+      }
     }
 
     return false

@@ -66,14 +66,14 @@ export function jsonrepair(text: string): string {
   let i = 0 // current index in text
   let output = '' // generated output
 
-  parseMarkdownCodeBlock()
+  parseMarkdownCodeBlock(['```', '[```', '{```'])
 
   const processed = parseValue()
   if (!processed) {
     throwUnexpectedEnd()
   }
 
-  parseMarkdownCodeBlock()
+  parseMarkdownCodeBlock(['```', '```]', '```}'])
 
   const processedComma = parseCharacter(',')
   if (processedComma) {
@@ -186,14 +186,12 @@ export function jsonrepair(text: string): string {
     return false
   }
 
-  function parseMarkdownCodeBlock(): boolean {
+  function parseMarkdownCodeBlock(blocks: string[]): boolean {
     // find and skip over a Markdown fenced code block:
     //     ``` ... ```
     // or
     //     ```json ... ```
-    if (text.slice(i, i + 3) === '```') {
-      i += 3
-
+    if (skipMarkdownCodeBlock(blocks)) {
       if (isFunctionNameCharStart(text[i])) {
         // strip the optional language specifier like "json"
         while (i < text.length && isFunctionNameChar(text[i])) {
@@ -204,6 +202,18 @@ export function jsonrepair(text: string): string {
       parseWhitespaceAndSkipComments()
 
       return true
+    }
+
+    return false
+  }
+
+  function skipMarkdownCodeBlock(blocks: string[]): boolean {
+    for (const block of blocks) {
+      const end = i + block.length
+      if (text.slice(i, end) === block) {
+        i = end
+        return true
+      }
     }
 
     return false
