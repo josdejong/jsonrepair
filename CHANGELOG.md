@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.13.0](https://github.com/josdejong/jsonrepair/compare/v3.12.0...v3.13.0) (2025-07-10)
+
+
+### Features
+
+* repair invalid fenced Markdown code blocks (fixes [#143](https://github.com/josdejong/jsonrepair/issues/143)) ([92cf61d](https://github.com/josdejong/jsonrepair/commit/92cf61d996d7c86737b92288968e2ff9332c0419))
+
 ## [3.12.0](https://github.com/josdejong/jsonrepair/compare/v3.11.2...v3.12.0) (2025-02-06)
 
 
