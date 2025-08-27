@@ -131,7 +131,7 @@ function parseSize(size) {
     throw new Error(`Buffer size "${size}" not recognized. Examples: 65536, 512K, 2M`)
   }
 
-  const num = Number.parseInt(match[1])
+  const num = Number.parseInt(match[1], 10)
   const suffix = match[2] // K, M, or G
 
   switch (suffix) {
