@@ -208,6 +208,8 @@ export function jsonrepair(text: string): string {
   }
 
   function skipMarkdownCodeBlock(blocks: string[]): boolean {
+    parseWhitespace(true)
+
     for (const block of blocks) {
       const end = i + block.length
       if (text.slice(i, end) === block) {
