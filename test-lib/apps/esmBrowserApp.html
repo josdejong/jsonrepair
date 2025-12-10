@@ -13,8 +13,8 @@
     const invalidJson = '{name: \'John\'}'
     const repairedJson = jsonrepair(invalidJson)
 
-    document.getElementById('invalid').innerHTML = 'Invalid JSON:' + invalidJson
-    document.getElementById('repaired').innerHTML = 'Repaired JSON:' + repairedJson
+    document.getElementById('invalid').innerHTML = `Invalid JSON:${invalidJson}`
+    document.getElementById('repaired').innerHTML = `Repaired JSON:${repairedJson}`
   </script>
 </body>
 </html>

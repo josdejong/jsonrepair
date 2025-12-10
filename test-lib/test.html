@@ -14,7 +14,7 @@
   </div>
 
   <script type="module">
-    import { jsonrepair } from '../lib/esm/jsonrepair.js'
+    import { jsonrepair } from '../lib/esm/index.js'
 
     function repairIt (text) {
       console.time('repair')
@@ -34,7 +34,7 @@
 
       const reader = new FileReader()
       const file = event.target.files[0]
-      reader.onload = function (event) {
+      reader.onload = (event) => {
         console.timeEnd('load file')
         const text = event.target.result
 
