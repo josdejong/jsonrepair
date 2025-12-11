@@ -710,6 +710,73 @@ export function jsonrepairCore({
           ) {
             // The quote is followed by the end of the text, a delimiter, or a next value
             // so the quote is indeed the end of the string
+
+            // But wait: if followed by a comma, we need to check what comes after.
+            // If what comes after the comma is NOT a valid next value or key,
+            // then this quote is likely an unescaped quote inside the string.
+            if (input.charAt(i) === ',') {
+              const iAfterComma = i + 1
+              // skip whitespace after the comma
+              let j = iAfterComma
+              while (!input.isEnd(j) && isWhitespace(input, j)) {
+                j++
+              }
+
+              // Check if what follows looks like a valid JSON structure continuation
+              const charAfterComma = input.charAt(j)
+              if (
+                charAfterComma !== '' &&
+                charAfterComma !== '}' &&
+                charAfterComma !== ']' &&
+                !isQuote(charAfterComma) &&
+                !isDigit(charAfterComma) &&
+                charAfterComma !== '-' &&
+                charAfterComma !== 't' && // true
+                charAfterComma !== 'f' && // false
+                charAfterComma !== 'n' && // null
+                charAfterComma !== '{' &&
+                charAfterComma !== '['
+              ) {
+                // The content after the comma doesn't look like a valid JSON value.
+                // This means the quote is likely an unescaped quote inside the string.
+                // Check further: if this appears to be followed by more text that ends
+                // the string properly, we should escape this quote.
+                // Look ahead to find if there's a proper ending pattern.
+                let k = j
+                while (
+                  !input.isEnd(k) &&
+                  !isQuote(input.charAt(k)) &&
+                  input.charAt(k) !== '}' &&
+                  input.charAt(k) !== ']'
+                ) {
+                  k++
+                }
+                if (!input.isEnd(k) && isQuote(input.charAt(k))) {
+                  // Found another quote ahead - this could be the real end quote
+                  // Let's check if what follows that quote is a proper delimiter
+                  let m = k + 1
+                  while (!input.isEnd(m) && isWhitespace(input, m)) {
+                    m++
+                  }
+                  if (
+                    input.isEnd(m) ||
+                    input.charAt(m) === '}' ||
+                    input.charAt(m) === ']' ||
+                    input.charAt(m) === ','
+                  ) {
+                    // Yes, the quote at position k looks like the real end quote
+                    // So we need to escape the current quote and continue
+                    output.remove(oQuote + 1)
+                    i = iQuote + 1
+
+                    // repair unescaped quote
+                    output.insertAt(oQuote, '\\')
+                    continue
+                  }
+                }
+              }
+            }
+
             parseConcatenatedString()
 
             return stack.update(Caret.afterValue)
