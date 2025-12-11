@@ -314,6 +314,13 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('["," 2')).toBe('[",", 2]')
     })
 
+    test('should escape unescaped double quotes followed by parentheses (issue #144)', () => {
+      expect(jsonrepair('{ "height": "53"" }')).toBe('{ "height": "53\\"" }')
+      expect(jsonrepair('{ "height": "(5\'3")" }')).toBe('{ "height": "(5\'3\\")" }')
+      expect(jsonrepair('{"a": "test")" }')).toBe('{"a": "test\\")" }')
+      expect(jsonrepair('{"value": "foo(bar")"}')).toBe('{"value": "foo(bar\\")"}')
+    })
+
     test('should replace special white space characters', () => {
       expect(jsonrepair('{"a":\u00a0"foo\u00a0bar"}')).toBe('{"a": "foo\u00a0bar"}')
       expect(jsonrepair('{"a":\u202F"foo"}')).toBe('{"a": "foo"}')

@@ -519,6 +519,62 @@ export function jsonrepair(text: string): string {
           ) {
             // The quote is followed by the end of the text, a delimiter,
             // or a next value. So the quote is indeed the end of the string.
+
+            // But wait: if the quote is directly followed by another quote or parenthesis
+            // (without whitespace), we need to check if this is actually part of the
+            // string content (like "5'3")" or "53"")
+            // Only check if the next character immediately after the quote is special
+            const charRightAfterQuote = text[iQuote + 1]
+            if (
+              charRightAfterQuote !== undefined &&
+              (charRightAfterQuote === ')' ||
+                charRightAfterQuote === '(' ||
+                isQuote(charRightAfterQuote))
+            ) {
+              // Look ahead: if there's another quote followed by a proper JSON delimiter,
+              // then the current quote is likely an unescaped quote inside the string.
+              let j = iQuote + 1
+              // Skip the current character (parenthesis or quote)
+              if (isQuote(text[j])) {
+                j++
+              }
+              while (j < text.length && !isQuote(text[j]) && text[j] !== '}' && text[j] !== ']') {
+                j++
+              }
+
+              // Check if we found another quote or if we hit a JSON structure delimiter
+              let shouldEscapeQuote = false
+              if (j < text.length && isQuote(text[j])) {
+                // Found another quote ahead - check if it's the real end quote
+                let m = j + 1
+                while (m < text.length && isWhitespace(text, m)) {
+                  m++
+                }
+                if (m >= text.length || text[m] === '}' || text[m] === ']' || text[m] === ',') {
+                  shouldEscapeQuote = true
+                }
+              } else if (
+                j < text.length &&
+                (text[j] === '}' || text[j] === ']') &&
+                isQuote(charRightAfterQuote)
+              ) {
+                // Special case: quote directly followed by another quote, then whitespace and }
+                // Like "53"" } - the first quote (at iQuote) should be escaped
+                // The second quote (charRightAfterQuote) is the actual end quote
+                shouldEscapeQuote = true
+              }
+
+              if (shouldEscapeQuote) {
+                // Escape the current quote and continue
+                output = output.substring(0, oBefore)
+                i = iQuote + 1
+
+                // repair unescaped quote
+                str = `${str.substring(0, oQuote)}\\${str.substring(oQuote)}`
+                continue
+              }
+            }
+
             parseConcatenatedString()
 
             return true
