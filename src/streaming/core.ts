@@ -711,66 +711,104 @@ export function jsonrepairCore({
             // The quote is followed by the end of the text, a delimiter, or a next value
             // so the quote is indeed the end of the string
 
-            // But wait: if the quote is directly followed by another quote or parenthesis
-            // (without whitespace), we need to check if this is actually part of the
-            // string content (like "5'3")" or "53"")
-            // Only check if the next character immediately after the quote is special
-            const charRightAfterQuote = input.charAt(iQuote + 1)
-            if (
-              charRightAfterQuote !== '' &&
-              (charRightAfterQuote === ')' ||
-                charRightAfterQuote === '(' ||
-                isQuote(charRightAfterQuote))
-            ) {
-              // Look ahead: if there's another quote followed by a proper JSON delimiter,
-              // then the current quote is likely an unescaped quote inside the string.
+            // Unified lookahead check for unescaped quotes (fixes #129, #144)
+            // Check if the quote is actually an unescaped quote inside the string
+            // by looking ahead to see if there's a "real" end quote followed by valid JSON delimiters
+            const charAfterQuote = input.charAt(iQuote + 1)
+            const needsLookahead =
+              charAfterQuote !== '' &&
+              (charAfterQuote === '"' ||
+                charAfterQuote === '(' ||
+                charAfterQuote === ')' ||
+                charAfterQuote === ',')
+
+            if (needsLookahead) {
+              let shouldEscape = false
               let j = iQuote + 1
-              // Skip the current character (parenthesis or quote)
-              if (isQuote(input.charAt(j))) {
-                j++
-              }
-              while (
-                !input.isEnd(j) &&
-                !isQuote(input.charAt(j)) &&
-                input.charAt(j) !== '}' &&
-                input.charAt(j) !== ']'
-              ) {
-                j++
-              }
 
-              // Check if we found another quote or if we hit a JSON structure delimiter
-              let shouldEscapeQuote = false
-              if (!input.isEnd(j) && isQuote(input.charAt(j))) {
-                // Found another quote ahead - check if it's the real end quote
-                let m = j + 1
-                while (!input.isEnd(m) && isWhitespace(input, m)) {
-                  m++
+              if (charAfterQuote === ',') {
+                // Comma case: check if what follows the comma is a valid JSON value start
+                j++
+                while (!input.isEnd(j) && isWhitespace(input, j)) {
+                  j++
                 }
+                const afterComma = input.charAt(j)
+                // If NOT a valid JSON value start, this comma is inside the string
                 if (
-                  input.isEnd(m) ||
-                  input.charAt(m) === '}' ||
-                  input.charAt(m) === ']' ||
-                  input.charAt(m) === ','
+                  afterComma !== '' &&
+                  afterComma !== '}' &&
+                  afterComma !== ']' &&
+                  !isQuote(afterComma) &&
+                  !isDigit(afterComma) &&
+                  afterComma !== '-' &&
+                  afterComma !== 't' &&
+                  afterComma !== 'f' &&
+                  afterComma !== 'n' &&
+                  afterComma !== '{' &&
+                  afterComma !== '['
                 ) {
-                  shouldEscapeQuote = true
+                  // Look for the real end quote
+                  while (
+                    !input.isEnd(j) &&
+                    !isQuote(input.charAt(j)) &&
+                    input.charAt(j) !== '}' &&
+                    input.charAt(j) !== ']'
+                  ) {
+                    j++
+                  }
+                  if (!input.isEnd(j) && isQuote(input.charAt(j))) {
+                    let m = j + 1
+                    while (!input.isEnd(m) && isWhitespace(input, m)) {
+                      m++
+                    }
+                    if (
+                      input.isEnd(m) ||
+                      input.charAt(m) === '}' ||
+                      input.charAt(m) === ']' ||
+                      input.charAt(m) === ','
+                    ) {
+                      shouldEscape = true
+                    }
+                  }
                 }
-              } else if (
-                !input.isEnd(j) &&
-                (input.charAt(j) === '}' || input.charAt(j) === ']') &&
-                isQuote(charRightAfterQuote)
-              ) {
-                // Special case: quote directly followed by another quote, then whitespace and }
-                // Like "53"" } - the first quote (at iQuote) should be escaped
-                // The second quote (charRightAfterQuote) is the actual end quote
-                shouldEscapeQuote = true
+              } else {
+                // Quote or parenthesis case: look for the real end quote
+                if (isQuote(charAfterQuote)) {
+                  j++ // skip the quote right after
+                }
+                while (
+                  !input.isEnd(j) &&
+                  !isQuote(input.charAt(j)) &&
+                  input.charAt(j) !== '}' &&
+                  input.charAt(j) !== ']'
+                ) {
+                  j++
+                }
+                if (!input.isEnd(j) && isQuote(input.charAt(j))) {
+                  let m = j + 1
+                  while (!input.isEnd(m) && isWhitespace(input, m)) {
+                    m++
+                  }
+                  if (
+                    input.isEnd(m) ||
+                    input.charAt(m) === '}' ||
+                    input.charAt(m) === ']' ||
+                    input.charAt(m) === ','
+                  ) {
+                    shouldEscape = true
+                  }
+                } else if (
+                  !input.isEnd(j) &&
+                  (input.charAt(j) === '}' || input.charAt(j) === ']') &&
+                  isQuote(charAfterQuote)
+                ) {
+                  shouldEscape = true
+                }
               }
 
-              if (shouldEscapeQuote) {
-                // Escape the current quote and continue
+              if (shouldEscape) {
                 output.remove(oQuote + 1)
                 i = iQuote + 1
-
-                // repair unescaped quote
                 output.insertAt(oQuote, '\\')
                 continue
               }

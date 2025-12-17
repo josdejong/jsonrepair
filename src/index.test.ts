@@ -314,11 +314,24 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('["," 2')).toBe('[",", 2]')
     })
 
-    test('should escape unescaped double quotes followed by parentheses (issue #144)', () => {
+    test('should escape unescaped double quotes in strings (issues #129, #144)', () => {
+      // Issue #144 - quotes followed by parentheses or another quote
       expect(jsonrepair('{ "height": "53"" }')).toBe('{ "height": "53\\"" }')
       expect(jsonrepair('{ "height": "(5\'3")" }')).toBe('{ "height": "(5\'3\\")" }')
       expect(jsonrepair('{"a": "test")" }')).toBe('{"a": "test\\")" }')
       expect(jsonrepair('{"value": "foo(bar")"}')).toBe('{"value": "foo(bar\\")"}')
+
+      // Issue #129 - quotes followed by comma
+      expect(jsonrepair('{"a": "x "y", z"}')).toBe('{"a": "x \\"y\\", z"}')
+      expect(
+        jsonrepair('{"key": "become an "Airbnb-free zone", which is a political decision."}')
+      ).toBe('{"key": "become an \\"Airbnb-free zone\\", which is a political decision."}')
+      expect(jsonrepair('{"key": "test "quoted", more text"}')).toBe(
+        '{"key": "test \\"quoted\\", more text"}'
+      )
+
+      // Ensure normal cases still work
+      expect(jsonrepair('{"a": "x","b": "y"}')).toBe('{"a": "x","b": "y"}')
     })
 
     test('should replace special white space characters', () => {
