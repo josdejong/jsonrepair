@@ -314,7 +314,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('["," 2')).toBe('[",", 2]')
     })
 
-    test('should escape unescaped double quotes in strings (issues #129, #144)', () => {
+    test('should escape unescaped double quotes in strings (issues #129, #144, #114, #151)', () => {
       // Issue #144 - quotes followed by parentheses or another quote
       expect(jsonrepair('{ "height": "53"" }')).toBe('{ "height": "53\\"" }')
       expect(jsonrepair('{ "height": "(5\'3")" }')).toBe('{ "height": "(5\'3\\")" }')
@@ -329,6 +329,27 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{"key": "test "quoted", more text"}')).toBe(
         '{"key": "test \\"quoted\\", more text"}'
       )
+
+      // Issue #114 - unescaped quotes in measurement units like 65"
+      expect(jsonrepair('{"text": "I want to buy 65" television"}')).toBe(
+        '{"text": "I want to buy 65\\" television"}'
+      )
+      expect(jsonrepair('{"text": "a 40" TV"}')).toBe('{"text": "a 40\\" TV"}')
+      expect(jsonrepair('{"size": "12" x 15""}')).toBe('{"size": "12\\" x 15\\""}')
+
+      // Issue #151 - quotes followed by slash
+      expect(jsonrepair('{"value": "This is test "message/stream"}')).toBe(
+        '{"value": "This is test \\"message/stream"}'
+      )
+      expect(jsonrepair('{"name":"Parth","value":"This is test "message/stream"}')).toBe(
+        '{"name":"Parth","value":"This is test \\"message/stream"}'
+      )
+      expect(jsonrepair('{"path": "home/user"test/file"}')).toBe(
+        '{"path": "home/user\\"test/file"}'
+      )
+
+      // Quotes followed by letters (general case)
+      expect(jsonrepair('{"text": "hello "world today"}')).toBe('{"text": "hello \\"world today"}')
 
       // Ensure normal cases still work
       expect(jsonrepair('{"a": "x","b": "y"}')).toBe('{"a": "x","b": "y"}')

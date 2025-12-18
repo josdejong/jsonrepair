@@ -520,82 +520,19 @@ export function jsonrepair(text: string): string {
             // The quote is followed by the end of the text, a delimiter,
             // or a next value. So the quote is indeed the end of the string.
 
-            // Unified lookahead check for unescaped quotes (fixes #129, #144)
+            // Unified lookahead check for unescaped quotes (fixes #129, #144, #114, #151)
             // Check if the quote is actually an unescaped quote inside the string
             // by looking ahead to see if there's a "real" end quote followed by valid JSON delimiters
-            const charAfterQuote = text[iQuote + 1]
-            const needsLookahead =
-              charAfterQuote !== undefined &&
-              (charAfterQuote === '"' ||
-                charAfterQuote === '(' ||
-                charAfterQuote === ')' ||
-                charAfterQuote === ',')
+            //
+            // We only need to do lookahead when the character immediately after the quote
+            // is "suspicious" - i.e., not a standard JSON delimiter but something that
+            // could indicate this quote is actually inside the string content
+            const needsLookahead = isUnescapedQuoteSuspicious(iQuote + 1)
 
             if (needsLookahead) {
-              let shouldEscape = false
-              let j = iQuote + 1
-
-              if (charAfterQuote === ',') {
-                // Comma case: check if what follows the comma is a valid JSON value start
-                j++
-                while (j < text.length && isWhitespace(text, j)) {
-                  j++
-                }
-                const afterComma = text[j]
-                // If NOT a valid JSON value start, this comma is inside the string
-                if (
-                  afterComma !== undefined &&
-                  afterComma !== '}' &&
-                  afterComma !== ']' &&
-                  !isQuote(afterComma) &&
-                  !isDigit(afterComma) &&
-                  afterComma !== '-' &&
-                  afterComma !== 't' &&
-                  afterComma !== 'f' &&
-                  afterComma !== 'n' &&
-                  afterComma !== '{' &&
-                  afterComma !== '['
-                ) {
-                  // Look for the real end quote
-                  while (j < text.length && !isQuote(text[j]) && text[j] !== '}' && text[j] !== ']') {
-                    j++
-                  }
-                  if (j < text.length && isQuote(text[j])) {
-                    let m = j + 1
-                    while (m < text.length && isWhitespace(text, m)) {
-                      m++
-                    }
-                    if (m >= text.length || text[m] === '}' || text[m] === ']' || text[m] === ',') {
-                      shouldEscape = true
-                    }
-                  }
-                }
-              } else {
-                // Quote or parenthesis case: look for the real end quote
-                if (isQuote(charAfterQuote)) {
-                  j++ // skip the quote right after
-                }
-                while (j < text.length && !isQuote(text[j]) && text[j] !== '}' && text[j] !== ']') {
-                  j++
-                }
-                if (j < text.length && isQuote(text[j])) {
-                  let m = j + 1
-                  while (m < text.length && isWhitespace(text, m)) {
-                    m++
-                  }
-                  if (m >= text.length || text[m] === '}' || text[m] === ']' || text[m] === ',') {
-                    shouldEscape = true
-                  }
-                } else if (
-                  j < text.length &&
-                  (text[j] === '}' || text[j] === ']') &&
-                  isQuote(charAfterQuote)
-                ) {
-                  shouldEscape = true
-                }
-              }
-
-              if (shouldEscape) {
+              const validEndQuoteIndex = findNextValidEndQuote(iQuote + 1)
+              if (validEndQuoteIndex !== -1) {
+                // Found a valid end quote further ahead, so this quote is unescaped
                 output = output.substring(0, oBefore)
                 i = iQuote + 1
                 str = `${str.substring(0, oQuote)}\\${str.substring(oQuote)}`
@@ -946,6 +883,141 @@ export function jsonrepair(text: string): string {
     }
 
     return prev
+  }
+
+  /**
+   * Check if the character(s) after a quote position indicate that the quote
+   * might be an unescaped quote inside the string content (suspicious),
+   * rather than a valid end quote.
+   *
+   * @param afterQuoteIndex - The position immediately after the quote
+   * @returns true if the position is suspicious, false if it looks like a valid end quote
+   */
+  function isUnescapedQuoteSuspicious(afterQuoteIndex: number): boolean {
+    const charAfterQuote = text[afterQuoteIndex]
+
+    // End of text or whitespace followed by delimiter - not suspicious
+    if (charAfterQuote === undefined || isWhitespace(text, afterQuoteIndex)) {
+      return false
+    }
+
+    // Standard JSON delimiters after quote - not suspicious
+    if (charAfterQuote === '}' || charAfterQuote === ']' || charAfterQuote === ':') {
+      return false
+    }
+
+    // String concatenation operator - not suspicious
+    if (charAfterQuote === '+') {
+      return false
+    }
+
+    // Comma case: need to check what comes after the comma
+    if (charAfterQuote === ',') {
+      let j = afterQuoteIndex + 1
+      // Skip whitespace after comma
+      while (j < text.length && isWhitespace(text, j)) {
+        j++
+      }
+      const afterComma = text[j]
+      // If followed by a valid JSON value start that's NOT an identifier, not suspicious
+      // (identifiers need special handling as they could be unquoted keys OR string content)
+      if (
+        afterComma === undefined ||
+        afterComma === '}' ||
+        afterComma === ']' ||
+        isQuote(afterComma) ||
+        isDigit(afterComma) ||
+        afterComma === '-' ||
+        afterComma === '{' ||
+        afterComma === '['
+      ) {
+        return false
+      }
+      // Check for comments (/* or //)
+      if (afterComma === '/' && (text[j + 1] === '*' || text[j + 1] === '/')) {
+        return false
+      }
+      // For identifiers, check if it's likely an unquoted key or string content
+      if (isFunctionNameCharStart(afterComma)) {
+        // Skip the identifier
+        let k = j
+        while (k < text.length && isFunctionNameChar(text[k])) {
+          k++
+        }
+        // Skip whitespace after the identifier
+        while (k < text.length && isWhitespace(text, k)) {
+          k++
+        }
+        // Check what comes after the identifier
+        // If it's followed by ':', it's an unquoted key (e.g., {a:'foo',b:'bar'}) - not suspicious
+        if (text[k] === ':') {
+          return false
+        }
+        // If it's a quote followed by ':', it's an unquoted key with quote (e.g., {"a":"foo",b":"bar"}) - not suspicious
+        if (isQuote(text[k])) {
+          let m = k + 1
+          while (m < text.length && isWhitespace(text, m)) {
+            m++
+          }
+          if (text[m] === ':') {
+            return false
+          }
+        }
+        // Otherwise, it's likely string content - suspicious
+        return true
+      }
+      // Comma followed by something else - suspicious
+      return true
+    }
+
+    // Any other character (letters, numbers, punctuation, etc.) - suspicious
+    return true
+  }
+
+  /**
+   * Look ahead to find a valid end quote for a string value.
+   * A valid end quote is a quote character followed by a valid JSON value delimiter
+   * (closing brace, bracket, comma, or end of text).
+   *
+   * Note: We exclude quotes followed by ':' because those are key quotes, not value quotes.
+   * This is important for cases like {"a":"foo",b":"bar"} where b" is an unquoted key.
+   *
+   * This helps detect unescaped quotes inside strings by checking if there's
+   * a "real" end quote further ahead. (fixes #129, #144, #114, #151)
+   *
+   * @param startIndex - The position to start searching from
+   * @returns The index of the valid end quote, or -1 if not found
+   */
+  function findNextValidEndQuote(startIndex: number): number {
+    let j = startIndex
+
+    // Search for the next quote that could be a valid end quote
+    while (j < text.length) {
+      if (isQuote(text[j])) {
+        // Found a quote, check if it's followed by a valid JSON value delimiter
+        let k = j + 1
+
+        // Skip whitespace after the quote
+        while (k < text.length && isWhitespace(text, k)) {
+          k++
+        }
+
+        // Check if what follows is a valid JSON structure continuation for a value
+        // Note: we exclude ':' because that would indicate this is a key quote, not a value quote
+        if (
+          k >= text.length ||
+          text[k] === '}' ||
+          text[k] === ']' ||
+          text[k] === ','
+        ) {
+          return j // This is a valid end quote for a value
+        }
+      }
+
+      j++
+    }
+
+    return -1 // No valid end quote found
   }
 
   function atEndOfNumber() {
