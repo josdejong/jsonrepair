@@ -106,6 +106,25 @@ export function isSpecialWhitespace(text: Text, index: number): boolean {
 }
 
 /**
+ * Skip whitespace starting at the given index
+ * @returns The index of the next non-whitespace character
+ */
+export function skipWhitespaceAtIndex(text: string, index: number): number {
+  let i = index
+  while (i < text.length && isWhitespace(text as unknown as Text, i)) {
+    i++
+  }
+  return i
+}
+
+/**
+ * Check if the given character indicates a valid end of a value
+ */
+export function isValidValueEndFollower(char: string | undefined): boolean {
+  return char === undefined || char === '}' || char === ']' || char === ','
+}
+
+/**
  * Test whether the given character is a quote or double quote character.
  * Also tests for special variants of quotes.
  */

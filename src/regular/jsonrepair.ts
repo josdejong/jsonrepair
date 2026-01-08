@@ -22,6 +22,8 @@ import {
   regexUrlChar,
   regexUrlStart,
   removeAtIndex,
+  skipWhitespaceAtIndex,
+  isValidValueEndFollower,
   stripLastOccurrence
 } from '../utils/stringUtils.js'
 
@@ -519,6 +521,27 @@ export function jsonrepair(text: string): string {
           ) {
             // The quote is followed by the end of the text, a delimiter,
             // or a next value. So the quote is indeed the end of the string.
+
+            // Unified lookahead check for unescaped quotes (fixes #129, #144, #114, #151)
+            // Check if the quote is actually an unescaped quote inside the string
+            // by looking ahead to see if there's a "real" end quote followed by valid JSON delimiters
+            //
+            // We only need to do lookahead when the character immediately after the quote
+            // is "suspicious" - i.e., not a standard JSON delimiter but something that
+            // could indicate this quote is actually inside the string content
+            const needsLookahead = isUnescapedQuoteSuspicious(iQuote + 1)
+
+            if (needsLookahead) {
+              const validEndQuoteIndex = findNextValidEndQuote(iQuote + 1)
+              if (validEndQuoteIndex !== -1) {
+                // Found a valid end quote further ahead, so this quote is unescaped
+                output = output.substring(0, oBefore)
+                i = iQuote + 1
+                str = `${str.substring(0, oQuote)}\\${str.substring(oQuote)}`
+                continue
+              }
+            }
+
             parseConcatenatedString()
 
             return true
@@ -862,6 +885,122 @@ export function jsonrepair(text: string): string {
     }
 
     return prev
+  }
+
+  /**
+   * Check if the character(s) after a quote position indicate that the quote
+   * might be an unescaped quote inside the string content (suspicious),
+   * rather than a valid end quote.
+   *
+   * @param afterQuoteIndex - The position immediately after the quote
+   * @returns true if the position is suspicious, false if it looks like a valid end quote
+   */
+  function isUnescapedQuoteSuspicious(afterQuoteIndex: number): boolean {
+    const charAfterQuote = text[afterQuoteIndex]
+
+    // End of text or whitespace followed by delimiter - not suspicious
+    if (charAfterQuote === undefined || isWhitespace(text, afterQuoteIndex)) {
+      return false
+    }
+
+    // Standard JSON delimiters after quote - not suspicious
+    if (charAfterQuote === '}' || charAfterQuote === ']' || charAfterQuote === ':') {
+      return false
+    }
+
+    // String concatenation operator - not suspicious
+    if (charAfterQuote === '+') {
+      return false
+    }
+
+    // Comma case: need to check what comes after the comma
+    if (charAfterQuote === ',') {
+      let j = skipWhitespaceAtIndex(text, afterQuoteIndex + 1)
+      const afterComma = text[j]
+      // If followed by a valid JSON value start that's NOT an identifier, not suspicious
+      // (identifiers need special handling as they could be unquoted keys OR string content)
+      if (
+        afterComma === undefined ||
+        afterComma === '}' ||
+        afterComma === ']' ||
+        isQuote(afterComma) ||
+        isDigit(afterComma) ||
+        afterComma === '-' ||
+        afterComma === '{' ||
+        afterComma === '['
+      ) {
+        return false
+      }
+      // Check for comments (/* or //)
+      if (afterComma === '/' && (text[j + 1] === '*' || text[j + 1] === '/')) {
+        return false
+      }
+      // For identifiers, check if it's likely an unquoted key or string content
+      if (isFunctionNameCharStart(afterComma)) {
+        // Skip the identifier
+        let k = j
+        while (k < text.length && isFunctionNameChar(text[k])) {
+          k++
+        }
+        // Skip whitespace after the identifier
+        k = skipWhitespaceAtIndex(text, k)
+        // Check what comes after the identifier
+        // If it's followed by ':', it's an unquoted key (e.g., {a:'foo',b:'bar'}) - not suspicious
+        if (text[k] === ':') {
+          return false
+        }
+        // If it's a quote followed by ':', it's an unquoted key with quote (e.g., {"a":"foo",b":"bar"}) - not suspicious
+        if (isQuote(text[k])) {
+          let m = skipWhitespaceAtIndex(text, k + 1)
+          if (text[m] === ':') {
+            return false
+          }
+        }
+        // Otherwise, it's likely string content - suspicious
+        return true
+      }
+      // Comma followed by something else - suspicious
+      return true
+    }
+
+    // Any other character (letters, numbers, punctuation, etc.) - suspicious
+    return true
+  }
+
+  /**
+   * Look ahead to find a valid end quote for a string value.
+   * A valid end quote is a quote character followed by a valid JSON value delimiter
+   * (closing brace, bracket, comma, or end of text).
+   *
+   * Note: We exclude quotes followed by ':' because those are key quotes, not value quotes.
+   * This is important for cases like {"a":"foo",b":"bar"} where b" is an unquoted key.
+   *
+   * This helps detect unescaped quotes inside strings by checking if there's
+   * a "real" end quote further ahead. (fixes #129, #144, #114, #151)
+   *
+   * @param startIndex - The position to start searching from
+   * @returns The index of the valid end quote, or -1 if not found
+   */
+  function findNextValidEndQuote(startIndex: number): number {
+    let j = startIndex
+
+    // Search for the next quote that could be a valid end quote
+    while (j < text.length) {
+      if (isQuote(text[j])) {
+        // Found a quote, check if it's followed by a valid JSON value delimiter
+        let k = skipWhitespaceAtIndex(text, j + 1)
+
+        // Check if what follows is a valid JSON structure continuation for a value
+        // Note: we exclude ':' because that would indicate this is a key quote, not a value quote
+        if (isValidValueEndFollower(text[k])) {
+          return j // This is a valid end quote for a value
+        }
+      }
+
+      j++
+    }
+
+    return -1 // No valid end quote found
   }
 
   function atEndOfNumber() {

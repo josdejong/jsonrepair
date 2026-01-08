@@ -314,6 +314,47 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('["," 2')).toBe('[",", 2]')
     })
 
+    test('should escape unescaped double quotes in strings (issues #129, #144, #114, #151)', () => {
+      // Issue #144 - quotes followed by parentheses or another quote
+      expect(jsonrepair('{ "height": "53"" }')).toBe('{ "height": "53\\"" }')
+      expect(jsonrepair('{ "height": "(5\'3")" }')).toBe('{ "height": "(5\'3\\")" }')
+      expect(jsonrepair('{"a": "test")" }')).toBe('{"a": "test\\")" }')
+      expect(jsonrepair('{"value": "foo(bar")"}')).toBe('{"value": "foo(bar\\")"}')
+
+      // Issue #129 - quotes followed by comma
+      expect(jsonrepair('{"a": "x "y", z"}')).toBe('{"a": "x \\"y\\", z"}')
+      expect(
+        jsonrepair('{"key": "become an "Airbnb-free zone", which is a political decision."}')
+      ).toBe('{"key": "become an \\"Airbnb-free zone\\", which is a political decision."}')
+      expect(jsonrepair('{"key": "test "quoted", more text"}')).toBe(
+        '{"key": "test \\"quoted\\", more text"}'
+      )
+
+      // Issue #114 - unescaped quotes in measurement units like 65"
+      expect(jsonrepair('{"text": "I want to buy 65" television"}')).toBe(
+        '{"text": "I want to buy 65\\" television"}'
+      )
+      expect(jsonrepair('{"text": "a 40" TV"}')).toBe('{"text": "a 40\\" TV"}')
+      expect(jsonrepair('{"size": "12" x 15""}')).toBe('{"size": "12\\" x 15\\""}')
+
+      // Issue #151 - quotes followed by slash
+      expect(jsonrepair('{"value": "This is test "message/stream"}')).toBe(
+        '{"value": "This is test \\"message/stream"}'
+      )
+      expect(jsonrepair('{"name":"Parth","value":"This is test "message/stream"}')).toBe(
+        '{"name":"Parth","value":"This is test \\"message/stream"}'
+      )
+      expect(jsonrepair('{"path": "home/user"test/file"}')).toBe(
+        '{"path": "home/user\\"test/file"}'
+      )
+
+      // Quotes followed by letters (general case)
+      expect(jsonrepair('{"text": "hello "world today"}')).toBe('{"text": "hello \\"world today"}')
+
+      // Ensure normal cases still work
+      expect(jsonrepair('{"a": "x","b": "y"}')).toBe('{"a": "x","b": "y"}')
+    })
+
     test('should replace special white space characters', () => {
       expect(jsonrepair('{"a":\u00a0"foo\u00a0bar"}')).toBe('{"a": "foo\u00a0bar"}')
       expect(jsonrepair('{"a":\u202F"foo"}')).toBe('{"a": "foo"}')
