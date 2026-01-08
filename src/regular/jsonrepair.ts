@@ -22,6 +22,8 @@ import {
   regexUrlChar,
   regexUrlStart,
   removeAtIndex,
+  skipWhitespaceAtIndex,
+  isValidValueEndFollower,
   stripLastOccurrence
 } from '../utils/stringUtils.js'
 
@@ -913,11 +915,7 @@ export function jsonrepair(text: string): string {
 
     // Comma case: need to check what comes after the comma
     if (charAfterQuote === ',') {
-      let j = afterQuoteIndex + 1
-      // Skip whitespace after comma
-      while (j < text.length && isWhitespace(text, j)) {
-        j++
-      }
+      let j = skipWhitespaceAtIndex(text, afterQuoteIndex + 1)
       const afterComma = text[j]
       // If followed by a valid JSON value start that's NOT an identifier, not suspicious
       // (identifiers need special handling as they could be unquoted keys OR string content)
@@ -945,9 +943,7 @@ export function jsonrepair(text: string): string {
           k++
         }
         // Skip whitespace after the identifier
-        while (k < text.length && isWhitespace(text, k)) {
-          k++
-        }
+        k = skipWhitespaceAtIndex(text, k)
         // Check what comes after the identifier
         // If it's followed by ':', it's an unquoted key (e.g., {a:'foo',b:'bar'}) - not suspicious
         if (text[k] === ':') {
@@ -955,10 +951,7 @@ export function jsonrepair(text: string): string {
         }
         // If it's a quote followed by ':', it's an unquoted key with quote (e.g., {"a":"foo",b":"bar"}) - not suspicious
         if (isQuote(text[k])) {
-          let m = k + 1
-          while (m < text.length && isWhitespace(text, m)) {
-            m++
-          }
+          let m = skipWhitespaceAtIndex(text, k + 1)
           if (text[m] === ':') {
             return false
           }
@@ -995,21 +988,11 @@ export function jsonrepair(text: string): string {
     while (j < text.length) {
       if (isQuote(text[j])) {
         // Found a quote, check if it's followed by a valid JSON value delimiter
-        let k = j + 1
-
-        // Skip whitespace after the quote
-        while (k < text.length && isWhitespace(text, k)) {
-          k++
-        }
+        let k = skipWhitespaceAtIndex(text, j + 1)
 
         // Check if what follows is a valid JSON structure continuation for a value
         // Note: we exclude ':' because that would indicate this is a key quote, not a value quote
-        if (
-          k >= text.length ||
-          text[k] === '}' ||
-          text[k] === ']' ||
-          text[k] === ','
-        ) {
+        if (isValidValueEndFollower(text[k])) {
           return j // This is a valid end quote for a value
         }
       }
