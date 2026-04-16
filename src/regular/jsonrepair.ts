@@ -94,6 +94,25 @@ export function jsonrepair(text: string): string {
     output = stripLastOccurrence(output, ',')
   }
 
+  // repair premature root object close: an extraneous `}` closed the root
+  // object too early and more key-value pairs follow, e.g.
+  // `{"a":{"b":1}}},"c":2}` -> `{"a":{"b":1},"c":2}`. Un-close the root,
+  // skip the extraneous close brace(s), and resume parsing entries.
+  // Note: only handles object roots; array-root analogues (like
+  // `[1,2]],3]`) are out of scope since they do not appear in the reported
+  // cases and would need a separate recovery path.
+  while (text[i] === '}' && /\}\s*$/.test(output) && hasObjectContinuationAfterCloses(i)) {
+    // un-close root object (strip the closing `}` added by parseObject)
+    output = stripLastOccurrence(output, '}')
+    // skip all consecutive extraneous closing braces
+    while (text[i] === '}') {
+      i++
+      parseWhitespaceAndSkipComments()
+    }
+    // resume object body; expects a comma before the next key
+    parseObjectEntries(false)
+  }
+
   // repair redundant end quotes
   while (text[i] === '}' || text[i] === ']') {
     i++
@@ -106,6 +125,14 @@ export function jsonrepair(text: string): string {
   }
 
   throwUnexpectedCharacter()
+
+  function hasObjectContinuationAfterCloses(start: number): boolean {
+    let j = start
+    while (j < text.length && (text[j] === '}' || isWhitespace(text, j))) {
+      j++
+    }
+    return text[j] === ','
+  }
 
   function parseValue(): boolean {
     parseWhitespaceAndSkipComments()
@@ -277,74 +304,86 @@ export function jsonrepair(text: string): string {
         parseWhitespaceAndSkipComments()
       }
 
-      let initial = true
-      while (i < text.length && text[i] !== '}') {
-        let processedComma: boolean
-        if (!initial) {
-          processedComma = parseCharacter(',')
-          if (!processedComma) {
-            // repair missing comma
-            output = insertBeforeLastWhitespace(output, ',')
-          }
-          parseWhitespaceAndSkipComments()
-        } else {
-          processedComma = true
-          initial = false
-        }
-
-        skipEllipsis()
-
-        const processedKey = parseString() || parseUnquotedString(true)
-        if (!processedKey) {
-          if (
-            text[i] === '}' ||
-            text[i] === '{' ||
-            text[i] === ']' ||
-            text[i] === '[' ||
-            text[i] === undefined
-          ) {
-            // repair trailing comma
-            output = stripLastOccurrence(output, ',')
-          } else {
-            throwObjectKeyExpected()
-          }
-          break
-        }
-
-        parseWhitespaceAndSkipComments()
-        const processedColon = parseCharacter(':')
-        const truncatedText = i >= text.length
-        if (!processedColon) {
-          if (isStartOfValue(text[i]) || truncatedText) {
-            // repair missing colon
-            output = insertBeforeLastWhitespace(output, ':')
-          } else {
-            throwColonExpected()
-          }
-        }
-        const processedValue = parseValue()
-        if (!processedValue) {
-          if (processedColon || truncatedText) {
-            // repair missing object value
-            output += 'null'
-          } else {
-            throwColonExpected()
-          }
-        }
-      }
-
-      if (text[i] === '}') {
-        output += '}'
-        i++
-      } else {
-        // repair missing end bracket
-        output = insertBeforeLastWhitespace(output, '}')
-      }
+      parseObjectEntries(true)
 
       return true
     }
 
     return false
+  }
+
+  /**
+   * Parse the entries of an object (the sequence of key:value pairs and the
+   * closing `}`), assuming the opening `{` has already been consumed. When
+   * `isInitial` is true, the first entry is parsed without requiring a leading
+   * comma (the normal object-body behaviour). When `isInitial` is false, a
+   * comma is expected before the first entry — used by the top-level
+   * premature-close recovery to resume parsing after an extraneous `}`.
+   */
+  function parseObjectEntries(isInitial: boolean) {
+    let initial = isInitial
+    while (i < text.length && text[i] !== '}') {
+      let processedComma: boolean
+      if (!initial) {
+        processedComma = parseCharacter(',')
+        if (!processedComma) {
+          // repair missing comma
+          output = insertBeforeLastWhitespace(output, ',')
+        }
+        parseWhitespaceAndSkipComments()
+      } else {
+        processedComma = true
+        initial = false
+      }
+
+      skipEllipsis()
+
+      const processedKey = parseString() || parseUnquotedString(true)
+      if (!processedKey) {
+        if (
+          text[i] === '}' ||
+          text[i] === '{' ||
+          text[i] === ']' ||
+          text[i] === '[' ||
+          text[i] === undefined
+        ) {
+          // repair trailing comma
+          output = stripLastOccurrence(output, ',')
+        } else {
+          throwObjectKeyExpected()
+        }
+        break
+      }
+
+      parseWhitespaceAndSkipComments()
+      const processedColon = parseCharacter(':')
+      const truncatedText = i >= text.length
+      if (!processedColon) {
+        if (isStartOfValue(text[i]) || truncatedText) {
+          // repair missing colon
+          output = insertBeforeLastWhitespace(output, ':')
+        } else {
+          throwColonExpected()
+        }
+      }
+      const processedValue = parseValue()
+      if (!processedValue) {
+        if (processedColon || truncatedText) {
+          // repair missing object value
+          output += 'null'
+        } else {
+          throwColonExpected()
+        }
+      }
+    }
+
+    if (text[i] === '}') {
+      output += '}'
+      i++
+    } else {
+      // repair missing end bracket
+      output = insertBeforeLastWhitespace(output, '}')
+    }
   }
 
   /**

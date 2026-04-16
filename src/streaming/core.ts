@@ -471,6 +471,27 @@ export function jsonrepairCore({
       return stack.update(Caret.afterValue)
     }
 
+    // repair premature root object close: an extraneous `}` closed the root
+    // object too early and more key-value pairs follow, e.g.
+    // `{"a":{"b":1}}},"c":2}` -> `{"a":{"b":1},"c":2}`. Un-close the root,
+    // skip the extraneous close brace(s), and resume parsing entries as if
+    // still inside the object.
+    if (
+      input.charAt(i) === '}' &&
+      output.endsWithIgnoringWhitespace('}') &&
+      hasObjectContinuationAfterCloses(i)
+    ) {
+      // un-close root object
+      output.stripLastOccurrence('}')
+      // skip all consecutive extraneous closing braces
+      while (input.charAt(i) === '}') {
+        i++
+        parseWhitespaceAndSkipComments()
+      }
+      // resume object body parsing; expects a comma before the next key
+      return stack.push(StackType.object, Caret.afterValue)
+    }
+
     // repair redundant end braces and brackets
     while (input.charAt(i) === '}' || input.charAt(i) === ']') {
       i++
@@ -481,6 +502,19 @@ export function jsonrepairCore({
       throwUnexpectedCharacter()
     }
 
+    return false
+  }
+
+  function hasObjectContinuationAfterCloses(start: number): boolean {
+    let j = start
+    while (!input.isEnd(j)) {
+      const ch = input.charAt(j)
+      if (ch === '}' || ch === ' ' || ch === '\n' || ch === '\t' || ch === '\r') {
+        j++
+      } else {
+        return ch === ','
+      }
+    }
     return false
   }
 

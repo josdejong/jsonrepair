@@ -494,6 +494,22 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{]')).toBe('{}')
     })
 
+    test('should repair an extra closing brace that closed the root object too early (#159)', () => {
+      // the reported example: one extra `}` after a valid nested object,
+      // followed by another root-level key/value pair
+      expect(jsonrepair('{"a":{"b":1}}},"c":2}')).toBe('{"a":{"b":1},"c":2}')
+      // simpler variant: single shallow extra close
+      expect(jsonrepair('{"a":1}},"b":2}')).toBe('{"a":1,"b":2}')
+      // multiple consecutive extra closes before the continuation
+      expect(jsonrepair('{"a":1}}}},"b":2}')).toBe('{"a":1,"b":2}')
+      // continuation value is itself an object
+      expect(jsonrepair('{"x":{"y":1}}},"z":{"w":2}}')).toBe('{"x":{"y":1},"z":{"w":2}}')
+      // multiple continuation entries after the premature close
+      expect(jsonrepair('{"a":1}},"b":2,"c":3}')).toBe('{"a":1,"b":2,"c":3}')
+      // whitespace around the extra closing brace
+      expect(jsonrepair('{"a":1} } , "b":2}')).toBe('{"a":1  , "b":2}')
+    })
+
     test('should add a missing closing bracket for an array', () => {
       expect(jsonrepair('[')).toBe('[]')
       expect(jsonrepair('[1,2,3')).toBe('[1,2,3]')
