@@ -7,6 +7,7 @@ import {
   isDigit,
   isDoubleQuote,
   isDoubleQuoteLike,
+  isFollowedByNumber,
   isFunctionNameChar,
   isFunctionNameCharStart,
   isHex,
@@ -515,7 +516,7 @@ export function jsonrepair(text: string): string {
             i >= text.length ||
             isDelimiter(text[i]) ||
             isQuote(text[i]) ||
-            isDigit(text[i])
+            isFollowedByNumber(text, i)
           ) {
             // The quote is followed by the end of the text, a delimiter,
             // or a next value. So the quote is indeed the end of the string.
@@ -908,3 +909,4 @@ export function jsonrepair(text: string): string {
 function atEndOfBlockComment(text: string, i: number) {
   return text[i] === '*' && text[i + 1] === '/'
 }
+
