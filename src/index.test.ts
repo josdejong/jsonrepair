@@ -316,6 +316,23 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('["a" 2]')).toBe('["a", 2]')
       expect(jsonrepair('["a" 2')).toBe('["a", 2]')
       expect(jsonrepair('["," 2')).toBe('[",", 2]')
+
+      // digit-prefixed tokens that are NOT standalone numbers — the quote before them
+      // should be escaped, not treated as end-of-string
+      expect(jsonrepair('{"v": "包含"985/211"的候选人"}')).toBe(
+        '{"v": "包含\\"985/211\\"的候选人"}'
+      )
+      expect(jsonrepair('{"v": "requires "2fa" enabled"}')).toBe(
+        '{"v": "requires \\"2fa\\" enabled"}'
+      )
+      expect(jsonrepair('{"v": "version "3.0.1" released"}')).toBe(
+        '{"v": "version \\"3.0.1\\" released"}'
+      )
+
+      // standalone numbers after a string (missing comma) must still be repaired correctly
+      expect(jsonrepair('["a" 2]')).toBe('["a", 2]')
+      expect(jsonrepair('["a" 2.5]')).toBe('["a", 2.5]')
+      expect(jsonrepair('["a" 2e10]')).toBe('["a", 2e10]')
     })
 
     test('should replace special white space characters', () => {

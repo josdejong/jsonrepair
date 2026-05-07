@@ -193,3 +193,37 @@ export function removeAtIndex(text: string, start: number, count: number) {
 export function endsWithCommaOrNewline(text: string): boolean {
   return /[,\n][ \t\r]*$/.test(text)
 }
+
+/**
+ * Returns true when `start` is the beginning of a JSON number token (digits,
+ * optional decimal part, optional exponent) that is immediately followed by a
+ * structural JSON character (`,`, `}`, `]`), whitespace, or end-of-string.
+ *
+ * Used to distinguish a genuine end-quote in `["a" 42]` — where a standalone
+ * number follows the string — from an embedded quote inside a value such as
+ * `"includes \"985/211\" items"`, where the digit sequence bleeds into
+ * non-structural content like `/`.
+ */
+export function isFollowedByNumber(text: string, start: number): boolean {
+  if (start >= text.length || text[start] < '0' || text[start] > '9') return false
+
+  let j = start
+  while (j < text.length && text[j] >= '0' && text[j] <= '9') j++
+  if (j < text.length && text[j] === '.') {
+    j++
+    while (j < text.length && text[j] >= '0' && text[j] <= '9') j++
+  }
+  if (j < text.length && (text[j] === 'e' || text[j] === 'E')) {
+    j++
+    if (j < text.length && (text[j] === '+' || text[j] === '-')) j++
+    while (j < text.length && text[j] >= '0' && text[j] <= '9') j++
+  }
+
+  return (
+    j >= text.length ||
+    text[j] === ',' ||
+    text[j] === '}' ||
+    text[j] === ']' ||
+    isWhitespace(text, j)
+  )
+}

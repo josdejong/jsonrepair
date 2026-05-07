@@ -706,7 +706,7 @@ export function jsonrepairCore({
             input.isEnd(i) ||
             isDelimiter(input.charAt(i)) ||
             isQuote(input.charAt(i)) ||
-            isDigit(input.charAt(i))
+            isInputFollowedByNumber(i)
           ) {
             // The quote is followed by the end of the text, a delimiter, or a next value
             // so the quote is indeed the end of the string
@@ -1006,6 +1006,35 @@ export function jsonrepairCore({
     }
 
     return prev
+  }
+
+  /**
+   * Returns true when position `start` begins a JSON number token that is
+   * immediately followed by a structural character (`,`, `}`, `]`), whitespace,
+   * or end-of-input. See `isFollowedByNumber` in stringUtils for rationale.
+   */
+  function isInputFollowedByNumber(start: number): boolean {
+    if (input.isEnd(start) || !isDigit(input.charAt(start))) return false
+
+    let j = start
+    while (!input.isEnd(j) && isDigit(input.charAt(j))) j++
+    if (!input.isEnd(j) && input.charAt(j) === '.') {
+      j++
+      while (!input.isEnd(j) && isDigit(input.charAt(j))) j++
+    }
+    if (!input.isEnd(j) && (input.charAt(j) === 'e' || input.charAt(j) === 'E')) {
+      j++
+      if (!input.isEnd(j) && (input.charAt(j) === '+' || input.charAt(j) === '-')) j++
+      while (!input.isEnd(j) && isDigit(input.charAt(j))) j++
+    }
+
+    return (
+      input.isEnd(j) ||
+      input.charAt(j) === ',' ||
+      input.charAt(j) === '}' ||
+      input.charAt(j) === ']' ||
+      isWhitespace(input, j)
+    )
   }
 
   function atEndOfNumber() {
