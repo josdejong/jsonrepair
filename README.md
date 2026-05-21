@@ -195,6 +195,18 @@ $ cat broken.json | jsonrepair                  # Repair data from an input stre
 $ cat broken.json | jsonrepair > repaired.json  # Repair data from an input stream, output to file
 ```
 
+### Standalone Executable
+
+Pre-built standalone binaries are available on the [GitHub Releases](https://github.com/josdejong/jsonrepair/releases) page for Linux (x64), macOS (arm64), and Windows (x64). These binaries do not require Node.js to be installed.
+
+Download the binary for your platform, make it executable (Linux/macOS), and run it:
+
+```bash
+# Linux / macOS
+chmod +x jsonrepair-linux-x64
+./jsonrepair-linux-x64 broken.json
+```
+
 ## Alternatives:
 
 Similar libraries:
