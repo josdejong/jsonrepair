@@ -22,6 +22,7 @@ import {
   regexUrlChar,
   regexUrlStart,
   removeAtIndex,
+  replaceHtmlEntities,
   stripLastOccurrence
 } from '../utils/stringUtils.js'
 
@@ -62,7 +63,8 @@ const escapeCharacters: { [key: string]: string } = {
  *     }
  *
  */
-export function jsonrepair(text: string): string {
+export function jsonrepair(rawText: string): string {
+  const text = replaceHtmlEntities(rawText)
   let i = 0 // current index in text
   let output = '' // generated output
 
