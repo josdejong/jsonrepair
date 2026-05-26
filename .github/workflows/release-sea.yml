@@ -1,0 +1,110 @@
+name: Release SEA Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-sea:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+            binary: jsonrepair-linux-x64
+            ext: ''
+          - os: macos-latest
+            target: macos-arm64
+            binary: jsonrepair-macos-arm64
+            ext: ''
+          - os: windows-latest
+            target: windows-x64
+            binary: jsonrepair-windows-x64.exe
+            ext: '.exe'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+      - run: npm ci
+      - run: npm run build
+      - name: Bundle CLI for SEA
+        shell: bash
+        run: |
+          mkdir -p dist
+          npx esbuild bin/cli.js --bundle --platform=node --format=esm --outfile=dist/cli.bundle.mjs
+      - name: Generate SEA blob
+        shell: bash
+        run: |
+          node --experimental-sea-config sea-config.json
+      - name: Create SEA binary
+        shell: bash
+        run: |
+          node -e "require('fs').copyFileSync(process.execPath, '${{ matrix.binary }}')"
+          chmod +x ${{ matrix.binary }} || true
+      - name: Remove signature
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          codesign --remove-signature ${{ matrix.binary }}
+      - name: Inject blob
+        shell: bash
+        run: |
+          npx postject ${{ matrix.binary }} NODE_SEA_BLOB dist/sea-prep.blob \
+            --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 \
+            ${{ runner.os == 'macOS' && '--macho-segment-name NODE_SEA' || '' }}
+      - name: Sign binary
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          codesign --sign - ${{ matrix.binary }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary }}
+          path: ${{ matrix.binary }}
+
+  build-sea-alpine:
+    runs-on: ubuntu-latest
+    container: node:26-alpine
+    steps:
+      - run: apk add --no-cache git
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm run build
+      - name: Bundle CLI for SEA
+        run: |
+          mkdir -p dist
+          npx esbuild bin/cli.js --bundle --platform=node --format=esm --outfile=dist/cli.bundle.mjs
+      - name: Generate SEA blob
+        run: node --experimental-sea-config sea-config.json
+      - name: Create SEA binary
+        run: |
+          cp $(command -v node) jsonrepair-alpine-x64
+          chmod +x jsonrepair-alpine-x64
+      - name: Inject blob
+        run: |
+          npx postject jsonrepair-alpine-x64 NODE_SEA_BLOB dist/sea-prep.blob \
+            --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jsonrepair-alpine-x64
+          path: jsonrepair-alpine-x64
+
+  release:
+    needs: [build-sea, build-sea-alpine]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            jsonrepair-linux-x64/jsonrepair-linux-x64
+            jsonrepair-alpine-x64/jsonrepair-alpine-x64
+            jsonrepair-macos-arm64/jsonrepair-macos-arm64
+            jsonrepair-windows-x64.exe/jsonrepair-windows-x64.exe

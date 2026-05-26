@@ -96,4 +96,5 @@ export function createInputBuffer(): InputBuffer {
   }
 }
 
-const indexOutOfRangeMessage = 'Index out of range, please configure a larger buffer size'
+const indexOutOfRangeMessage =
+  'Index out of range, please configure a larger buffer size (use --buffer to increase, e.g. --buffer 512K or --buffer 2M)'

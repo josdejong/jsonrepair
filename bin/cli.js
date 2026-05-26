@@ -67,7 +67,7 @@ function processArgs(args) {
 
 async function run(options) {
   if (options.version) {
-    outputVersion()
+    await outputVersion()
     return
   }
 
@@ -117,10 +117,18 @@ async function run(options) {
   }
 }
 
-function outputVersion() {
+async function outputVersion() {
+  try {
+    const sea = await import('node:sea')
+    if (sea.isSea()) {
+      const pkg = JSON.parse(sea.getAsset('package.json', 'utf-8'))
+      console.log(pkg.version)
+      return
+    }
+  } catch {}
+
   const file = join(__dirname, '../package.json')
   const pkg = JSON.parse(String(readFileSync(file, 'utf-8')))
-
   console.log(pkg.version)
 }
 
