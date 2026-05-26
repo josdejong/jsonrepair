@@ -193,3 +193,68 @@ export function removeAtIndex(text: string, start: number, count: number) {
 export function endsWithCommaOrNewline(text: string): boolean {
   return /[,\n][ \t\r]*$/.test(text)
 }
+
+const namedHtmlEntities: { [key: string]: string } = {
+  '&quot;': '"',
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&apos;': "'"
+}
+
+export function replaceHtmlEntities(text: string): string {
+  if (!text.includes('&')) {
+    return text
+  }
+
+  let result = ''
+  let inString = false
+  let i = 0
+
+  while (i < text.length) {
+    if (inString) {
+      if (text[i] === '\\' && i + 1 < text.length) {
+        result += text[i] + text[i + 1]
+        i += 2
+      } else {
+        if (text[i] === '"') {
+          inString = false
+        }
+        result += text[i]
+        i++
+      }
+    } else if (text[i] === '"') {
+      inString = true
+      result += text[i]
+      i++
+    } else if (text[i] === '&') {
+      const semi = text.indexOf(';', i + 1)
+      if (semi !== -1 && semi - i <= 10) {
+        const entity = text.substring(i, semi + 1)
+        const named = namedHtmlEntities[entity]
+        if (named !== undefined) {
+          result += named
+          i = semi + 1
+          continue
+        }
+        if (text[i + 1] === '#') {
+          const body = text.substring(i + 2, semi)
+          const hex = body[0] === 'x' || body[0] === 'X'
+          const code = Number.parseInt(hex ? body.substring(1) : body, hex ? 16 : 10)
+          if (!Number.isNaN(code) && code >= 0 && code <= 0x10ffff) {
+            result += String.fromCodePoint(code)
+            i = semi + 1
+            continue
+          }
+        }
+      }
+      result += text[i]
+      i++
+    } else {
+      result += text[i]
+      i++
+    }
+  }
+
+  return result
+}

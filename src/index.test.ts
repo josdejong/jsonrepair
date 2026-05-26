@@ -714,6 +714,27 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[0789]')).toBe('["0789"]')
       expect(jsonrepair('{value:0789}')).toBe('{"value":"0789"}')
     })
+
+    test('should repair named HTML entities', () => {
+      expect(jsonrepair('{&quot;name&quot;: &quot;John&quot;}')).toBe('{"name": "John"}')
+      expect(jsonrepair('&quot;hello&quot;')).toBe('"hello"')
+      expect(jsonrepair('{&quot;a&quot;:2}')).toBe('{"a":2}')
+      expect(jsonrepair('[&quot;a&quot;, &quot;b&quot;]')).toBe('["a", "b"]')
+      expect(jsonrepair('{&quot;a&quot;: &quot;b &amp; c&quot;}')).toBe('{"a": "b & c"}')
+      expect(jsonrepair('{&quot;a&quot;: &quot;&lt;b&gt;&quot;}')).toBe('{"a": "<b>"}')
+      expect(jsonrepair('{&quot;a&quot;: &apos;hello&apos;}')).toBe('{"a": "hello"}')
+    })
+
+    test('should repair numeric HTML entities', () => {
+      expect(jsonrepair('&#34;hello&#34;')).toBe('"hello"')
+      expect(jsonrepair('&#x22;hello&#x22;')).toBe('"hello"')
+      expect(jsonrepair('{&#34;a&#34;: &#34;b&#34;}')).toBe('{"a": "b"}')
+    })
+
+    test('should not decode HTML entities inside existing strings', () => {
+      expect(jsonrepair('{"a": "&amp; test"}')).toBe('{"a": "&amp; test"}')
+      expect(jsonrepair('{"html": "&quot;bold&quot;"}')).toBe('{"html": "&quot;bold&quot;"}')
+    })
   })
 
   test('should throw an exception in case of non-repairable issues', () => {

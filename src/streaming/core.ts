@@ -18,7 +18,8 @@ import {
   isWhitespace,
   isWhitespaceExceptNewline,
   regexUrlChar,
-  regexUrlStart
+  regexUrlStart,
+  replaceHtmlEntities
 } from '../utils/stringUtils.js'
 import { createInputBuffer } from './buffer/InputBuffer.js'
 import { createOutputBuffer } from './buffer/OutputBuffer.js'
@@ -81,7 +82,7 @@ export function jsonrepairCore({
   }
 
   function transform(chunk: string) {
-    input.push(chunk)
+    input.push(replaceHtmlEntities(chunk))
 
     while (i < input.currentLength() - bufferSize && parse()) {
       // loop until there is nothing more to process
