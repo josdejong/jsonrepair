@@ -468,6 +468,7 @@ export function jsonrepair(text: string): string {
 
       let str = '"'
       i++
+      let openParenCount = 0
 
       while (true) {
         if (i >= text.length) {
@@ -510,11 +511,18 @@ export function jsonrepair(text: string): string {
 
           parseWhitespaceAndSkipComments(false)
 
+          // when the next char is a quote, peek past it: if nothing meaningful follows,
+          // that quote is the true end and this one is embedded (e.g. `"The TV is 72""`)
+          let jPeek = i + 1
+          while (jPeek < text.length && isWhitespace(text, jPeek)) jPeek++
+          const nextQuoteIsEndQuote =
+            isQuote(text[i]) && (jPeek >= text.length || isDelimiter(text[jPeek]))
+
           if (
             stopAtDelimiter ||
             i >= text.length ||
-            isDelimiter(text[i]) ||
-            isQuote(text[i]) ||
+            (isDelimiter(text[i]) && !(text[i] === ')' && openParenCount > 0)) ||
+            (isQuote(text[i]) && !nextQuoteIsEndQuote) ||
             isDigit(text[i])
           ) {
             // The quote is followed by the end of the text, a delimiter,
@@ -621,6 +629,8 @@ export function jsonrepair(text: string): string {
               throwInvalidCharacter(char)
             }
             str += char
+            if (char === '(') openParenCount++
+            else if (char === ')') openParenCount--
             i++
           }
         }

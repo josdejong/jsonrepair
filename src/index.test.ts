@@ -316,6 +316,8 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('["a" 2]')).toBe('["a", 2]')
       expect(jsonrepair('["a" 2')).toBe('["a", 2]')
       expect(jsonrepair('["," 2')).toBe('[",", 2]')
+      expect(jsonrepair('{ "height": "(5\'3")" }')).toBe('{ "height": "(5\'3\\")" }')
+      expect(jsonrepair('"The TV is 72""')).toBe('"The TV is 72\\""')
     })
 
     test('should replace special white space characters', () => {

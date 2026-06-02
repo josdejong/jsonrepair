@@ -662,6 +662,7 @@ export function jsonrepairCore({
 
       output.push('"')
       i++
+      let openParenCount = 0
 
       while (true) {
         if (input.isEnd(i)) {
@@ -701,11 +702,18 @@ export function jsonrepairCore({
 
           parseWhitespaceAndSkipComments(false)
 
+          // when the next char is a quote, peek past it: if nothing meaningful follows,
+          // that quote is the true end and this one is embedded (e.g. `"The TV is 72""`)
+          let jPeek = i + 1
+          while (!input.isEnd(jPeek) && isWhitespace(input, jPeek)) jPeek++
+          const nextQuoteIsEndQuote =
+            isQuote(input.charAt(i)) && (input.isEnd(jPeek) || isDelimiter(input.charAt(jPeek)))
+
           if (
             stopAtDelimiter ||
             input.isEnd(i) ||
-            isDelimiter(input.charAt(i)) ||
-            isQuote(input.charAt(i)) ||
+            (isDelimiter(input.charAt(i)) && !(input.charAt(i) === ')' && openParenCount > 0)) ||
+            (isQuote(input.charAt(i)) && !nextQuoteIsEndQuote) ||
             isDigit(input.charAt(i))
           ) {
             // The quote is followed by the end of the text, a delimiter, or a next value
@@ -814,6 +822,8 @@ export function jsonrepairCore({
               throwInvalidCharacter(char)
             }
             output.push(char)
+            if (char === '(') openParenCount++
+            else if (char === ')') openParenCount--
             i++
           }
         }
