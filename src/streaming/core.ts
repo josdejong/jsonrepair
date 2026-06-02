@@ -663,6 +663,8 @@ export function jsonrepairCore({
       output.push('"')
       i++
       let openParenCount = 0
+      let openBracketCount = 0
+      let openBraceCount = 0
 
       while (true) {
         if (input.isEnd(i)) {
@@ -712,7 +714,10 @@ export function jsonrepairCore({
           if (
             stopAtDelimiter ||
             input.isEnd(i) ||
-            (isDelimiter(input.charAt(i)) && !(input.charAt(i) === ')' && openParenCount > 0)) ||
+            (isDelimiter(input.charAt(i)) &&
+              !(input.charAt(i) === ')' && openParenCount > 0) &&
+              !(input.charAt(i) === ']' && openBracketCount > 0) &&
+              !(input.charAt(i) === '}' && openBraceCount > 0)) ||
             (isQuote(input.charAt(i)) && !nextQuoteIsEndQuote) ||
             isDigit(input.charAt(i))
           ) {
@@ -824,6 +829,10 @@ export function jsonrepairCore({
             output.push(char)
             if (char === '(') openParenCount++
             else if (char === ')') openParenCount--
+            else if (char === '[') openBracketCount++
+            else if (char === ']') openBracketCount--
+            else if (char === '{') openBraceCount++
+            else if (char === '}') openBraceCount--
             i++
           }
         }

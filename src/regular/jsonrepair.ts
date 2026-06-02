@@ -469,6 +469,8 @@ export function jsonrepair(text: string): string {
       let str = '"'
       i++
       let openParenCount = 0
+      let openBracketCount = 0
+      let openBraceCount = 0
 
       while (true) {
         if (i >= text.length) {
@@ -521,7 +523,10 @@ export function jsonrepair(text: string): string {
           if (
             stopAtDelimiter ||
             i >= text.length ||
-            (isDelimiter(text[i]) && !(text[i] === ')' && openParenCount > 0)) ||
+            (isDelimiter(text[i]) &&
+              !(text[i] === ')' && openParenCount > 0) &&
+              !(text[i] === ']' && openBracketCount > 0) &&
+              !(text[i] === '}' && openBraceCount > 0)) ||
             (isQuote(text[i]) && !nextQuoteIsEndQuote) ||
             isDigit(text[i])
           ) {
@@ -631,6 +636,10 @@ export function jsonrepair(text: string): string {
             str += char
             if (char === '(') openParenCount++
             else if (char === ')') openParenCount--
+            else if (char === '[') openBracketCount++
+            else if (char === ']') openBracketCount--
+            else if (char === '{') openBraceCount++
+            else if (char === '}') openBraceCount--
             i++
           }
         }
