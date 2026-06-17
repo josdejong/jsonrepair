@@ -1,4 +1,5 @@
 import { JSONRepairError } from '../utils/JSONRepairError.js'
+import { repairNumber } from '../utils/numberUtils.js'
 import {
   endsWithCommaOrNewline,
   insertBeforeLastWhitespace,
@@ -670,69 +671,37 @@ export function jsonrepair(text: string): string {
     const start = i
     if (text[i] === '-') {
       i++
-      if (atEndOfNumber()) {
-        repairNumberEndingWithNumericSymbol(start)
-        return true
-      }
-      if (!isDigit(text[i])) {
-        i = start
-        return false
-      }
     }
 
-    // Note that in JSON leading zeros like "00789" are not allowed.
-    // We will allow all leading zeros here though and at the end of parseNumber
-    // check against trailing zeros and repair that if needed.
-    // Leading zeros can have meaning, so we should not clear them.
     while (isDigit(text[i])) {
       i++
     }
 
-    if (text[i] === '.') {
+    if (text[i] === '.' && (i > start || isDigit(text[i + 1]))) {
       i++
-      if (atEndOfNumber()) {
-        repairNumberEndingWithNumericSymbol(start)
-        return true
-      }
-      if (!isDigit(text[i])) {
-        i = start
-        return false
-      }
       while (isDigit(text[i])) {
         i++
       }
-    }
-
-    if (text[i] === 'e' || text[i] === 'E') {
-      i++
-      if (text[i] === '-' || text[i] === '+') {
-        i++
-      }
-      if (atEndOfNumber()) {
-        repairNumberEndingWithNumericSymbol(start)
-        return true
-      }
-      if (!isDigit(text[i])) {
-        i = start
-        return false
-      }
-      while (isDigit(text[i])) {
-        i++
-      }
-    }
-
-    // if we're not at the end of the number by this point, allow this to be parsed as another type
-    if (!atEndOfNumber()) {
-      i = start
-      return false
     }
 
     if (i > start) {
-      // repair a number with leading zeros like "00789"
-      const num = text.slice(start, i)
-      const hasInvalidLeadingZero = /^0\d/.test(num)
+      if (text[i] === 'e' || text[i] === 'E') {
+        i++
+        if (text[i] === '-' || text[i] === '+') {
+          i++
+        }
+        while (isDigit(text[i])) {
+          i++
+        }
+      }
 
-      output += hasInvalidLeadingZero ? `"${num}"` : num
+      // if we're not at the end of the number by this point, allow this to be parsed as another type
+      if (!atEndOfNumber()) {
+        i = start
+        return false
+      }
+
+      output += repairNumber(text.slice(start, i))
       return true
     }
 
@@ -870,13 +839,6 @@ export function jsonrepair(text: string): string {
 
   function atEndOfNumber() {
     return i >= text.length || isDelimiter(text[i]) || isWhitespace(text, i)
-  }
-
-  function repairNumberEndingWithNumericSymbol(start: number) {
-    // repair numbers cut off at the end
-    // this will only be called when we end after a '.', '-', or 'e' and does not
-    // change the number more than it needs to make it valid JSON
-    output += `${text.slice(start, i)}0`
   }
 
   function throwInvalidCharacter(char: string) {
