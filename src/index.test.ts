@@ -283,6 +283,21 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('"first\\\nsecond"')).toBe('"first\\nsecond"')
     })
 
+    test('should repair a backslash character outside of a string', () => {
+      const msg = 'Unexpected character "\\\\"'
+
+      expect(() => jsonrepair('["y"\\, "z"]')).toThrow(new JSONRepairError(msg, 4))
+      expect(() => jsonrepair('["y", "z"\\]')).toThrow(new JSONRepairError(msg, 9))
+      expect(() => jsonrepair('["y" \\, "z"]')).toThrow(new JSONRepairError(msg, 5))
+      expect(() => jsonrepair('["y", "z"]\\')).toThrow(new JSONRepairError(msg, 10))
+      expect(() => jsonrepair('["y",\\\\ "z"]')).toThrow(new JSONRepairError(msg, 6))
+      expect(() => jsonrepair('[["y"],\\["z"]]')).toThrow(
+        new JSONRepairError('Unexpected character "["', 8)
+      )
+      expect(() => jsonrepair('"y"\\, "z"')).toThrow(new JSONRepairError(msg, 3))
+      expect(() => jsonrepair('{"a": "y"\\, "b"\\: "z"}')).toThrow(new JSONRepairError(msg, 9))
+    })
+
     test('should repair a missing object value', () => {
       expect(jsonrepair('{"a":}')).toBe('{"a":null}')
       expect(jsonrepair('{"a":,"b":2}')).toBe('{"a":null,"b":2}')

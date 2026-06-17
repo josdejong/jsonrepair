@@ -443,11 +443,14 @@ export function jsonrepair(text: string): string {
    *   stop index detected in the first iteration.
    */
   function parseString(stopAtDelimiter = false, stopAtIndex = -1): boolean {
-    let skipEscapeChars = text[i] === '\\'
+    const skipEscapeChars = text[i] === '\\'
     if (skipEscapeChars) {
       // repair: remove the first escape character
       i++
-      skipEscapeChars = true
+
+      if (!isQuote(text[i])) {
+        throwUnexpectedCharacter()
+      }
     }
 
     if (isQuote(text[i])) {
@@ -522,6 +525,10 @@ export function jsonrepair(text: string): string {
             parseConcatenatedString()
 
             return true
+          }
+
+          if (text[i] === '\\') {
+            throwUnexpectedCharacter()
           }
 
           const iPrevChar = prevNonWhitespaceIndex(iQuote - 1)
