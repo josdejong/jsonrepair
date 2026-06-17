@@ -290,6 +290,10 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(() => jsonrepair('["y", "z"\\]')).toThrow(new JSONRepairError(msg, 9))
       expect(() => jsonrepair('["y" \\, "z"]')).toThrow(new JSONRepairError(msg, 5))
       expect(() => jsonrepair('["y", "z"]\\')).toThrow(new JSONRepairError(msg, 10))
+      expect(() => jsonrepair('["y",\\\\ "z"]')).toThrow(new JSONRepairError(msg, 6))
+      expect(() => jsonrepair('[["y"],\\["z"]]')).toThrow(
+        new JSONRepairError('Unexpected character "["', 8)
+      )
       expect(() => jsonrepair('"y"\\, "z"')).toThrow(new JSONRepairError(msg, 3))
       expect(() => jsonrepair('{"a": "y"\\, "b"\\: "z"}')).toThrow(new JSONRepairError(msg, 9))
     })

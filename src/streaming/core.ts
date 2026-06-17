@@ -637,11 +637,14 @@ export function jsonrepairCore({
    *   stop index detected in the first iteration.
    */
   function parseString(stopAtDelimiter = false, stopAtIndex = -1): boolean {
-    let skipEscapeChars = input.charAt(i) === '\\'
+    const skipEscapeChars = input.charAt(i) === '\\'
     if (skipEscapeChars) {
       // repair: remove the first escape character
       i++
-      skipEscapeChars = true
+
+      if (!isQuote(input.charAt(i))) {
+        throwUnexpectedCharacter()
+      }
     }
 
     if (isQuote(input.charAt(i))) {
