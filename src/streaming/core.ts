@@ -949,7 +949,10 @@ export function jsonrepairCore({
   }
 
   function parseKeyword(name: string, value: string): boolean {
-    if (input.substring(i, i + name.length) === name) {
+    if (
+      input.substring(i, i + name.length) === name &&
+      !isFunctionNameChar(input.charAt(i + name.length))
+    ) {
       output.push(value)
       i += name.length
       return stack.update(Caret.afterValue)

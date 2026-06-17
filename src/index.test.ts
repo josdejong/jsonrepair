@@ -65,6 +65,13 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       assertRepair('true')
       assertRepair('false')
       assertRepair('null')
+
+      expect(jsonrepair('trueble')).toBe('"trueble"')
+      expect(jsonrepair('Trueble')).toBe('"Trueble"')
+      expect(jsonrepair('false_value')).toBe('"false_value"')
+      expect(jsonrepair('false$')).toBe('"false$"')
+      expect(jsonrepair('nullifiable')).toBe('"nullifiable"')
+      expect(jsonrepair('[truee')).toBe('["truee"]')
     })
 
     test('correctly handle strings equaling a JSON delimiter', () => {
