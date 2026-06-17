@@ -193,3 +193,16 @@ export function removeAtIndex(text: string, start: number, count: number) {
 export function endsWithCommaOrNewline(text: string): boolean {
   return /[,\n][ \t\r]*$/.test(text)
 }
+
+/**
+ * Count the number of occurrences of a single character in a string
+ */
+export function countOccurrences(text: string, char: string): number {
+  let count = 0
+  for (let i = 0; i < text.length; i++) {
+    if (text.charAt(i) === char) {
+      count++
+    }
+  }
+  return count
+}

@@ -1,5 +1,6 @@
 import { JSONRepairError } from '../utils/JSONRepairError.js'
 import {
+  countOccurrences,
   isControlCharacter,
   isDelimiter,
   isDigit,
@@ -662,9 +663,6 @@ export function jsonrepairCore({
 
       output.push('"')
       i++
-      let openParenCount = 0
-      let openBracketCount = 0
-      let openBraceCount = 0
 
       while (true) {
         if (input.isEnd(i)) {
@@ -704,21 +702,31 @@ export function jsonrepairCore({
 
           parseWhitespaceAndSkipComments(false)
 
-          // when the next char is a quote, peek past it: if nothing meaningful follows,
-          // that quote is the true end and this one is embedded (e.g. `"The TV is 72""`)
-          let jPeek = i + 1
-          while (!input.isEnd(jPeek) && isWhitespace(input, jPeek)) jPeek++
-          const nextQuoteIsEndQuote =
-            isQuote(input.charAt(i)) && (input.isEnd(jPeek) || isDelimiter(input.charAt(jPeek)))
-
           if (
             stopAtDelimiter ||
             input.isEnd(i) ||
             (isDelimiter(input.charAt(i)) &&
-              !(input.charAt(i) === ')' && openParenCount > 0) &&
-              !(input.charAt(i) === ']' && openBracketCount > 0) &&
-              !(input.charAt(i) === '}' && openBraceCount > 0)) ||
-            (isQuote(input.charAt(i)) && !nextQuoteIsEndQuote) ||
+              // only count the brackets inside the string when actually needed,
+              // i.e. when the quote is directly followed by a closing bracket
+              !(
+                input.charAt(i) === ')' &&
+                countOccurrences(input.substring(iBefore, iQuote), '(') -
+                  countOccurrences(input.substring(iBefore, iQuote), ')') >
+                  0
+              ) &&
+              !(
+                input.charAt(i) === ']' &&
+                countOccurrences(input.substring(iBefore, iQuote), '[') -
+                  countOccurrences(input.substring(iBefore, iQuote), ']') >
+                  0
+              ) &&
+              !(
+                input.charAt(i) === '}' &&
+                countOccurrences(input.substring(iBefore, iQuote), '{') -
+                  countOccurrences(input.substring(iBefore, iQuote), '}') >
+                  0
+              )) ||
+            (isQuote(input.charAt(i)) && !nextQuoteIsEndQuote(i)) ||
             isDigit(input.charAt(i))
           ) {
             // The quote is followed by the end of the text, a delimiter, or a next value
@@ -827,12 +835,6 @@ export function jsonrepairCore({
               throwInvalidCharacter(char)
             }
             output.push(char)
-            if (char === '(') openParenCount++
-            else if (char === ')') openParenCount--
-            else if (char === '[') openBracketCount++
-            else if (char === ']') openBracketCount--
-            else if (char === '{') openBraceCount++
-            else if (char === '}') openBraceCount--
             i++
           }
         }
@@ -1025,6 +1027,17 @@ export function jsonrepairCore({
     }
 
     return prev
+  }
+
+  function nextQuoteIsEndQuote(index: number): boolean {
+    // precondition: input.charAt(index) is a quote. Peek past it: if nothing meaningful
+    // follows, that quote is the true end and this one is embedded (e.g. `"The TV is 72""`)
+    let next = index + 1
+    while (!input.isEnd(next) && isWhitespace(input, next)) {
+      next++
+    }
+
+    return input.isEnd(next) || isDelimiter(input.charAt(next))
   }
 
   function atEndOfNumber() {

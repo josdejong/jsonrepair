@@ -1,5 +1,6 @@
 import { JSONRepairError } from '../utils/JSONRepairError.js'
 import {
+  countOccurrences,
   endsWithCommaOrNewline,
   insertBeforeLastWhitespace,
   isControlCharacter,
@@ -468,9 +469,6 @@ export function jsonrepair(text: string): string {
 
       let str = '"'
       i++
-      let openParenCount = 0
-      let openBracketCount = 0
-      let openBraceCount = 0
 
       while (true) {
         if (i >= text.length) {
@@ -513,21 +511,16 @@ export function jsonrepair(text: string): string {
 
           parseWhitespaceAndSkipComments(false)
 
-          // when the next char is a quote, peek past it: if nothing meaningful follows,
-          // that quote is the true end and this one is embedded (e.g. `"The TV is 72""`)
-          let jPeek = i + 1
-          while (jPeek < text.length && isWhitespace(text, jPeek)) jPeek++
-          const nextQuoteIsEndQuote =
-            isQuote(text[i]) && (jPeek >= text.length || isDelimiter(text[jPeek]))
-
           if (
             stopAtDelimiter ||
             i >= text.length ||
             (isDelimiter(text[i]) &&
-              !(text[i] === ')' && openParenCount > 0) &&
-              !(text[i] === ']' && openBracketCount > 0) &&
-              !(text[i] === '}' && openBraceCount > 0)) ||
-            (isQuote(text[i]) && !nextQuoteIsEndQuote) ||
+              // only count the brackets inside the string when actually needed,
+              // i.e. when the quote is directly followed by a closing bracket
+              !(text[i] === ')' && countOccurrences(str, '(') - countOccurrences(str, ')') > 0) &&
+              !(text[i] === ']' && countOccurrences(str, '[') - countOccurrences(str, ']') > 0) &&
+              !(text[i] === '}' && countOccurrences(str, '{') - countOccurrences(str, '}') > 0)) ||
+            (isQuote(text[i]) && !nextQuoteIsEndQuote(i)) ||
             isDigit(text[i])
           ) {
             // The quote is followed by the end of the text, a delimiter,
@@ -634,12 +627,6 @@ export function jsonrepair(text: string): string {
               throwInvalidCharacter(char)
             }
             str += char
-            if (char === '(') openParenCount++
-            else if (char === ')') openParenCount--
-            else if (char === '[') openBracketCount++
-            else if (char === ']') openBracketCount--
-            else if (char === '{') openBraceCount++
-            else if (char === '}') openBraceCount--
             i++
           }
         }
@@ -885,6 +872,17 @@ export function jsonrepair(text: string): string {
     }
 
     return prev
+  }
+
+  function nextQuoteIsEndQuote(index: number): boolean {
+    // precondition: text[index] is a quote. Peek past it: if nothing meaningful
+    // follows, that quote is the true end and this one is embedded (e.g. `"The TV is 72""`)
+    let next = index + 1
+    while (next < text.length && isWhitespace(text, next)) {
+      next++
+    }
+
+    return next >= text.length || isDelimiter(text[next])
   }
 
   function atEndOfNumber() {
