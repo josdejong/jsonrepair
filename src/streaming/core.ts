@@ -1,5 +1,4 @@
 import { JSONRepairError } from '../utils/JSONRepairError.js'
-import { repairNumber } from '../utils/numberUtils.js'
 import {
   isControlCharacter,
   isDelimiter,
@@ -862,28 +861,69 @@ export function jsonrepairCore({
    */
   function parseNumber(): boolean {
     const start = i
+    let num = ''
+    let invalid = false
+
     if (input.charAt(i) === '-') {
+      num += input.charAt(i)
       i++
+
+      if (!isDigit(input.charAt(i)) && atEndOfNumber()) {
+        num += '0'
+      }
+    }
+
+    if (input.charAt(i) === '0' && isDigit(input.charAt(i + 1))) {
+      // the number has leading zeros like "00123" or "001.23"
+      invalid = true
     }
 
     while (isDigit(input.charAt(i))) {
+      num += input.charAt(i)
       i++
     }
 
-    if (input.charAt(i) === '.' && (i > start || isDigit(input.charAt(i + 1)))) {
+    if (input.charAt(i) === '.') {
+      if (num === '' || num === '-') {
+        // repair missing leading zero before dot
+        num += '0'
+      }
+
+      num += input.charAt(i)
       i++
+
+      if (!isDigit(input.charAt(i))) {
+        // repair a truncated number like "2." into "2.0"
+        num += '0'
+      }
+
       while (isDigit(input.charAt(i))) {
+        num += input.charAt(i)
         i++
       }
     }
 
     if (i > start) {
       if (input.charAt(i) === 'e' || input.charAt(i) === 'E') {
+        if (num === '-') {
+          invalid = true
+        }
+
+        num += input.charAt(i)
         i++
+
         if (input.charAt(i) === '-' || input.charAt(i) === '+') {
+          num += input.charAt(i)
           i++
         }
+
+        if (!isDigit(input.charAt(i))) {
+          // repair a truncated number like "2e" into "2e0"
+          num += '0'
+        }
+
         while (isDigit(input.charAt(i))) {
+          num += input.charAt(i)
           i++
         }
       }
@@ -894,7 +934,7 @@ export function jsonrepairCore({
         return false
       }
 
-      output.push(repairNumber(input.substring(start, i)))
+      output.push(invalid ? `"${input.substring(start, i)}"` : num)
       return stack.update(Caret.afterValue)
     }
 

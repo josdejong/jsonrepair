@@ -1,5 +1,4 @@
 import { JSONRepairError } from '../utils/JSONRepairError.js'
-import { repairNumber } from '../utils/numberUtils.js'
 import {
   endsWithCommaOrNewline,
   insertBeforeLastWhitespace,
@@ -669,28 +668,70 @@ export function jsonrepair(text: string): string {
    */
   function parseNumber(): boolean {
     const start = i
+    let num = ''
+    let invalid = false
+
     if (text[i] === '-') {
+      num += text[i]
       i++
+
+      if (!isDigit(text[i]) && atEndOfNumber()) {
+        // repair missing zero after minus like in "-.2" or "-"
+        num += '0'
+      }
+    }
+
+    if (text[i] === '0' && isDigit(text[i + 1])) {
+      // the number has leading zeros like "00123" or "001.23"
+      invalid = true
     }
 
     while (isDigit(text[i])) {
+      num += text[i]
       i++
     }
 
-    if (text[i] === '.' && (i > start || isDigit(text[i + 1]))) {
+    if (text[i] === '.') {
+      if (num === '' || num === '-') {
+        // repair missing leading zero before dot
+        num += '0'
+      }
+
+      num += text[i]
       i++
+
+      if (!isDigit(text[i])) {
+        // repair a truncated number like "2." into "2.0"
+        num += '0'
+      }
+
       while (isDigit(text[i])) {
+        num += text[i]
         i++
       }
     }
 
     if (i > start) {
       if (text[i] === 'e' || text[i] === 'E') {
+        if (num === '-') {
+          invalid = true
+        }
+
+        num += text[i]
         i++
+
         if (text[i] === '-' || text[i] === '+') {
+          num += text[i]
           i++
         }
+
+        if (!isDigit(text[i])) {
+          // repair a truncated number like "2e" into "2e0"
+          num += '0'
+        }
+
         while (isDigit(text[i])) {
+          num += text[i]
           i++
         }
       }
@@ -701,7 +742,7 @@ export function jsonrepair(text: string): string {
         return false
       }
 
-      output += repairNumber(text.slice(start, i))
+      output += invalid ? `"${text.substring(start, i)}"` : num
       return true
     }
 

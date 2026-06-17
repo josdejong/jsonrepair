@@ -178,9 +178,11 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{"foo')).toBe('{"foo":null}')
       expect(jsonrepair('{')).toBe('{}')
       expect(jsonrepair('2.')).toBe('2.0')
+      expect(jsonrepair('[2.]')).toBe('[2.0]')
       expect(jsonrepair('2e')).toBe('2e0')
       expect(jsonrepair('2e+')).toBe('2e+0')
       expect(jsonrepair('2e-')).toBe('2e-0')
+      expect(jsonrepair('[2e+]')).toBe('[2e+0]')
       expect(jsonrepair('{"foo":"bar\\u20')).toBe('{"foo":"bar"}')
       expect(jsonrepair('"\\u')).toBe('""')
       expect(jsonrepair('"\\u2')).toBe('""')
@@ -568,7 +570,6 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('2.')).toBe('2.0')
       expect(jsonrepair('.3')).toBe('0.3')
       expect(jsonrepair('-.3')).toBe('-0.3')
-      expect(jsonrepair('-05')).toBe('-05')
       expect(jsonrepair('-')).toBe('-0')
     })
 
@@ -583,6 +584,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[2 0.0.1 2]')).toBe('[2, "0.0.1 2"]') // note: currently spaces delimit numbers, but don't delimit unquoted strings
       expect(jsonrepair('2e3.4')).toBe('"2e3.4"')
       expect(jsonrepair('00.')).toBe('"00."')
+      expect(jsonrepair('-05')).toBe('"-05"')
 
       expect(jsonrepair('e')).toBe('"e"')
       expect(jsonrepair('[e],')).toBe('["e"]')
@@ -591,7 +593,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{"k": e},')).toBe('{"k": "e"}')
       expect(jsonrepair('{"n": 05}')).toBe('{"n": "05"}')
       expect(jsonrepair('[05e]')).toBe('["05e"]')
-      expect(jsonrepair('.')).toBe('"."')
+      expect(jsonrepair('.')).toBe('0.0')
     })
 
     test('should repair regular expressions', () => {
