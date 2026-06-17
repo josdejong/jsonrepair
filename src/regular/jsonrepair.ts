@@ -524,6 +524,10 @@ export function jsonrepair(text: string): string {
             return true
           }
 
+          if (text[i] === '\\') {
+            throwUnexpectedCharacter()
+          }
+
           const iPrevChar = prevNonWhitespaceIndex(iQuote - 1)
           const prevChar = text.charAt(iPrevChar)
 

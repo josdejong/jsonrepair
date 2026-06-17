@@ -715,6 +715,10 @@ export function jsonrepairCore({
             return stack.update(Caret.afterValue)
           }
 
+          if (input.charAt(i) === '\\') {
+            throwUnexpectedCharacter()
+          }
+
           const iPrevChar = prevNonWhitespaceIndex(iQuote - 1)
           const prevChar = input.charAt(iPrevChar)
 
