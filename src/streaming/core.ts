@@ -1,6 +1,5 @@
 import { JSONRepairError } from '../utils/JSONRepairError.js'
 import {
-  countOccurrences,
   isControlCharacter,
   isDelimiter,
   isDigit,
@@ -9,6 +8,7 @@ import {
   isFunctionNameChar,
   isFunctionNameCharStart,
   isHex,
+  isInsideUnclosedBracket,
   isQuote,
   isSingleQuote,
   isSingleQuoteLike,
@@ -708,24 +708,7 @@ export function jsonrepairCore({
             (isDelimiter(input.charAt(i)) &&
               // only count the brackets inside the string when actually needed,
               // i.e. when the quote is directly followed by a closing bracket
-              !(
-                input.charAt(i) === ')' &&
-                countOccurrences(input.substring(iBefore, iQuote), '(') -
-                  countOccurrences(input.substring(iBefore, iQuote), ')') >
-                  0
-              ) &&
-              !(
-                input.charAt(i) === ']' &&
-                countOccurrences(input.substring(iBefore, iQuote), '[') -
-                  countOccurrences(input.substring(iBefore, iQuote), ']') >
-                  0
-              ) &&
-              !(
-                input.charAt(i) === '}' &&
-                countOccurrences(input.substring(iBefore, iQuote), '{') -
-                  countOccurrences(input.substring(iBefore, iQuote), '}') >
-                  0
-              )) ||
+              !isInsideUnclosedBracket(input.substring(iBefore, iQuote), input.charAt(i))) ||
             (isQuote(input.charAt(i)) && !nextQuoteIsEndQuote(i)) ||
             isDigit(input.charAt(i))
           ) {

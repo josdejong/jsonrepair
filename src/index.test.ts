@@ -326,7 +326,9 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
 
       // multiple sets of parentheses, both nested and non-nested, with an unescaped quote among them
       expect(jsonrepair('"a (b) ((c") d)"')).toBe('"a (b) ((c\\") d)"')
-      expect(jsonrepair('"He (52) is six feet ((72")) tall"')).toBe('"He (52) is six feet ((72\\")) tall"')
+      expect(jsonrepair('"He (52) is six feet ((72")) tall"')).toBe(
+        '"He (52) is six feet ((72\\")) tall"'
+      )
 
       // unescaped quote before a closing ] or } (something other than parentheses)
       expect(jsonrepair('"the list [1, 2"] more"')).toBe('"the list [1, 2\\"] more"')

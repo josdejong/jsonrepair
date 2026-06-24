@@ -206,3 +206,25 @@ export function countOccurrences(text: string, char: string): number {
   }
   return count
 }
+
+/**
+ * Test whether `closeChar` is a closing bracket and `text` still contains an
+ * unmatched opening bracket of the same kind. This indicates that the end of
+ * `text` is located inside the brackets, for example the quote in
+ * `"a (b") c"` is followed by `)` while `(` is still unclosed.
+ *
+ * Note that the (potentially expensive) counting is only performed when
+ * `closeChar` actually is a closing bracket.
+ */
+export function isInsideUnclosedBracket(text: string, closeChar: string): boolean {
+  switch (closeChar) {
+    case ')':
+      return countOccurrences(text, '(') > countOccurrences(text, ')')
+    case ']':
+      return countOccurrences(text, '[') > countOccurrences(text, ']')
+    case '}':
+      return countOccurrences(text, '{') > countOccurrences(text, '}')
+    default:
+      return false
+  }
+}

@@ -1,6 +1,5 @@
 import { JSONRepairError } from '../utils/JSONRepairError.js'
 import {
-  countOccurrences,
   endsWithCommaOrNewline,
   insertBeforeLastWhitespace,
   isControlCharacter,
@@ -11,6 +10,7 @@ import {
   isFunctionNameChar,
   isFunctionNameCharStart,
   isHex,
+  isInsideUnclosedBracket,
   isQuote,
   isSingleQuote,
   isSingleQuoteLike,
@@ -517,9 +517,7 @@ export function jsonrepair(text: string): string {
             (isDelimiter(text[i]) &&
               // only count the brackets inside the string when actually needed,
               // i.e. when the quote is directly followed by a closing bracket
-              !(text[i] === ')' && countOccurrences(str, '(') - countOccurrences(str, ')') > 0) &&
-              !(text[i] === ']' && countOccurrences(str, '[') - countOccurrences(str, ']') > 0) &&
-              !(text[i] === '}' && countOccurrences(str, '{') - countOccurrences(str, '}') > 0)) ||
+              !isInsideUnclosedBracket(str, text[i])) ||
             (isQuote(text[i]) && !nextQuoteIsEndQuote(i)) ||
             isDigit(text[i])
           ) {
