@@ -770,7 +770,7 @@ export function jsonrepair(text: string): string {
   }
 
   function parseKeyword(name: string, value: string): boolean {
-    if (text.slice(i, i + name.length) === name) {
+    if (text.slice(i, i + name.length) === name && !isFunctionNameChar(text[i + name.length])) {
       output += value
       i += name.length
       return true
