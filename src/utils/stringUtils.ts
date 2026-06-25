@@ -193,3 +193,38 @@ export function removeAtIndex(text: string, start: number, count: number) {
 export function endsWithCommaOrNewline(text: string): boolean {
   return /[,\n][ \t\r]*$/.test(text)
 }
+
+/**
+ * Count the number of occurrences of a single character in a string
+ */
+export function countOccurrences(text: string, char: string): number {
+  let count = 0
+  for (let i = 0; i < text.length; i++) {
+    if (text.charAt(i) === char) {
+      count++
+    }
+  }
+  return count
+}
+
+/**
+ * Test whether `closeChar` is a closing bracket and `text` still contains an
+ * unmatched opening bracket of the same kind. This indicates that the end of
+ * `text` is located inside the brackets, for example the quote in
+ * `"a (b") c"` is followed by `)` while `(` is still unclosed.
+ *
+ * Note that the (potentially expensive) counting is only performed when
+ * `closeChar` actually is a closing bracket.
+ */
+export function isInsideUnclosedBracket(text: string, closeChar: string): boolean {
+  switch (closeChar) {
+    case ')':
+      return countOccurrences(text, '(') > countOccurrences(text, ')')
+    case ']':
+      return countOccurrences(text, '[') > countOccurrences(text, ']')
+    case '}':
+      return countOccurrences(text, '{') > countOccurrences(text, '}')
+    default:
+      return false
+  }
+}

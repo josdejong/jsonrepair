@@ -10,6 +10,7 @@ import {
   isFunctionNameChar,
   isFunctionNameCharStart,
   isHex,
+  isInsideUnclosedBracket,
   isQuote,
   isSingleQuote,
   isSingleQuoteLike,
@@ -513,8 +514,11 @@ export function jsonrepair(text: string): string {
           if (
             stopAtDelimiter ||
             i >= text.length ||
-            isDelimiter(text[i]) ||
-            isQuote(text[i]) ||
+            (isDelimiter(text[i]) &&
+              // only count the brackets inside the string when actually needed,
+              // i.e. when the quote is directly followed by a closing bracket
+              !isInsideUnclosedBracket(str, text[i])) ||
+            (isQuote(text[i]) && !nextQuoteIsEndQuote(i)) ||
             isDigit(text[i])
           ) {
             // The quote is followed by the end of the text, a delimiter,
@@ -866,6 +870,17 @@ export function jsonrepair(text: string): string {
     }
 
     return prev
+  }
+
+  function nextQuoteIsEndQuote(index: number): boolean {
+    // precondition: text[index] is a quote. Peek past it: if nothing meaningful
+    // follows, that quote is the true end and this one is embedded (e.g. `"The TV is 72""`)
+    let next = index + 1
+    while (next < text.length && isWhitespace(text, next)) {
+      next++
+    }
+
+    return next >= text.length || isDelimiter(text[next])
   }
 
   function atEndOfNumber() {

@@ -316,6 +316,26 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('["a" 2]')).toBe('["a", 2]')
       expect(jsonrepair('["a" 2')).toBe('["a", 2]')
       expect(jsonrepair('["," 2')).toBe('[",", 2]')
+      expect(jsonrepair('{ "height": "(5\'3")" }')).toBe('{ "height": "(5\'3\\")" }')
+      expect(jsonrepair('"The TV is 72""')).toBe('"The TV is 72\\""')
+    })
+
+    test('should escape unescaped double quotes in the middle of a string', () => {
+      // unescaped quote followed by a closing parenthesis in the middle of the string
+      expect(jsonrepair('"He is six feet (72") tall"')).toBe('"He is six feet (72\\") tall"')
+
+      // multiple sets of parentheses, both nested and non-nested, with an unescaped quote among them
+      expect(jsonrepair('"a (b) ((c") d)"')).toBe('"a (b) ((c\\") d)"')
+      expect(jsonrepair('"He (52) is six feet ((72")) tall"')).toBe(
+        '"He (52) is six feet ((72\\")) tall"'
+      )
+
+      // unescaped quote before a closing ] or } (something other than parentheses)
+      expect(jsonrepair('"the list [1, 2"] more"')).toBe('"the list [1, 2\\"] more"')
+      expect(jsonrepair('"the set {a, b"} more"')).toBe('"the set {a, b\\"} more"')
+
+      // only a closing parenthesis and no opening one: the quote is the real end of the string
+      expect(jsonrepair('["foo)" 2]')).toBe('["foo)", 2]')
     })
 
     test('should replace special white space characters', () => {
