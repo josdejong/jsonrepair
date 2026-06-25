@@ -290,7 +290,6 @@ export function jsonrepair(text: string): string {
           parseWhitespaceAndSkipComments()
         } else {
           processedComma = true
-          initial = false
         }
 
         skipEllipsis()
@@ -305,7 +304,9 @@ export function jsonrepair(text: string): string {
             text[i] === undefined
           ) {
             // repair trailing comma
-            output = stripLastOccurrence(output, ',')
+            if (!initial) {
+              output = stripLastOccurrence(output, ',')
+            }
           } else {
             throwObjectKeyExpected()
           }
@@ -332,6 +333,8 @@ export function jsonrepair(text: string): string {
             throwColonExpected()
           }
         }
+
+        initial = false
       }
 
       if (text[i] === '}') {
@@ -370,8 +373,6 @@ export function jsonrepair(text: string): string {
             // repair missing comma
             output = insertBeforeLastWhitespace(output, ',')
           }
-        } else {
-          initial = false
         }
 
         skipEllipsis()
@@ -379,9 +380,13 @@ export function jsonrepair(text: string): string {
         const processedValue = parseValue()
         if (!processedValue) {
           // repair trailing comma
-          output = stripLastOccurrence(output, ',')
+          if (!initial) {
+            output = stripLastOccurrence(output, ',')
+          }
           break
         }
+
+        initial = false
       }
 
       if (text[i] === ']') {

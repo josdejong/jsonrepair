@@ -509,9 +509,10 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[{"b":2\n]')).toBe('[{"b":2}\n]')
       expect(jsonrepair('[{"i":1{"i":2}]')).toBe('[{"i":1},{"i":2}]')
       expect(jsonrepair('[{"i":1,{"i":2}]')).toBe('[{"i":1},{"i":2}]')
+      expect(jsonrepair('[{{]')).toBe('[{},{}]')
     })
 
-    test('should remove a redundant closing bracket for an object', () => {
+    test('should remove a redundant closing brace for an object', () => {
       expect(jsonrepair('{"a": 1}}')).toBe('{"a": 1}')
       expect(jsonrepair('{"a": 1}}]}')).toBe('{"a": 1}')
       expect(jsonrepair('{"a": 1 }  }  ]  }  ')).toBe('{"a": 1 }        ')
@@ -530,6 +531,8 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[[1,2,3,')).toBe('[[1,2,3]]')
       expect(jsonrepair('{\n"values":[1,2,3\n}')).toBe('{\n"values":[1,2,3]\n}')
       expect(jsonrepair('{\n"values":[1,2,3\n')).toBe('{\n"values":[1,2,3]}\n')
+      expect(jsonrepair('[1,[}]')).toBe('[1,[]]')
+      expect(jsonrepair('{"a": 1, "b": [}')).toBe('{"a": 1, "b": []}')
     })
 
     test('should strip MongoDB data types', () => {
