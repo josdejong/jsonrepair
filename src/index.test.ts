@@ -65,6 +65,13 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       assertRepair('true')
       assertRepair('false')
       assertRepair('null')
+
+      expect(jsonrepair('trueble')).toBe('"trueble"')
+      expect(jsonrepair('Trueble')).toBe('"Trueble"')
+      expect(jsonrepair('false_value')).toBe('"false_value"')
+      expect(jsonrepair('false$')).toBe('"false$"')
+      expect(jsonrepair('nullifiable')).toBe('"nullifiable"')
+      expect(jsonrepair('[truee')).toBe('["truee"]')
     })
 
     test('correctly handle strings equaling a JSON delimiter', () => {
@@ -178,9 +185,11 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{"foo')).toBe('{"foo":null}')
       expect(jsonrepair('{')).toBe('{}')
       expect(jsonrepair('2.')).toBe('2.0')
+      expect(jsonrepair('[2.]')).toBe('[2.0]')
       expect(jsonrepair('2e')).toBe('2e0')
       expect(jsonrepair('2e+')).toBe('2e+0')
       expect(jsonrepair('2e-')).toBe('2e-0')
+      expect(jsonrepair('[2e+]')).toBe('[2e+0]')
       expect(jsonrepair('{"foo":"bar\\u20')).toBe('{"foo":"bar"}')
       expect(jsonrepair('"\\u')).toBe('""')
       expect(jsonrepair('"\\u2')).toBe('""')
@@ -316,6 +325,26 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('["a" 2]')).toBe('["a", 2]')
       expect(jsonrepair('["a" 2')).toBe('["a", 2]')
       expect(jsonrepair('["," 2')).toBe('[",", 2]')
+      expect(jsonrepair('{ "height": "(5\'3")" }')).toBe('{ "height": "(5\'3\\")" }')
+      expect(jsonrepair('"The TV is 72""')).toBe('"The TV is 72\\""')
+    })
+
+    test('should escape unescaped double quotes in the middle of a string', () => {
+      // unescaped quote followed by a closing parenthesis in the middle of the string
+      expect(jsonrepair('"He is six feet (72") tall"')).toBe('"He is six feet (72\\") tall"')
+
+      // multiple sets of parentheses, both nested and non-nested, with an unescaped quote among them
+      expect(jsonrepair('"a (b) ((c") d)"')).toBe('"a (b) ((c\\") d)"')
+      expect(jsonrepair('"He (52) is six feet ((72")) tall"')).toBe(
+        '"He (52) is six feet ((72\\")) tall"'
+      )
+
+      // unescaped quote before a closing ] or } (something other than parentheses)
+      expect(jsonrepair('"the list [1, 2"] more"')).toBe('"the list [1, 2\\"] more"')
+      expect(jsonrepair('"the set {a, b"} more"')).toBe('"the set {a, b\\"} more"')
+
+      // only a closing parenthesis and no opening one: the quote is the real end of the string
+      expect(jsonrepair('["foo)" 2]')).toBe('["foo)", 2]')
     })
 
     test('should replace special white space characters', () => {
@@ -480,9 +509,10 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[{"b":2\n]')).toBe('[{"b":2}\n]')
       expect(jsonrepair('[{"i":1{"i":2}]')).toBe('[{"i":1},{"i":2}]')
       expect(jsonrepair('[{"i":1,{"i":2}]')).toBe('[{"i":1},{"i":2}]')
+      expect(jsonrepair('[{{]')).toBe('[{},{}]')
     })
 
-    test('should remove a redundant closing bracket for an object', () => {
+    test('should remove a redundant closing brace for an object', () => {
       expect(jsonrepair('{"a": 1}}')).toBe('{"a": 1}')
       expect(jsonrepair('{"a": 1}}]}')).toBe('{"a": 1}')
       expect(jsonrepair('{"a": 1 }  }  ]  }  ')).toBe('{"a": 1 }        ')
@@ -501,6 +531,8 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[[1,2,3,')).toBe('[[1,2,3]]')
       expect(jsonrepair('{\n"values":[1,2,3\n}')).toBe('{\n"values":[1,2,3]\n}')
       expect(jsonrepair('{\n"values":[1,2,3\n')).toBe('{\n"values":[1,2,3]}\n')
+      expect(jsonrepair('[1,[}]')).toBe('[1,[]]')
+      expect(jsonrepair('{"a": 1, "b": [}')).toBe('{"a": 1, "b": []}')
     })
 
     test('should strip MongoDB data types', () => {
@@ -564,7 +596,14 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{greeting: hello world!}')).toBe('{"greeting": "hello world!"}')
     })
 
-    test('should turn invalid numbers into strings', () => {
+    test('should repair invalid numbers', () => {
+      expect(jsonrepair('2.')).toBe('2.0')
+      expect(jsonrepair('.3')).toBe('0.3')
+      expect(jsonrepair('-.3')).toBe('-0.3')
+      expect(jsonrepair('-')).toBe('-0')
+    })
+
+    test('should turn invalid unrepairable numbers into strings', () => {
       expect(jsonrepair('ES2020')).toBe('"ES2020"')
       expect(jsonrepair('0.0.1')).toBe('"0.0.1"')
       expect(jsonrepair('746de9ad-d4ff-4c66-97d7-00a92ad46967')).toBe(
@@ -574,6 +613,17 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[0.0.1,2]')).toBe('["0.0.1",2]') // test delimiter for numerics
       expect(jsonrepair('[2 0.0.1 2]')).toBe('[2, "0.0.1 2"]') // note: currently spaces delimit numbers, but don't delimit unquoted strings
       expect(jsonrepair('2e3.4')).toBe('"2e3.4"')
+      expect(jsonrepair('00.')).toBe('"00."')
+      expect(jsonrepair('-05')).toBe('"-05"')
+
+      expect(jsonrepair('e')).toBe('"e"')
+      expect(jsonrepair('[e],')).toBe('["e"]')
+      expect(jsonrepair('[e5],')).toBe('["e5"]')
+      expect(jsonrepair('[-e5],')).toBe('["-e5"]')
+      expect(jsonrepair('{"k": e},')).toBe('{"k": "e"}')
+      expect(jsonrepair('{"n": 05}')).toBe('{"n": "05"}')
+      expect(jsonrepair('[05e]')).toBe('["05e"]')
+      expect(jsonrepair('.')).toBe('0.0')
     })
 
     test('should repair regular expressions', () => {
@@ -643,7 +693,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       )
     })
 
-    test('should repair numbers at the end', () => {
+    test('should repair truncated numbers', () => {
       expect(jsonrepair('{"a":2.')).toBe('{"a":2.0}')
       expect(jsonrepair('{"a":2e')).toBe('{"a":2e0}')
       expect(jsonrepair('{"a":2e-')).toBe('{"a":2e-0}')
@@ -706,7 +756,7 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('a,b')).toBe('[\n"a","b"\n]')
     })
 
-    test('should repair a number with leading zero', () => {
+    test('should repair a number with leading zeros', () => {
       expect(jsonrepair('0789')).toBe('"0789"')
       expect(jsonrepair('000789')).toBe('"000789"')
       expect(jsonrepair('001.2')).toBe('"001.2"')

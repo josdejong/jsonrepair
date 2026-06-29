@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.14.1](https://github.com/josdejong/jsonrepair/compare/v3.14.0...v3.14.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* improve repairing of numbers ([#172](https://github.com/josdejong/jsonrepair/issues/172)) ([aedd5a9](https://github.com/josdejong/jsonrepair/commit/aedd5a9021472e2f5c8b74e29809e177ad24d30e))
+* repair unquoted strings starting with a keyword ([#173](https://github.com/josdejong/jsonrepair/issues/173)) ([1bbc1da](https://github.com/josdejong/jsonrepair/commit/1bbc1da22babfd12d3d0fc73e607686b776c79e1))
+* trailing-comma repair strips the parents containers comma ([#174](https://github.com/josdejong/jsonrepair/issues/174)) ([8d1754c](https://github.com/josdejong/jsonrepair/commit/8d1754c43a769b1801c8845facbaf9d478066a0d))
+* unescaped quotes before special characters like `)` or the end of the string ([#169](https://github.com/josdejong/jsonrepair/issues/169)) ([5cbc9ba](https://github.com/josdejong/jsonrepair/commit/5cbc9ba372cf70f7bad3f6b754db8cf1cc7ac275))
+
 ## [3.14.0](https://github.com/josdejong/jsonrepair/compare/v3.13.3...v3.14.0) (2026-04-16)
 
 

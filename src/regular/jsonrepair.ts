@@ -11,6 +11,7 @@ import {
   isFunctionNameChar,
   isFunctionNameCharStart,
   isHex,
+  isInsideUnclosedBracket,
   isQuote,
   isSingleQuote,
   isSingleQuoteEntity,
@@ -297,7 +298,6 @@ export function jsonrepair(text: string): string {
           parseWhitespaceAndSkipComments()
         } else {
           processedComma = true
-          initial = false
         }
 
         skipEllipsis()
@@ -312,7 +312,9 @@ export function jsonrepair(text: string): string {
             text[i] === undefined
           ) {
             // repair trailing comma
-            output = stripLastOccurrence(output, ',')
+            if (!initial) {
+              output = stripLastOccurrence(output, ',')
+            }
           } else {
             throwObjectKeyExpected()
           }
@@ -339,6 +341,8 @@ export function jsonrepair(text: string): string {
             throwColonExpected()
           }
         }
+
+        initial = false
       }
 
       if (text[i] === '}') {
@@ -377,8 +381,6 @@ export function jsonrepair(text: string): string {
             // repair missing comma
             output = insertBeforeLastWhitespace(output, ',')
           }
-        } else {
-          initial = false
         }
 
         skipEllipsis()
@@ -386,9 +388,13 @@ export function jsonrepair(text: string): string {
         const processedValue = parseValue()
         if (!processedValue) {
           // repair trailing comma
-          output = stripLastOccurrence(output, ',')
+          if (!initial) {
+            output = stripLastOccurrence(output, ',')
+          }
           break
         }
+
+        initial = false
       }
 
       if (text[i] === ']') {
@@ -544,8 +550,11 @@ export function jsonrepair(text: string): string {
           if (
             stopAtDelimiter ||
             i >= text.length ||
-            isDelimiter(text[i]) ||
-            isQuote(text[i]) ||
+            (isDelimiter(text[i]) &&
+              // only count the brackets inside the string when actually needed,
+              // i.e. when the quote is directly followed by a closing bracket
+              !isInsideUnclosedBracket(str, text[i])) ||
+            (isQuote(text[i]) && !nextQuoteIsEndQuote(i)) ||
             isDigit(text[i])
           ) {
             // The quote is followed by the end of the text, a delimiter,
@@ -711,71 +720,81 @@ export function jsonrepair(text: string): string {
    */
   function parseNumber(): boolean {
     const start = i
+    let num = ''
+    let invalid = false
+
     if (text[i] === '-') {
+      num += text[i]
       i++
-      if (atEndOfNumber()) {
-        repairNumberEndingWithNumericSymbol(start)
-        return true
-      }
-      if (!isDigit(text[i])) {
-        i = start
-        return false
+
+      if (!isDigit(text[i]) && atEndOfNumber()) {
+        // repair missing zero after minus like in "-.2" or "-"
+        num += '0'
       }
     }
 
-    // Note that in JSON leading zeros like "00789" are not allowed.
-    // We will allow all leading zeros here though and at the end of parseNumber
-    // check against trailing zeros and repair that if needed.
-    // Leading zeros can have meaning, so we should not clear them.
+    if (text[i] === '0' && isDigit(text[i + 1])) {
+      // the number has leading zeros like "00123" or "001.23"
+      invalid = true
+    }
+
     while (isDigit(text[i])) {
+      num += text[i]
       i++
     }
 
     if (text[i] === '.') {
-      i++
-      if (atEndOfNumber()) {
-        repairNumberEndingWithNumericSymbol(start)
-        return true
+      if (num === '' || num === '-') {
+        // repair missing leading zero before dot
+        num += '0'
       }
-      if (!isDigit(text[i])) {
-        i = start
-        return false
-      }
-      while (isDigit(text[i])) {
-        i++
-      }
-    }
 
-    if (text[i] === 'e' || text[i] === 'E') {
+      num += text[i]
       i++
-      if (text[i] === '-' || text[i] === '+') {
-        i++
-      }
-      if (atEndOfNumber()) {
-        repairNumberEndingWithNumericSymbol(start)
-        return true
-      }
-      if (!isDigit(text[i])) {
-        i = start
-        return false
-      }
-      while (isDigit(text[i])) {
-        i++
-      }
-    }
 
-    // if we're not at the end of the number by this point, allow this to be parsed as another type
-    if (!atEndOfNumber()) {
-      i = start
-      return false
+      if (!isDigit(text[i])) {
+        // repair a truncated number like "2." into "2.0"
+        num += '0'
+      }
+
+      while (isDigit(text[i])) {
+        num += text[i]
+        i++
+      }
     }
 
     if (i > start) {
-      // repair a number with leading zeros like "00789"
-      const num = text.slice(start, i)
-      const hasInvalidLeadingZero = /^0\d/.test(num)
+      if (text[i] === 'e' || text[i] === 'E') {
+        if (num === '-') {
+          invalid = true
+        }
 
-      output += hasInvalidLeadingZero ? `"${num}"` : num
+        num += text[i]
+        i++
+
+        if (text[i] === '-' || text[i] === '+') {
+          num += text[i]
+          i++
+        }
+
+        if (!isDigit(text[i])) {
+          // repair a truncated number like "2e" into "2e0"
+          num += '0'
+        }
+
+        while (isDigit(text[i])) {
+          num += text[i]
+          i++
+        }
+      }
+
+      // if we're not at the end of the number by this point, allow this to be parsed as another type
+      if (!atEndOfNumber()) {
+        i = start
+        return false
+      }
+
+      output += invalid ? `"${text.substring(start, i)}"` : num
       return true
     }
 
@@ -799,7 +818,7 @@ export function jsonrepair(text: string): string {
   }
 
   function parseKeyword(name: string, value: string): boolean {
-    if (text.slice(i, i + name.length) === name) {
+    if (text.slice(i, i + name.length) === name && !isFunctionNameChar(text[i + name.length])) {
       output += value
       i += name.length
       return true
@@ -911,15 +930,19 @@ export function jsonrepair(text: string): string {
     return prev
   }
 
-  function atEndOfNumber() {
-    return i >= text.length || isDelimiter(text[i]) || isWhitespace(text, i)
+  function nextQuoteIsEndQuote(index: number): boolean {
+    // precondition: text[index] is a quote. Peek past it: if nothing meaningful
+    // follows, that quote is the true end and this one is embedded (e.g. `"The TV is 72""`)
+    let next = index + 1
+    while (next < text.length && isWhitespace(text, next)) {
+      next++
+    }
+
+    return next >= text.length || isDelimiter(text[next])
   }
 
-  function repairNumberEndingWithNumericSymbol(start: number) {
-    // repair numbers cut off at the end
-    // this will only be called when we end after a '.', '-', or 'e' and does not
-    // change the number more than it needs to make it valid JSON
-    output += `${text.slice(start, i)}0`
+  function atEndOfNumber() {
+    return i >= text.length || isDelimiter(text[i]) || isWhitespace(text, i)
   }
 
   function throwInvalidCharacter(char: string) {

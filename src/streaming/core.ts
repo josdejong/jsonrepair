@@ -9,6 +9,7 @@ import {
   isFunctionNameChar,
   isFunctionNameCharStart,
   isHex,
+  isInsideUnclosedBracket,
   isQuote,
   isSingleQuote,
   isSingleQuoteEntity,
@@ -743,8 +744,11 @@ export function jsonrepairCore({
           if (
             stopAtDelimiter ||
             input.isEnd(i) ||
-            isDelimiter(input.charAt(i)) ||
-            isQuote(input.charAt(i)) ||
+            (isDelimiter(input.charAt(i)) &&
+              // only count the brackets inside the string when actually needed,
+              // i.e. when the quote is directly followed by a closing bracket
+              !isInsideUnclosedBracket(input.substring(iBefore, iQuote), input.charAt(i))) ||
+            (isQuote(input.charAt(i)) && !nextQuoteIsEndQuote(i)) ||
             isDigit(input.charAt(i))
           ) {
             // The quote is followed by the end of the text, a delimiter, or a next value
@@ -912,71 +916,80 @@ export function jsonrepairCore({
    */
   function parseNumber(): boolean {
     const start = i
+    let num = ''
+    let invalid = false
+
     if (input.charAt(i) === '-') {
+      num += input.charAt(i)
       i++
-      if (atEndOfNumber()) {
-        repairNumberEndingWithNumericSymbol(start)
-        return stack.update(Caret.afterValue)
-      }
-      if (!isDigit(input.charAt(i))) {
-        i = start
-        return false
+
+      if (!isDigit(input.charAt(i)) && atEndOfNumber()) {
+        num += '0'
       }
     }
 
-    // Note that in JSON leading zeros like "00789" are not allowed.
-    // We will allow all leading zeros here though and at the end of parseNumber
-    // check against trailing zeros and repair that if needed.
-    // Leading zeros can have meaning, so we should not clear them.
+    if (input.charAt(i) === '0' && isDigit(input.charAt(i + 1))) {
+      // the number has leading zeros like "00123" or "001.23"
+      invalid = true
+    }
+
     while (isDigit(input.charAt(i))) {
+      num += input.charAt(i)
       i++
     }
 
     if (input.charAt(i) === '.') {
-      i++
-      if (atEndOfNumber()) {
-        repairNumberEndingWithNumericSymbol(start)
-        return stack.update(Caret.afterValue)
+      if (num === '' || num === '-') {
+        // repair missing leading zero before dot
+        num += '0'
       }
-      if (!isDigit(input.charAt(i))) {
-        i = start
-        return false
-      }
-      while (isDigit(input.charAt(i))) {
-        i++
-      }
-    }
 
-    if (input.charAt(i) === 'e' || input.charAt(i) === 'E') {
+      num += input.charAt(i)
       i++
-      if (input.charAt(i) === '-' || input.charAt(i) === '+') {
-        i++
-      }
-      if (atEndOfNumber()) {
-        repairNumberEndingWithNumericSymbol(start)
-        return stack.update(Caret.afterValue)
-      }
-      if (!isDigit(input.charAt(i))) {
-        i = start
-        return false
-      }
-      while (isDigit(input.charAt(i))) {
-        i++
-      }
-    }
 
-    // if we're not at the end of the number by this point, allow this to be parsed as another type
-    if (!atEndOfNumber()) {
-      i = start
-      return false
+      if (!isDigit(input.charAt(i))) {
+        // repair a truncated number like "2." into "2.0"
+        num += '0'
+      }
+
+      while (isDigit(input.charAt(i))) {
+        num += input.charAt(i)
+        i++
+      }
     }
 
     if (i > start) {
-      // repair a number with leading zeros like "00789"
-      const num = input.substring(start, i)
-      const hasInvalidLeadingZero = /^0\d/.test(num)
+      if (input.charAt(i) === 'e' || input.charAt(i) === 'E') {
+        if (num === '-') {
+          invalid = true
+        }
 
-      output.push(hasInvalidLeadingZero ? `"${num}"` : num)
+        num += input.charAt(i)
+        i++
+
+        if (input.charAt(i) === '-' || input.charAt(i) === '+') {
+          num += input.charAt(i)
+          i++
+        }
+
+        if (!isDigit(input.charAt(i))) {
+          // repair a truncated number like "2e" into "2e0"
+          num += '0'
+        }
+
+        while (isDigit(input.charAt(i))) {
+          num += input.charAt(i)
+          i++
+        }
+      }
+
+      // if we're not at the end of the number by this point, allow this to be parsed as another type
+      if (!atEndOfNumber()) {
+        i = start
+        return false
+      }
+
+      output.push(invalid ? `"${input.substring(start, i)}"` : num)
       return stack.update(Caret.afterValue)
     }
 
@@ -1000,7 +1013,10 @@ export function jsonrepairCore({
   }
 
   function parseKeyword(name: string, value: string): boolean {
-    if (input.substring(i, i + name.length) === name) {
+    if (
+      input.substring(i, i + name.length) === name &&
+      !isFunctionNameChar(input.charAt(i + name.length))
+    ) {
       output.push(value)
       i += name.length
       return stack.update(Caret.afterValue)
@@ -1059,15 +1075,19 @@ export function jsonrepairCore({
     return prev
   }
 
-  function atEndOfNumber() {
-    return input.isEnd(i) || isDelimiter(input.charAt(i)) || isWhitespace(input, i)
+  function nextQuoteIsEndQuote(index: number): boolean {
+    // precondition: input.charAt(index) is a quote. Peek past it: if nothing meaningful
+    // follows, that quote is the true end and this one is embedded (e.g. `"The TV is 72""`)
+    let next = index + 1
+    while (!input.isEnd(next) && isWhitespace(input, next)) {
+      next++
+    }
+
+    return input.isEnd(next) || isDelimiter(input.charAt(next))
   }
 
-  function repairNumberEndingWithNumericSymbol(start: number) {
-    // repair numbers cut off at the end
-    // this will only be called when we end after a '.', '-', or 'e' and does not
-    // change the number more than it needs to make it valid JSON
-    output.push(`${input.substring(start, i)}0`)
+  function atEndOfNumber() {
+    return input.isEnd(i) || isDelimiter(input.charAt(i)) || isWhitespace(input, i)
   }
 
   function throwInvalidCharacter(char: string) {
