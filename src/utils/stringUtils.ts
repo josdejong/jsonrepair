@@ -194,6 +194,74 @@ export function endsWithCommaOrNewline(text: string): boolean {
   return /[,\n][ \t\r]*$/.test(text)
 }
 
+const namedHtmlEntities: { [key: string]: string } = {
+  '&quot;': '"',
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&apos;': "'"
+}
+
+// the longest entity we need to recognize is a numeric one like "&#x10FFFF;"
+// (10 chars), so a window of 12 characters is always enough
+export const maxHtmlEntityLength = 12
+
+export interface HtmlEntityMatch {
+  char: string // the decoded character
+  length: number // number of source characters consumed, including & and ;
+}
+
+/**
+ * Try to match an HTML entity at the start of the given window. The window is a
+ * small slice of text that begins exactly at the candidate '&'. Returns the
+ * decoded character and the number of characters consumed, or null when there
+ * is no complete, valid entity (for example a truncated "&quot" without ';').
+ */
+export function matchHtmlEntity(window: string): HtmlEntityMatch | null {
+  if (window.charAt(0) !== '&') {
+    return null
+  }
+
+  const semicolon = window.indexOf(';')
+  if (semicolon === -1) {
+    return null
+  }
+
+  const entity = window.substring(0, semicolon + 1)
+  const named = namedHtmlEntities[entity]
+  if (named !== undefined) {
+    return { char: named, length: entity.length }
+  }
+
+  if (window.charAt(1) === '#') {
+    const body = window.substring(2, semicolon)
+    const hex = body.charAt(0) === 'x' || body.charAt(0) === 'X'
+    const digits = hex ? body.substring(1) : body
+    if (digits.length > 0) {
+      const code = Number.parseInt(digits, hex ? 16 : 10)
+      if (!Number.isNaN(code) && code >= 0 && code <= 0x10ffff) {
+        return { char: String.fromCodePoint(code), length: entity.length }
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Test whether a matched HTML entity decodes to a double quote character
+ */
+export function isDoubleQuoteEntity(match: HtmlEntityMatch | null): boolean {
+  return match !== null && match.char === '"'
+}
+
+/**
+ * Test whether a matched HTML entity decodes to a single quote character
+ */
+export function isSingleQuoteEntity(match: HtmlEntityMatch | null): boolean {
+  return match !== null && match.char === "'"
+}
+
 /**
  * Count the number of occurrences of a single character in a string
  */

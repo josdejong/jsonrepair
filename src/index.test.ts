@@ -764,6 +764,48 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[0789]')).toBe('["0789"]')
       expect(jsonrepair('{value:0789}')).toBe('{"value":"0789"}')
     })
+
+    test('should repair named HTML entities', () => {
+      expect(jsonrepair('{&quot;name&quot;: &quot;John&quot;}')).toBe('{"name": "John"}')
+      expect(jsonrepair('&quot;hello&quot;')).toBe('"hello"')
+      expect(jsonrepair('{&quot;a&quot;:2}')).toBe('{"a":2}')
+      expect(jsonrepair('[&quot;a&quot;, &quot;b&quot;]')).toBe('["a", "b"]')
+      expect(jsonrepair('{&quot;a&quot;: &quot;b &amp; c&quot;}')).toBe('{"a": "b & c"}')
+      expect(jsonrepair('{&quot;a&quot;: &quot;&lt;b&gt;&quot;}')).toBe('{"a": "<b>"}')
+      expect(jsonrepair('{&quot;a&quot;: &apos;hello&apos;}')).toBe('{"a": "hello"}')
+    })
+
+    test('should repair numeric HTML entities', () => {
+      expect(jsonrepair('&#34;hello&#34;')).toBe('"hello"')
+      expect(jsonrepair('&#x22;hello&#x22;')).toBe('"hello"')
+      expect(jsonrepair('{&#34;a&#34;: &#34;b&#34;}')).toBe('{"a": "b"}')
+    })
+
+    test('should not decode HTML entities when the document is not HTML-encoded', () => {
+      // no entity-opened string, so decoding stays off and entities stay literal
+      expect(jsonrepair('{"a": "&amp; test"}')).toBe('{"a": "&amp; test"}')
+      expect(jsonrepair('{"html": "&quot;bold&quot;"}')).toBe('{"html": "&quot;bold&quot;"}')
+      expect(jsonrepair("{a: '&amp; test'}")).toBe('{"a": "&amp; test"}')
+    })
+
+    test('should decode HTML entities document-wide once the document is HTML-encoded', () => {
+      // an entity-opened string also decodes entities in the strings that follow
+      expect(jsonrepair("{&quot;a&quot;: 1, b: 'AT&amp;T'}")).toBe('{"a": 1, "b": "AT&T"}')
+      expect(jsonrepair("{&quot;a&quot;: 'x &lt; y &amp; z'}")).toBe('{"a": "x < y & z"}')
+      expect(jsonrepair('{&quot;a&quot;: 1, &quot;b&quot;: &quot;c &amp; d&quot;}')).toBe(
+        '{"a": 1, "b": "c & d"}'
+      )
+    })
+
+    test('should escape a literal quote inside an entity-opened string', () => {
+      expect(jsonrepair('&quot;he"llo&quot;')).toBe('"he\\"llo"')
+    })
+
+    test('should keep a truncated HTML entity as literal text', () => {
+      expect(jsonrepair('&quot')).toBe('"&quot"')
+      expect(jsonrepair('&#')).toBe('"&#"')
+      expect(jsonrepair('&')).toBe('"&"')
+    })
   })
 
   test('should throw an exception in case of non-repairable issues', () => {
@@ -819,6 +861,26 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
   function assertRepair(text: string) {
     expect(jsonrepair(text)).toEqual(text)
   }
+})
+
+describe('jsonrepair streaming', () => {
+  test('should repair an HTML entity split across two chunks', () => {
+    let output = ''
+    const { transform, flush } = jsonrepairCore({
+      onData: (chunk) => {
+        output += chunk
+      },
+      bufferSize: Number.POSITIVE_INFINITY,
+      chunkSize: Number.POSITIVE_INFINITY
+    })
+
+    // the entity &quot; is split: "&qu" arrives in the first chunk, "ot;" in the next
+    transform('{&qu')
+    transform('ot;a&quot;: &quot;b&quot;}')
+    flush()
+
+    expect(output).toBe('{"a": "b"}')
+  })
 })
 
 function createStreamingRepairWrapper(): (input: string) => string {
