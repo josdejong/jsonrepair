@@ -1,0 +1,11 @@
+{
+  "main": "dist/cli.bundle.mjs",
+  "output": "dist/sea-prep.blob",
+  "mainFormat": "module",
+  "disableExperimentalSEAWarning": true,
+  "useCodeCache": false,
+  "useSnapshot": false,
+  "assets": {
+    "package.json": "package.json"
+  }
+}

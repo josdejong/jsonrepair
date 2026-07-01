@@ -62,7 +62,7 @@ describe('command line interface', () => {
     await expect(() => {
       return run(`node ${binFile} "${largeFile}" --buffer 2`)
     }).rejects.toThrow(
-      'Error: Index out of range, please configure a larger buffer size (index: 65536)'
+      'Error: Index out of range, please configure a larger buffer size (use --buffer to increase, e.g. --buffer 512K or --buffer 2M) (index: 65536)'
     )
 
     unlinkSync(largeFile)
