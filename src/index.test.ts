@@ -781,20 +781,21 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{&#34;a&#34;: &#34;b&#34;}')).toBe('{"a": "b"}')
     })
 
-    test('should not decode HTML entities when the document is not HTML-encoded', () => {
-      // no entity-opened string, so decoding stays off and entities stay literal
+    test('should decode HTML entities inside the string they open', () => {
+      expect(jsonrepair('{&quot;a&quot;: &quot;b &amp; c&quot;}')).toBe('{"a": "b & c"}')
+      expect(jsonrepair('{&quot;a&quot;: &quot;1 &lt; 2&quot;}')).toBe('{"a": "1 < 2"}')
+    })
+
+    test('should not decode HTML entities inside a string opened by a real quote', () => {
       expect(jsonrepair('{"a": "&amp; test"}')).toBe('{"a": "&amp; test"}')
       expect(jsonrepair('{"html": "&quot;bold&quot;"}')).toBe('{"html": "&quot;bold&quot;"}')
       expect(jsonrepair("{a: '&amp; test'}")).toBe('{"a": "&amp; test"}')
     })
 
-    test('should decode HTML entities document-wide once the document is HTML-encoded', () => {
-      // an entity-opened string also decodes entities in the strings that follow
-      expect(jsonrepair("{&quot;a&quot;: 1, b: 'AT&amp;T'}")).toBe('{"a": 1, "b": "AT&T"}')
-      expect(jsonrepair("{&quot;a&quot;: 'x &lt; y &amp; z'}")).toBe('{"a": "x < y & z"}')
-      expect(jsonrepair('{&quot;a&quot;: 1, &quot;b&quot;: &quot;c &amp; d&quot;}')).toBe(
-        '{"a": 1, "b": "c & d"}'
-      )
+    test('should decode entities per string, independent of key order', () => {
+      // the &amp; in the single-quoted string stays literal in both orderings
+      expect(jsonrepair("{&quot;a&quot;: 1, b: 'AT&amp;T'}")).toBe('{"a": 1, "b": "AT&amp;T"}')
+      expect(jsonrepair("{b: 'AT&amp;T', &quot;a&quot;: 1}")).toBe('{"b": "AT&amp;T", "a": 1}')
     })
 
     test('should escape a literal quote inside an entity-opened string', () => {

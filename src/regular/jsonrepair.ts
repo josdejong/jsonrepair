@@ -71,10 +71,6 @@ export function jsonrepair(text: string): string {
   let i = 0 // current index in text
   let output = '' // generated output
 
-  // once a string is opened by a quote-producing entity like &quot;, treat the
-  // whole document as HTML-encoded and decode entities in all following strings
-  let htmlEntityDecoding = false
-
   parseMarkdownCodeBlock(['```', '[```', '{```'])
 
   const processed = parseValue()
@@ -469,10 +465,6 @@ export function jsonrepair(text: string): string {
     const openEntity =
       text[i] === '&' ? matchHtmlEntity(text.slice(i, i + maxHtmlEntityLength)) : null
     const openedByEntity = isDoubleQuoteEntity(openEntity) || isSingleQuoteEntity(openEntity)
-    if (openedByEntity) {
-      // the document is HTML-encoded: decode entities in every following string
-      htmlEntityDecoding = true
-    }
 
     if (isQuote(text[i]) || openedByEntity) {
       // double quotes are correct JSON,
@@ -524,17 +516,13 @@ export function jsonrepair(text: string): string {
           return true
         }
 
-        // while decoding, a '&' may be an entity; it is the end quote when it
-        // decodes to the opening quote
+        // inside an entity-opened string a '&' is an entity; it is the end quote
+        // when it decodes to the opening quote
         const entity =
-          htmlEntityDecoding && text[i] === '&'
+          openedByEntity && text[i] === '&'
             ? matchHtmlEntity(text.slice(i, i + maxHtmlEntityLength))
             : null
-        const isEnd = entity
-          ? openedByEntity && openEntity
-            ? entity.char === openEntity.char
-            : isEndQuote(entity.char)
-          : isEndQuote(text[i])
+        const isEnd = entity && openEntity ? entity.char === openEntity.char : isEndQuote(text[i])
 
         if (isEnd) {
           // end quote

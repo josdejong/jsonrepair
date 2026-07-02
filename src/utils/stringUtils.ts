@@ -212,29 +212,29 @@ export interface HtmlEntityMatch {
 }
 
 /**
- * Try to match an HTML entity at the start of the given window. The window is a
- * small slice of text that begins exactly at the candidate '&'. Returns the
+ * Try to match an HTML entity at the start of the given fragment. The fragment
+ * is a small slice of text that begins exactly at the candidate '&'. Returns the
  * decoded character and the number of characters consumed, or null when there
  * is no complete, valid entity (for example a truncated "&quot" without ';').
  */
-export function matchHtmlEntity(window: string): HtmlEntityMatch | null {
-  if (window.charAt(0) !== '&') {
+export function matchHtmlEntity(fragment: string): HtmlEntityMatch | null {
+  if (fragment.charAt(0) !== '&') {
     return null
   }
 
-  const semicolon = window.indexOf(';')
+  const semicolon = fragment.indexOf(';')
   if (semicolon === -1) {
     return null
   }
 
-  const entity = window.substring(0, semicolon + 1)
+  const entity = fragment.substring(0, semicolon + 1)
   const named = namedHtmlEntities[entity]
   if (named !== undefined) {
     return { char: named, length: entity.length }
   }
 
-  if (window.charAt(1) === '#') {
-    const body = window.substring(2, semicolon)
+  if (fragment.charAt(1) === '#') {
+    const body = fragment.substring(2, semicolon)
     const hex = body.charAt(0) === 'x' || body.charAt(0) === 'X'
     const digits = hex ? body.substring(1) : body
     if (digits.length > 0) {
