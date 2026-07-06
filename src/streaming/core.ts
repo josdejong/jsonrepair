@@ -735,6 +735,7 @@ export function jsonrepairCore({
             stopAtDelimiter ||
             input.isEnd(i) ||
             (isDelimiter(input.charAt(i)) &&
+              !(input.charAt(i) === ',' && quoteBeforeCommaIsEmbedded(i)) &&
               // only count the brackets inside the string when actually needed,
               // i.e. when the quote is directly followed by a closing bracket
               !isInsideUnclosedBracket(input.substring(iBefore, iQuote), input.charAt(i))) ||
@@ -1078,6 +1079,45 @@ export function jsonrepairCore({
     }
 
     return input.isEnd(next) || isDelimiter(input.charAt(next))
+  }
+
+  function quoteBeforeCommaIsEmbedded(commaIndex: number): boolean {
+    let next = commaIndex + 1
+    while (next < input.currentLength() && isWhitespace(input, next)) {
+      next++
+    }
+
+    if (next >= input.currentLength() || isQuote(input.charAt(next))) {
+      return false
+    }
+
+    let end = next
+    while (end < input.currentLength()) {
+      if (isQuote(input.charAt(end))) {
+        break
+      }
+
+      if (input.charAt(end) === ':' || isUnquotedStringDelimiter(input.charAt(end))) {
+        return false
+      }
+
+      end++
+    }
+
+    if (end >= input.currentLength()) {
+      return false
+    }
+
+    let afterEndQuote = end + 1
+    while (afterEndQuote < input.currentLength() && isWhitespace(input, afterEndQuote)) {
+      afterEndQuote++
+    }
+
+    return (
+      afterEndQuote < input.currentLength() &&
+      isDelimiter(input.charAt(afterEndQuote)) &&
+      input.charAt(afterEndQuote) !== ':'
+    )
   }
 
   function atEndOfNumber() {

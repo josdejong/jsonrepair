@@ -342,6 +342,9 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('["," 2')).toBe('[",", 2]')
       expect(jsonrepair('{ "height": "(5\'3")" }')).toBe('{ "height": "(5\'3\\")" }')
       expect(jsonrepair('"The TV is 72""')).toBe('"The TV is 72\\""')
+      expect(
+        jsonrepair('{\n  "text": "hello",\n  "sentence": "do you know about "micheal", jackson"\n}')
+      ).toBe('{\n  "text": "hello",\n  "sentence": "do you know about \\"micheal\\", jackson"\n}')
     })
 
     test('should escape unescaped double quotes in the middle of a string', () => {

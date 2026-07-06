@@ -542,6 +542,7 @@ export function jsonrepair(text: string): string {
             stopAtDelimiter ||
             i >= text.length ||
             (isDelimiter(text[i]) &&
+              !(text[i] === ',' && quoteBeforeCommaIsEmbedded(i)) &&
               // only count the brackets inside the string when actually needed,
               // i.e. when the quote is directly followed by a closing bracket
               !isInsideUnclosedBracket(str, text[i])) ||
@@ -934,6 +935,44 @@ export function jsonrepair(text: string): string {
     }
 
     return next >= text.length || isDelimiter(text[next])
+  }
+
+  function quoteBeforeCommaIsEmbedded(commaIndex: number): boolean {
+    let next = commaIndex + 1
+    while (next < text.length && isWhitespace(text, next)) {
+      next++
+    }
+
+    if (next >= text.length || isQuote(text[next])) {
+      return false
+    }
+
+    let end = next
+    while (end < text.length) {
+      if (isQuote(text[end])) {
+        break
+      }
+
+      if (text[end] === ':' || isUnquotedStringDelimiter(text[end])) {
+        return false
+      }
+
+      end++
+    }
+
+    if (end >= text.length) {
+      return false
+    }
+
+    let afterEndQuote = end + 1
+    while (afterEndQuote < text.length && isWhitespace(text, afterEndQuote)) {
+      afterEndQuote++
+    }
+
+    return (
+      afterEndQuote >= text.length ||
+      (isDelimiter(text[afterEndQuote]) && text[afterEndQuote] !== ':')
+    )
   }
 
   function atEndOfNumber() {
