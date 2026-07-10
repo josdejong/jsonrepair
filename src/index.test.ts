@@ -172,6 +172,36 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('["abc,/*comment*/"def"]')).toBe('["abc","def"]')
     })
 
+    test('should preserve valid object keys containing true', () => {
+      expect(jsonrepair('{"note: true, huh": 1}')).toBe('{"note: true, huh": 1}')
+    })
+
+    test('should preserve valid object keys containing null', () => {
+      expect(jsonrepair('{"a: null, b": 2}')).toBe('{"a: null, b": 2}')
+    })
+
+    test('should preserve valid object keys containing false', () => {
+      expect(jsonrepair('{"x: false} y": 3}')).toBe('{"x: false} y": 3}')
+    })
+
+    test('should preserve valid value strings containing true', () => {
+      expect(jsonrepair('{"a": "x: true, y"}')).toBe('{"a": "x: true, y"}')
+    })
+
+    test('should repair missing object-key end quotes before values', () => {
+      expect(
+        jsonrepair(
+          '{"body": "@root continuing the review...", "suggested_diff_hunk: null, "approve_pr: false}'
+        )
+      ).toBe(
+        '{"body": "@root continuing the review...", "suggested_diff_hunk": null, "approve_pr": false}'
+      )
+    })
+
+    test('should repair a missing object-key end quote before true', () => {
+      expect(jsonrepair('{"done: true}')).toBe('{"done": true}')
+    })
+
     test('should repair truncated JSON', () => {
       expect(jsonrepair('"foo')).toBe('"foo"')
       expect(jsonrepair('[')).toBe('[]')
