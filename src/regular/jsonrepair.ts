@@ -298,7 +298,7 @@ export function jsonrepair(text: string): string {
 
         skipEllipsis()
 
-        const processedKey = parseString() || parseUnquotedString(true)
+        const processedKey = parseString(false, -1, true) || parseUnquotedString(true)
         if (!processedKey) {
           if (
             text[i] === '}' ||
@@ -452,7 +452,7 @@ export function jsonrepair(text: string): string {
    *   and fixing the string by inserting a quote there, or stopping at a
    *   stop index detected in the first iteration.
    */
-  function parseString(stopAtDelimiter = false, stopAtIndex = -1): boolean {
+  function parseString(stopAtDelimiter = false, stopAtIndex = -1, isObjectKey = false): boolean {
     const skipEscapeChars = text[i] === '\\'
     if (skipEscapeChars) {
       // repair: remove the first escape character
@@ -501,10 +501,23 @@ export function jsonrepair(text: string): string {
             i = iBefore
             output = output.substring(0, oBefore)
 
-            return parseString(true)
+            return parseString(true, -1, isObjectKey)
           }
 
           // repair missing quote
+          str = insertBeforeLastWhitespace(str, '"')
+          output += str
+
+          return true
+        }
+
+        if (
+          isObjectKey &&
+          (stopAtDelimiter || stopAtIndex !== -1) &&
+          text[i] === ':' &&
+          isPrimitiveValue(text, i)
+        ) {
+          // repair missing end quote before an object value
           str = insertBeforeLastWhitespace(str, '"')
           output += str
 
@@ -569,7 +582,7 @@ export function jsonrepair(text: string): string {
             i = iBefore
             output = output.substring(0, oBefore)
 
-            return parseString(false, iPrevChar)
+            return parseString(false, iPrevChar, isObjectKey)
           }
 
           if (isDelimiter(prevChar)) {
@@ -579,7 +592,7 @@ export function jsonrepair(text: string): string {
             i = iBefore
             output = output.substring(0, oBefore)
 
-            return parseString(true)
+            return parseString(true, -1, isObjectKey)
           }
 
           // revert to right after the quote but before any whitespace, and continue parsing the string
@@ -934,6 +947,32 @@ export function jsonrepair(text: string): string {
     }
 
     return next >= text.length || isDelimiter(text[next])
+  }
+
+  function isPrimitiveValue(text: string, index: number): boolean {
+    let valueStart = index + 1
+    while (valueStart < text.length && isWhitespace(text, valueStart)) {
+      valueStart++
+    }
+
+    const length = text.startsWith('true', valueStart)
+      ? 4
+      : text.startsWith('false', valueStart)
+        ? 5
+        : text.startsWith('null', valueStart)
+          ? 4
+          : 0
+
+    if (length === 0) {
+      return false
+    }
+
+    let valueEnd = valueStart + length
+    while (valueEnd < text.length && isWhitespace(text, valueEnd)) {
+      valueEnd++
+    }
+
+    return valueEnd < text.length && isDelimiter(text[valueEnd])
   }
 
   function atEndOfNumber() {
