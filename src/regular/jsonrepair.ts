@@ -1,10 +1,10 @@
 import { JSONRepairError } from '../utils/JSONRepairError.js'
+import { isStandaloneNumber, scanNumber } from '../utils/numberUtils.js'
 import {
   endsWithCommaOrNewline,
   insertBeforeLastWhitespace,
   isControlCharacter,
   isDelimiter,
-  isDigit,
   isDoubleQuote,
   isDoubleQuoteEntity,
   isDoubleQuoteLike,
@@ -546,7 +546,7 @@ export function jsonrepair(text: string): string {
               // i.e. when the quote is directly followed by a closing bracket
               !isInsideUnclosedBracket(str, text[i])) ||
             (isQuote(text[i]) && !nextQuoteIsEndQuote(i)) ||
-            isDigit(text[i])
+            isFollowedByStandaloneNumber(i)
           ) {
             // The quote is followed by the end of the text, a delimiter,
             // or a next value. So the quote is indeed the end of the string.
@@ -715,85 +715,12 @@ export function jsonrepair(text: string): string {
    */
   function parseNumber(): boolean {
     const start = i
-    let num = ''
-    let invalid = false
+    const token = scanNumber(text, start, (index) => atEndOfNumber(index))
+    if (!token) return false
 
-    if (text[i] === '-') {
-      num += text[i]
-      i++
-
-      if (!isDigit(text[i]) && atEndOfNumber()) {
-        // repair missing zero after minus like in "-.2" or "-"
-        num += '0'
-      }
-    }
-
-    if (text[i] === '0' && isDigit(text[i + 1])) {
-      // the number has leading zeros like "00123" or "001.23"
-      invalid = true
-    }
-
-    while (isDigit(text[i])) {
-      num += text[i]
-      i++
-    }
-
-    if (text[i] === '.') {
-      if (num === '' || num === '-') {
-        // repair missing leading zero before dot
-        num += '0'
-      }
-
-      num += text[i]
-      i++
-
-      if (!isDigit(text[i])) {
-        // repair a truncated number like "2." into "2.0"
-        num += '0'
-      }
-
-      while (isDigit(text[i])) {
-        num += text[i]
-        i++
-      }
-    }
-
-    if (i > start) {
-      if (text[i] === 'e' || text[i] === 'E') {
-        if (num === '-') {
-          invalid = true
-        }
-
-        num += text[i]
-        i++
-
-        if (text[i] === '-' || text[i] === '+') {
-          num += text[i]
-          i++
-        }
-
-        if (!isDigit(text[i])) {
-          // repair a truncated number like "2e" into "2e0"
-          num += '0'
-        }
-
-        while (isDigit(text[i])) {
-          num += text[i]
-          i++
-        }
-      }
-
-      // if we're not at the end of the number by this point, allow this to be parsed as another type
-      if (!atEndOfNumber()) {
-        i = start
-        return false
-      }
-
-      output += invalid ? `"${text.substring(start, i)}"` : num
-      return true
-    }
-
-    return false
+    i = token.end
+    output += token.invalid ? `"${text.substring(start, i)}"` : token.value
+    return true
   }
 
   /**
@@ -936,8 +863,17 @@ export function jsonrepair(text: string): string {
     return next >= text.length || isDelimiter(text[next])
   }
 
-  function atEndOfNumber() {
-    return i >= text.length || isDelimiter(text[i]) || isWhitespace(text, i)
+  function isFollowedByStandaloneNumber(start: number): boolean {
+    return isStandaloneNumber(
+      text,
+      start,
+      (index) => index >= text.length,
+      (index) => isWhitespace(text, index)
+    )
+  }
+
+  function atEndOfNumber(index = i) {
+    return index >= text.length || isDelimiter(text[index]) || isWhitespace(text, index)
   }
 
   function throwInvalidCharacter(char: string) {
