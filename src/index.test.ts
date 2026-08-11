@@ -335,9 +335,23 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     test('should escape unescaped double quotes', () => {
       expect(jsonrepair('"The TV has a 24" screen"')).toBe('"The TV has a 24\\" screen"')
       expect(jsonrepair('{"key": "apple "bee" carrot"}')).toBe('{"key": "apple \\"bee\\" carrot"}')
+      expect(jsonrepair('{"key": "includes "985/211" items"}')).toBe(
+        '{"key": "includes \\"985/211\\" items"}'
+      )
+      expect(jsonrepair('{"key": "example "2.3"。continued"}')).toBe(
+        '{"key": "example \\"2.3\\"。continued"}'
+      )
+      expect(jsonrepair('{"key": "requires "2fa" enabled"}')).toBe(
+        '{"key": "requires \\"2fa\\" enabled"}'
+      )
+      expect(jsonrepair('{"key": "version "3.0.1" released"}')).toBe(
+        '{"key": "version \\"3.0.1\\" released"}'
+      )
 
       expect(jsonrepair('[",",":"]')).toBe('[",",":"]')
       expect(jsonrepair('["a" 2]')).toBe('["a", 2]')
+      expect(jsonrepair('["a" 2.5]')).toBe('["a", 2.5]')
+      expect(jsonrepair('["a" 2e10]')).toBe('["a", 2e10]')
       expect(jsonrepair('["a" 2')).toBe('["a", 2]')
       expect(jsonrepair('["," 2')).toBe('[",", 2]')
       expect(jsonrepair('{ "height": "(5\'3")" }')).toBe('{ "height": "(5\'3\\")" }')
