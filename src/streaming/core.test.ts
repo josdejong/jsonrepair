@@ -47,6 +47,22 @@ describe('core', () => {
     expect(chunks.join('')).toBe(expected)
   })
 
+  test.each([1, 3, 100])('preserves a matching closer across %i-character chunks', (size) => {
+    const prefix = `[${'0,'.repeat(30)}`
+    const suffix = `${',0'.repeat(30)}]`
+    const input = `${prefix}{"a":{"b":[1}],"c":2},"d":3}${suffix}`
+    const expected = `${prefix}{"a":{"b":[1],"c":2},"d":3}${suffix}`
+    const { chunks, transform } = createCore({ bufferSize: 16, chunkSize: 4 })
+
+    for (let i = 0; i < input.length; i += size) {
+      transform.transform(input.slice(i, i + size))
+    }
+    transform.flush()
+
+    expect(chunks.length).toBeGreaterThan(1)
+    expect(chunks.join('')).toBe(expected)
+  })
+
   test.each([1, 2, 7, 16])('repairs nested closers across %i-character chunks', (size) => {
     const prefix = `${'[0,'.repeat(20)}0,`
     const suffix = `${',0'.repeat(30)}${']'.repeat(20)}`

@@ -252,15 +252,18 @@ export function jsonrepair(text: string): string {
   }
 
   function skipRedundantClosingBrackets() {
-    const end = redundantClosersEnd(
-      text,
-      i,
-      text.length,
-      (depth) => closingBrackets[closingBrackets.length - 1 - depth]
-    )
-    while (end !== null && i < end) {
-      i++
-      parseWhitespaceAndSkipComments()
+    while (true) {
+      const end = redundantClosersEnd(
+        text,
+        i,
+        text.length,
+        (depth) => closingBrackets[closingBrackets.length - 1 - depth]
+      )
+      if (end === null || end <= i) return
+      while (i < end) {
+        i++
+        parseWhitespaceAndSkipComments()
+      }
     }
   }
 

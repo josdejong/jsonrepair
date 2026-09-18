@@ -599,6 +599,16 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[{"a":[1},2]')).toBe('[{"a":[1]},2]')
     })
 
+    test.each([
+      ['{"a":{"b":[1}],"c":2},"d":3}', '{"a":{"b":[1],"c":2},"d":3}'],
+      ['{"a":[[{"b":1}}],[2]],"c":3}', '{"a":[[{"b":1}],[2]],"c":3}'],
+      ['{"a":{"b":[1}}],"c":2},"d":3}', '{"a":{"b":[1],"c":2},"d":3}'],
+      ['{"a":{"b":1]},"c":2}', '{"a":{"b":1},"c":2}'],
+      ['{"a":{"c":0}]}],"b":2}', '{"a":{"c":0},"b":2}']
+    ])('should preserve the matching closer after a stray closer: %s', (input, expected) => {
+      expect(jsonrepair(input)).toBe(expected)
+    })
+
     test('should preserve missing-colon repairs after an array', () => {
       expect(jsonrepair('{"a":[1],"b"2}')).toBe('{"a":[1],"b":2}')
       expect(jsonrepair('{"a":[1],"b"[]}')).toBe('{"a":[1],"b":[]}')

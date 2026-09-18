@@ -26,10 +26,15 @@ export function redundantClosersEnd(
   let i = start
   let depth = 0
   let matched = true
+  const current = closingBracket(0)
+  const mismatchedStart = charAt(start) !== current
   const absent = new Set<string>()
   while (charAt(i) === '}' || charAt(i) === ']') {
     let ancestor = depth
     const closer = charAt(i)
+    // Remove a stray prefix without also consuming the current container's end.
+    // A matching ancestor can still claim the prefix on the preceding iteration.
+    if (mismatchedStart && closer === current) return i
     if (!absent.has(closer)) {
       while (closingBracket(ancestor) && closer !== closingBracket(ancestor)) ancestor++
       if (!closingBracket(ancestor)) absent.add(closer)
