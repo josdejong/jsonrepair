@@ -818,6 +818,14 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[a,b\nc]')).toBe('["a","b",\n"c"]')
     })
 
+    test.each([
+      ['[1],2]', '[\n[1],2\n]'],
+      ['{}\n{}]}', '[\n{},\n{}\n]'],
+      ['[1],2,]', '[\n[1],2\n]']
+    ])('should remove surplus closers after separate root values: %s', (input, expected) => {
+      expect(jsonrepair(input)).toBe(expected)
+    })
+
     test('should repair newline separated json (for example from MongoDB)', () => {
       const text =
         '' + '/* 1 */\n' + '{}\n' + '\n' + '/* 2 */\n' + '{}\n' + '\n' + '/* 3 */\n' + '{}\n'

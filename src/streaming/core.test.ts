@@ -124,6 +124,20 @@ describe('core', () => {
       transform.transform('{"id":2}\n')
     }).toThrow('Cannot unshift: start of the output is already flushed from the buffer')
   })
+
+  test.each([1, 3, 100])('repairs surplus root closers across %i-character chunks', (size) => {
+    const values = `0${',0'.repeat(30)}`
+    const input = `${values}]}`
+    const { chunks, transform } = createCore({ bufferSize: 16, chunkSize: 4 })
+
+    for (let i = 0; i < input.length; i += size) {
+      transform.transform(input.slice(i, i + size))
+    }
+    transform.flush()
+
+    expect(chunks.length).toBeGreaterThan(1)
+    expect(chunks.join('')).toBe(`[\n${values}\n]`)
+  })
 })
 
 function createCore(options?: { chunkSize: number; bufferSize: number }) {

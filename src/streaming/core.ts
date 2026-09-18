@@ -466,7 +466,8 @@ export function jsonrepairCore({
   }
 
   function parseRepairNdJsonEnd(): boolean {
-    if (input.isEnd(i)) {
+    if (input.isEnd(i) || input.charAt(i) === '}' || input.charAt(i) === ']') {
+      // Root handling removes surplus closers after the synthetic array ends.
       output.push('\n]')
       return stack.pop()
     }
