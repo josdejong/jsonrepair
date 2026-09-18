@@ -1,3 +1,4 @@
+import { redundantClosersEnd } from '../utils/closingBrackets.js'
 import { JSONRepairError } from '../utils/JSONRepairError.js'
 import {
   endsWithCommaOrNewline,
@@ -70,6 +71,7 @@ const escapeCharacters: { [key: string]: string } = {
 export function jsonrepair(text: string): string {
   let i = 0 // current index in text
   let output = '' // generated output
+  const closingBrackets: string[] = []
 
   parseMarkdownCodeBlock(['```', '[```', '{```'])
 
@@ -249,6 +251,22 @@ export function jsonrepair(text: string): string {
     return skipCharacter('\\')
   }
 
+  function skipRedundantClosingBrackets() {
+    while (true) {
+      const end = redundantClosersEnd(
+        text,
+        i,
+        text.length,
+        (depth) => closingBrackets[closingBrackets.length - 1 - depth]
+      )
+      if (end === null || end <= i) return
+      while (i < end) {
+        i++
+        parseWhitespaceAndSkipComments()
+      }
+    }
+  }
+
   /**
    * Skip ellipsis like "[1,2,3,...]" or "[1,2,3,...,9]" or "[...,7,8,9]"
    * or a similar construct in objects.
@@ -273,6 +291,7 @@ export function jsonrepair(text: string): string {
    */
   function parseObject(): boolean {
     if (text[i] === '{') {
+      closingBrackets.push('}')
       output += '{'
       i++
       parseWhitespaceAndSkipComments()
@@ -339,6 +358,7 @@ export function jsonrepair(text: string): string {
         }
 
         initial = false
+        skipRedundantClosingBrackets()
       }
 
       if (text[i] === '}') {
@@ -349,6 +369,7 @@ export function jsonrepair(text: string): string {
         output = insertBeforeLastWhitespace(output, '}')
       }
 
+      closingBrackets.pop()
       return true
     }
 
@@ -360,6 +381,7 @@ export function jsonrepair(text: string): string {
    */
   function parseArray(): boolean {
     if (text[i] === '[') {
+      closingBrackets.push(']')
       output += '['
       i++
       parseWhitespaceAndSkipComments()
@@ -391,6 +413,7 @@ export function jsonrepair(text: string): string {
         }
 
         initial = false
+        skipRedundantClosingBrackets()
       }
 
       if (text[i] === ']') {
@@ -401,6 +424,7 @@ export function jsonrepair(text: string): string {
         output = insertBeforeLastWhitespace(output, ']')
       }
 
+      closingBrackets.pop()
       return true
     }
 

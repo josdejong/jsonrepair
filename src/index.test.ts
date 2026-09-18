@@ -527,6 +527,15 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[{{]')).toBe('[{},{}]')
     })
 
+    test.each([
+      ['[0,{{}]', '[0,{},{}]'],
+      ['[{"comma,key":{{}]', '[{"comma,key":{}},{}]'],
+      ['[{"a":[1,2],{{}]', '[{"a":[1,2]},{},{}]'],
+      ['[0,{"a":{"b":}{"c":1}},"d":2}]', '[0,{"a":{"b":null}},{"c":1,"d":2}]']
+    ])('should preserve earlier commas when repairing an object end: %s', (input, expected) => {
+      expect(jsonrepair(input)).toBe(expected)
+    })
+
     test('should remove a redundant closing brace for an object', () => {
       expect(jsonrepair('{"a": 1}}')).toBe('{"a": 1}')
       expect(jsonrepair('{"a": 1}}]}')).toBe('{"a": 1}')
@@ -548,6 +557,76 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{\n"values":[1,2,3\n')).toBe('{\n"values":[1,2,3]}\n')
       expect(jsonrepair('[1,[}]')).toBe('[1,[]]')
       expect(jsonrepair('{"a": 1, "b": [}')).toBe('{"a": 1, "b": []}')
+    })
+
+    test.each([
+      ['{"a":{"b":1}}},"c":2}', '{"a":{"b":1},"c":2}'],
+      ['[{"a":{"b":1}}},"c":2}]', '[{"a":{"b":1},"c":2}]'],
+      ['{"x":[{"a":{"b":1}}},"c":2}]}', '{"x":[{"a":{"b":1},"c":2}]}'],
+      ['{"a":{"b":[{}},{}]}}', '{"a":{"b":[{},{}]}}'],
+      ['{"a":{"b":[{}},{},{}]}}', '{"a":{"b":[{},{},{}]}}'],
+      ['{"a":[1,2}},3]}', '{"a":[1,2,3]}'],
+      ['{"a":{"b":[1,2]],3]}}', '{"a":{"b":[1,2,3]}}'],
+      ['[1,2]],3]', '[1,2,3]'],
+      ['{"a":[1,2]],"b":3}', '{"a":[1,2],"b":3}'],
+      ['{"a":{"b":1}} }, "c":2}', '{"a":{"b":1} , "c":2}'],
+      ['{"a":{"b":1}}},"c\\"d":2}', '{"a":{"b":1},"c\\"d":2}']
+    ])('should repair redundant closers before a continuation: %s', (input, expected) => {
+      expect(jsonrepair(input)).toBe(expected)
+    })
+
+    test.each([
+      '{"a":{"b":1},"c":2}',
+      '[{"a":{"b":1}}, {"c":2}]',
+      '{"a":[{"b":1}],"c":2}',
+      '{"a":{"b":[{},{}]},"c":2}',
+      '[[[1]],2]',
+      '[{"a":[1]},2]',
+      '{"a":[[1]],"b":"c"}',
+      '{"a":[{}],"b":"},\\"c\\":2"}',
+      '[{"a":"b"},"c",2]'
+    ])('should preserve legitimate parent continuations: %s', (input) => {
+      expect(jsonrepair(input)).toBe(input)
+    })
+
+    test('should preserve separate root values after matched closing brackets', () => {
+      expect(jsonrepair('[1],2')).toBe('[\n[1],2\n]')
+      expect(jsonrepair('{"a":[1]}, {"b":2}')).toBe('[\n{"a":[1]}, {"b":2}\n]')
+    })
+
+    test('should prefer missing closers when the continuation belongs to an ancestor', () => {
+      expect(jsonrepair('{"a":[{"b":1],"c":2}')).toBe('{"a":[{"b":1}],"c":2}')
+      expect(jsonrepair('[{"a":[1},2]')).toBe('[{"a":[1]},2]')
+    })
+
+    test.each([
+      ['{"a":{"b":[1}],"c":2},"d":3}', '{"a":{"b":[1],"c":2},"d":3}'],
+      ['{"a":[[{"b":1}}],[2]],"c":3}', '{"a":[[{"b":1}],[2]],"c":3}'],
+      ['{"a":{"b":[1}}],"c":2},"d":3}', '{"a":{"b":[1],"c":2},"d":3}'],
+      ['{"a":{"b":1]},"c":2}', '{"a":{"b":1},"c":2}'],
+      ['{"a":{"c":0}]}],"b":2}', '{"a":{"c":0},"b":2}']
+    ])('should preserve the matching closer after a stray closer: %s', (input, expected) => {
+      expect(jsonrepair(input)).toBe(expected)
+    })
+
+    test('should preserve missing-colon repairs after an array', () => {
+      expect(jsonrepair('{"a":[1],"b"2}')).toBe('{"a":[1],"b":2}')
+      expect(jsonrepair('{"a":[1],"b"[]}')).toBe('{"a":[1],"b":[]}')
+    })
+
+    test('should preserve missing-parent repairs after a matched array end', () => {
+      expect(jsonrepair('[{"a":[1],{"b":2}]')).toBe('[{"a":[1]},{"b":2}]')
+    })
+
+    test('should preserve valid mixed nesting around every JSON value type', () => {
+      for (const value of [null, true, false, 0, -1.5, '},"key":[]', [], {}, [1, 2], { a: 1 }]) {
+        let nested: unknown = value
+        for (let depth = 0; depth < 8; depth++) {
+          nested = depth % 2 ? [nested, value] : { first: nested, second: value }
+          const text = JSON.stringify(nested)
+          expect(jsonrepair(text)).toBe(text)
+        }
+      }
     })
 
     test('should strip MongoDB data types', () => {
@@ -737,6 +816,14 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{"array": [\na\nb\n]}')).toBe('{"array": [\n"a",\n"b"\n]}')
       expect(jsonrepair('1\n2')).toBe('[\n1,\n2\n]')
       expect(jsonrepair('[a,b\nc]')).toBe('["a","b",\n"c"]')
+    })
+
+    test.each([
+      ['[1],2]', '[\n[1],2\n]'],
+      ['{}\n{}]}', '[\n{},\n{}\n]'],
+      ['[1],2,]', '[\n[1],2\n]']
+    ])('should remove surplus closers after separate root values: %s', (input, expected) => {
+      expect(jsonrepair(input)).toBe(expected)
     })
 
     test('should repair newline separated json (for example from MongoDB)', () => {
