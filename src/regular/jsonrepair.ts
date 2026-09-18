@@ -258,7 +258,7 @@ export function jsonrepair(text: string): string {
       text.length,
       (depth) => closingBrackets[closingBrackets.length - 1 - depth]
     )
-    while (i < end) {
+    while (end !== null && i < end) {
       i++
       parseWhitespaceAndSkipComments()
     }

@@ -590,6 +590,15 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[{"a":[1},2]')).toBe('[{"a":[1]},2]')
     })
 
+    test('should preserve missing-colon repairs after an array', () => {
+      expect(jsonrepair('{"a":[1],"b"2}')).toBe('{"a":[1],"b":2}')
+      expect(jsonrepair('{"a":[1],"b"[]}')).toBe('{"a":[1],"b":[]}')
+    })
+
+    test('should preserve missing-parent repairs after a matched array end', () => {
+      expect(jsonrepair('[{"a":[1],{"b":2}]')).toBe('[{"a":[1]},{"b":2}]')
+    })
+
     test('should preserve valid mixed nesting around every JSON value type', () => {
       for (const value of [null, true, false, 0, -1.5, '},"key":[]', [], {}, [1, 2], { a: 1 }]) {
         let nested: unknown = value

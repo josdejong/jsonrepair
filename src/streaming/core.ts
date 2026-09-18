@@ -77,6 +77,8 @@ export function jsonrepairCore({
 
   let i = 0
   let iFlushed = 0
+  let inputClosed = false
+  let lookaheadUntil = 0
   const stack = createStack()
 
   function flushInputBuffer() {
@@ -97,6 +99,7 @@ export function jsonrepairCore({
   }
 
   function flush() {
+    inputClosed = true
     input.close()
 
     while (parse()) {
@@ -107,13 +110,35 @@ export function jsonrepairCore({
   }
 
   function parse(): boolean {
+    if (!inputClosed && input.currentLength() < lookaheadUntil) return false
     parseWhitespaceAndSkipComments()
 
     if (
       stack.caret === Caret.afterValue &&
       (stack.type === StackType.object || stack.type === StackType.array)
     ) {
-      const end = redundantClosersEnd(input, i, input.currentLength(), stack.closingBracket)
+      // The closer run and its following key/value each get one buffer window.
+      // Bound pending lookahead even when input arrives one character at a time.
+      const limit = i + 2 * bufferSize
+      const available = Math.min(input.currentLength(), limit)
+      const end = redundantClosersEnd(
+        input,
+        i,
+        available,
+        stack.closingBracket,
+        inputClosed && available === input.currentLength()
+      )
+      if (end === null) {
+        if (available === limit) {
+          throw new Error(
+            'Index out of range, please configure a larger buffer size for closing-bracket lookahead'
+          )
+        }
+        // Avoid rescanning the same incomplete continuation on every tiny chunk.
+        lookaheadUntil = limit
+        return false
+      }
+      lookaheadUntil = 0
       if (end > i) {
         while (i < end) {
           i++

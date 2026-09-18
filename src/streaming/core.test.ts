@@ -47,6 +47,42 @@ describe('core', () => {
     expect(chunks.join('')).toBe(expected)
   })
 
+  test.each([
+    1, 3, 16, 100
+  ])('waits for a continuation split across %i-character chunks', (size) => {
+    const suffix = `${',0'.repeat(16)}]`
+    const input = `[{"a":{"b":1}}},"xxxxxxxxxxxx":2}${suffix}`
+    const expected = `[{"a":{"b":1},"xxxxxxxxxxxx":2}${suffix}`
+    const { chunks, transform } = createCore({ bufferSize: 16, chunkSize: 4 })
+
+    for (let i = 0; i < input.length; i += size) {
+      transform.transform(input.slice(i, i + size))
+    }
+    transform.flush()
+    expect(chunks.join('')).toBe(expected)
+  })
+
+  test.each([1, 3, 100])('resolves pending lookahead at EOF with %i-character chunks', (size) => {
+    const input = '[{"a":{"b":1}}},"xxxxxxxxxxxx":2}]'
+    const { chunks, transform } = createCore({ bufferSize: 16, chunkSize: 4 })
+    for (let i = 0; i < input.length; i += size) {
+      transform.transform(input.slice(i, i + size))
+    }
+    transform.flush()
+    expect(chunks.join('')).toBe('[{"a":{"b":1},"xxxxxxxxxxxx":2}]')
+  })
+
+  test.each([1, 100])('bounds pending lookahead with %i-character chunks', (size) => {
+    const input = `[{"a":{"b":1}}},"${'x'.repeat(40)}":2}]`
+    const { transform } = createCore({ bufferSize: 16, chunkSize: 4 })
+    expect(() => {
+      for (let i = 0; i < input.length; i += size) {
+        transform.transform(input.slice(i, i + size))
+      }
+      transform.flush()
+    }).toThrow('please configure a larger buffer size for closing-bracket lookahead')
+  })
+
   test('it should throw an error when having a too small output buffer', () => {
     // testing with ndjson, that has to insert a [ at the start of the document
     const { transform } = createCore({ bufferSize: 4, chunkSize: 2 })

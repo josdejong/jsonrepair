@@ -160,6 +160,8 @@ The option `chunkSize` determines the size of the chunks that the transform outp
 
 The option `bufferSize` determines how many bytes of the input and output stream are kept in memory and is also `65536` bytes by default. This buffer is used as a "moving window" on the input and output. This is necessary because `jsonrepair` must look ahead or look back to see what to fix, and it must sometimes walk back the generated output to insert a missing comma for example. The `bufferSize` must be larger than the length of the largest string and whitespace in the JSON data, otherwise, and error is thrown when processing the data. Making `bufferSize` very large will result in more memory usage and less performance.
 
+Repairing redundant closing brackets may need to wait for the following key or value. This lookahead is limited to twice `bufferSize`; if that context does not fit, increase `bufferSize`. The parser waits for incomplete chunks rather than interpreting them as the end of the document.
+
 ## Command Line Interface (CLI)
 
 When `jsonrepair` is installed globally using npm, it can be used on the command line. To install `jsonrepair` globally:
