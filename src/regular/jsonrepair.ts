@@ -105,6 +105,8 @@ export function jsonrepair(text: string): string {
     parseWhitespaceAndSkipComments()
   }
 
+  parseMarkdownCodeBlock(['```', '```]', '```}'])
+
   if (i >= text.length) {
     // reached the end of the document properly
     return output

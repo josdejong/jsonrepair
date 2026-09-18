@@ -453,6 +453,22 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{```json\n{"a":"b"}\n```}')).toBe('\n{"a":"b"}\n')
     })
 
+    test.each([
+      ['```json\n[{"a":1}\n}\n]\n```', '\n[{"a":1}]\n\n\n'],
+      ['```json\n{"a":1}\n}\n```', '\n{"a":1}\n\n'],
+      ['[{"a":1}\n}\n]\n```', '[{"a":1}]\n\n\n'],
+      ['```json\n[1]\n}\n```', '\n[1]\n\n'],
+      ['```json\n{} } /* extra brace */ ]\n```\n', '\n{}   \n\n']
+    ])('should strip a markdown fence after redundant closing brackets: %s', (input, expected) => {
+      expect(jsonrepair(input)).toBe(expected)
+    })
+
+    test('should reject unexpected content after redundant brackets and a markdown fence', () => {
+      expect(() => jsonrepair('```json\n{} }\n```\n!')).toThrow(
+        new JSONRepairError('Unexpected character "!"', 17)
+      )
+    })
+
     test('should repair escaped string contents', () => {
       expect(jsonrepair('\\"hello world\\"')).toBe('"hello world"')
       expect(jsonrepair('\\"hello world\\')).toBe('"hello world"')

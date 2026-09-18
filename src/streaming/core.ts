@@ -482,6 +482,8 @@ export function jsonrepairCore({
       parseWhitespaceAndSkipComments()
     }
 
+    parseMarkdownCodeBlock(['```', '```]', '```}'])
+
     if (!input.isEnd(i)) {
       throwUnexpectedCharacter()
     }
