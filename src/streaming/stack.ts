@@ -25,6 +25,11 @@ export function createStack() {
       return caret
     },
 
+    closingBracket(depth: number): string | undefined {
+      const type = stack[stack.length - 1 - depth]
+      return type === StackType.object ? '}' : type === StackType.array ? ']' : undefined
+    },
+
     pop(): true {
       stack.pop()
       caret = Caret.afterValue

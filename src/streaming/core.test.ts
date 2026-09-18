@@ -31,6 +31,22 @@ describe('core', () => {
     }).toThrow('Index out of range, please configure a larger buffer size (index: 6)')
   })
 
+  test.each([1, 2, 7, 16])('repairs nested closers across %i-character chunks', (size) => {
+    const prefix = `${'[0,'.repeat(20)}0,`
+    const suffix = `${',0'.repeat(30)}${']'.repeat(20)}`
+    const input = `${prefix}{"a":{"b":1}}},"c":2}${suffix}`
+    const expected = `${prefix}{"a":{"b":1},"c":2}${suffix}`
+    const { chunks, transform } = createCore({ bufferSize: 32, chunkSize: 8 })
+
+    for (let i = 0; i < input.length; i += size) {
+      transform.transform(input.slice(i, i + size))
+    }
+    transform.flush()
+
+    expect(chunks.length).toBeGreaterThan(1)
+    expect(chunks.join('')).toBe(expected)
+  })
+
   test('it should throw an error when having a too small output buffer', () => {
     // testing with ndjson, that has to insert a [ at the start of the document
     const { transform } = createCore({ bufferSize: 4, chunkSize: 2 })

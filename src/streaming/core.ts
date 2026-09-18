@@ -1,3 +1,4 @@
+import { redundantClosersEnd } from '../utils/closingBrackets.js'
 import { JSONRepairError } from '../utils/JSONRepairError.js'
 import {
   isControlCharacter,
@@ -107,6 +108,20 @@ export function jsonrepairCore({
 
   function parse(): boolean {
     parseWhitespaceAndSkipComments()
+
+    if (
+      stack.caret === Caret.afterValue &&
+      (stack.type === StackType.object || stack.type === StackType.array)
+    ) {
+      const end = redundantClosersEnd(input, i, input.currentLength(), stack.closingBracket)
+      if (end > i) {
+        while (i < end) {
+          i++
+          parseWhitespaceAndSkipComments()
+        }
+        return true
+      }
+    }
 
     switch (stack.type) {
       case StackType.object: {

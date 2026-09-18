@@ -550,6 +550,57 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('{"a": 1, "b": [}')).toBe('{"a": 1, "b": []}')
     })
 
+    test.each([
+      ['{"a":{"b":1}}},"c":2}', '{"a":{"b":1},"c":2}'],
+      ['[{"a":{"b":1}}},"c":2}]', '[{"a":{"b":1},"c":2}]'],
+      ['{"x":[{"a":{"b":1}}},"c":2}]}', '{"x":[{"a":{"b":1},"c":2}]}'],
+      ['{"a":{"b":[{}},{}]}}', '{"a":{"b":[{},{}]}}'],
+      ['{"a":{"b":[{}},{},{}]}}', '{"a":{"b":[{},{},{}]}}'],
+      ['{"a":[1,2}},3]}', '{"a":[1,2,3]}'],
+      ['{"a":{"b":[1,2]],3]}}', '{"a":{"b":[1,2,3]}}'],
+      ['[1,2]],3]', '[1,2,3]'],
+      ['{"a":[1,2]],"b":3}', '{"a":[1,2],"b":3}'],
+      ['{"a":{"b":1}} }, "c":2}', '{"a":{"b":1} , "c":2}'],
+      ['{"a":{"b":1}}},"c\\"d":2}', '{"a":{"b":1},"c\\"d":2}']
+    ])('should repair redundant closers before a continuation: %s', (input, expected) => {
+      expect(jsonrepair(input)).toBe(expected)
+    })
+
+    test.each([
+      '{"a":{"b":1},"c":2}',
+      '[{"a":{"b":1}}, {"c":2}]',
+      '{"a":[{"b":1}],"c":2}',
+      '{"a":{"b":[{},{}]},"c":2}',
+      '[[[1]],2]',
+      '[{"a":[1]},2]',
+      '{"a":[[1]],"b":"c"}',
+      '{"a":[{}],"b":"},\\"c\\":2"}',
+      '[{"a":"b"},"c",2]'
+    ])('should preserve legitimate parent continuations: %s', (input) => {
+      expect(jsonrepair(input)).toBe(input)
+    })
+
+    test('should preserve separate root values after matched closing brackets', () => {
+      expect(jsonrepair('[1],2')).toBe('[\n[1],2\n]')
+      expect(jsonrepair('{"a":[1]}, {"b":2}')).toBe('[\n{"a":[1]}, {"b":2}\n]')
+    })
+
+    test('should prefer missing closers when the continuation belongs to an ancestor', () => {
+      expect(jsonrepair('{"a":[{"b":1],"c":2}')).toBe('{"a":[{"b":1}],"c":2}')
+      expect(jsonrepair('[{"a":[1},2]')).toBe('[{"a":[1]},2]')
+    })
+
+    test('should preserve valid mixed nesting around every JSON value type', () => {
+      for (const value of [null, true, false, 0, -1.5, '},"key":[]', [], {}, [1, 2], { a: 1 }]) {
+        let nested: unknown = value
+        for (let depth = 0; depth < 8; depth++) {
+          nested = depth % 2 ? [nested, value] : { first: nested, second: value }
+          const text = JSON.stringify(nested)
+          expect(jsonrepair(text)).toBe(text)
+        }
+      }
+    })
+
     test('should strip MongoDB data types', () => {
       // simple
       expect(jsonrepair('NumberLong("2")')).toBe('"2"')
