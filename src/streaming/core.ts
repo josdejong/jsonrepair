@@ -415,7 +415,9 @@ export function jsonrepairCore({
   function parseRepairObjectEndOrComma(): true {
     // repair missing object end and trailing comma
     if (input.charAt(i) === '{') {
-      output.stripLastOccurrence(',')
+      if (output.endsWithIgnoringWhitespace(',')) {
+        output.stripLastOccurrence(',')
+      }
       output.insertBeforeLastWhitespace('}')
       return stack.pop()
     }

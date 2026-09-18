@@ -31,6 +31,22 @@ describe('core', () => {
     }).toThrow('Index out of range, please configure a larger buffer size (index: 6)')
   })
 
+  test.each([1, 3, 100])('preserves earlier commas across %i-character chunks', (size) => {
+    const prefix = `[${'0,'.repeat(30)}`
+    const suffix = `${',0'.repeat(30)}]`
+    const input = `${prefix}{"comma,key":{{}${suffix}`
+    const expected = `${prefix}{"comma,key":{}},{}${suffix}`
+    const { chunks, transform } = createCore({ bufferSize: 16, chunkSize: 4 })
+
+    for (let i = 0; i < input.length; i += size) {
+      transform.transform(input.slice(i, i + size))
+    }
+    transform.flush()
+
+    expect(chunks.length).toBeGreaterThan(1)
+    expect(chunks.join('')).toBe(expected)
+  })
+
   test.each([1, 2, 7, 16])('repairs nested closers across %i-character chunks', (size) => {
     const prefix = `${'[0,'.repeat(20)}0,`
     const suffix = `${',0'.repeat(30)}${']'.repeat(20)}`

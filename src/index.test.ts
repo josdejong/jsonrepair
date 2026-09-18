@@ -527,6 +527,15 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[{{]')).toBe('[{},{}]')
     })
 
+    test.each([
+      ['[0,{{}]', '[0,{},{}]'],
+      ['[{"comma,key":{{}]', '[{"comma,key":{}},{}]'],
+      ['[{"a":[1,2],{{}]', '[{"a":[1,2]},{},{}]'],
+      ['[0,{"a":{"b":}{"c":1}},"d":2}]', '[0,{"a":{"b":null}},{"c":1,"d":2}]']
+    ])('should preserve earlier commas when repairing an object end: %s', (input, expected) => {
+      expect(jsonrepair(input)).toBe(expected)
+    })
+
     test('should remove a redundant closing brace for an object', () => {
       expect(jsonrepair('{"a": 1}}')).toBe('{"a": 1}')
       expect(jsonrepair('{"a": 1}}]}')).toBe('{"a": 1}')
