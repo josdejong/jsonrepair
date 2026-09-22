@@ -707,7 +707,7 @@ export function jsonrepairCore({
           return stack.update(Caret.afterValue)
         }
 
-        if (i === stopAtIndex) {
+        if (stopAtIndex !== -1 && i >= stopAtIndex) {
           // use the stop index detected in the first iteration, and repair end quote
           output.insertBeforeLastWhitespace('"')
 
@@ -841,6 +841,11 @@ export function jsonrepairCore({
             // repair a backslash escaped newline (like in Bash scripts)
             output.push('\\n')
             i += 2
+          } else if (stopAtIndex !== -1 && i + 1 === stopAtIndex) {
+            // repair invalid escape character: remove it — the escaped character
+            // is the delimiter the retry should stop at, so drop the backslash
+            // and let the stopAtIndex check above end the string there
+            i += 1
           } else {
             // repair invalid escape character: remove it
             output.push(char)
