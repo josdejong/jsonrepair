@@ -380,6 +380,13 @@ export function jsonrepairCore({
       return stack.pop()
     }
 
+    // repair missing object end before an array like {"a":1 [1]}: an array
+    // cannot be a key, so an inserted comma would be stripped again forever
+    if (input.charAt(i) === '[') {
+      output.insertBeforeLastWhitespace('}')
+      return stack.pop()
+    }
+
     // repair missing comma
     if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
       output.insertBeforeLastWhitespace(',')
