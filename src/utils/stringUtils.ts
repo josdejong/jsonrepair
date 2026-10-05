@@ -48,8 +48,9 @@ export function isFunctionNameChar(char: string) {
   )
 }
 
-// matches "https://" and other schemas
-export const regexUrlStart = /^(http|https|ftp|mailto|file|data|irc):\/\/$/
+// Matches URL schemes and single-slash paths without consuming comments after drive/$FILE prefixes.
+export const regexUrlStart =
+  /^(?:(?:http|https|ftp|mailto|file|data|irc):\/(?:\/|[^/*])?|(?:[A-Za-z]|\$FILE):\/[^/*]?)$/
 
 // matches all valid URL characters EXCEPT "[", "]", and ",", since that are important JSON delimiters
 export const regexUrlChar = /^[A-Za-z0-9-._~:/?#@!$&'()*+;=]$/
