@@ -843,14 +843,21 @@ export function jsonrepairCore({
             i += 2
           } else {
             // repair invalid escape character: remove it
-            output.push(char)
+            if (isControlCharacter(char)) {
+              output.push(controlCharacters[char])
+            } else {
+              if (char !== '' && !isValidStringCharacter(char)) {
+                throwInvalidCharacter(char)
+              }
+              output.push(char)
+            }
             i += 2
           }
         } else {
           // handle regular characters
           const char = input.charAt(i)
 
-          if (char === '"' && input.charAt(i - 1) !== '\\') {
+          if (char === '"') {
             // repair unescaped double quote
             output.push(`\\${char}`)
             i++

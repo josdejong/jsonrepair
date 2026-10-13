@@ -292,6 +292,27 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('"first\\\nsecond"')).toBe('"first\\nsecond"')
     })
 
+    test('should escape a control character after a backslash', () => {
+      // the backslash is removed, and the control character is escaped
+      expect(jsonrepair('"a\\\tb"')).toBe('"a\\tb"')
+      expect(jsonrepair('"a\\\rb"')).toBe('"a\\rb"')
+      expect(jsonrepair('"a\\\r\n"')).toBe('"a\\r\\n"')
+      expect(jsonrepair('"a\\\bb"')).toBe('"a\\bb"')
+      expect(jsonrepair('"a\\\fb"')).toBe('"a\\fb"')
+      expect(jsonrepair('{"a": "x\\\ty"}')).toBe('{"a": "x\\ty"}')
+      expect(jsonrepair("['x\\\ty']")).toBe('["x\\ty"]')
+    })
+
+    test('should escape a double quote after an escaped backslash in a single-quoted string', () => {
+      expect(jsonrepair("{'a': 'x\\\\\"y'}")).toBe('{"a": "x\\\\\\"y"}')
+      expect(jsonrepair("['x\\\\\"y']")).toBe('["x\\\\\\"y"]')
+      expect(jsonrepair("'x\\\\\"'")).toBe('"x\\\\\\""')
+
+      // an already escaped double quote is left as is
+      expect(jsonrepair("['x\\\"y']")).toBe('["x\\"y"]')
+      expect(jsonrepair("['x\\\\\\\"y']")).toBe('["x\\\\\\"y"]')
+    })
+
     test('should repair a backslash character outside of a string', () => {
       const msg = 'Unexpected character "\\\\"'
 
@@ -872,6 +893,15 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
     expect(() => {
       console.log({ output: jsonrepair('"abc\u{1f}"') })
     }).toThrow(new JSONRepairError('Invalid character "\\u001f"', 4))
+
+    // an invalid control character after a backslash
+    expect(() => {
+      console.log({ output: jsonrepair('"a\\\u{00}b"') })
+    }).toThrow(new JSONRepairError('Invalid character "\\u0000"', 2))
+
+    expect(() => {
+      console.log({ output: jsonrepair('"a\\\u{1f}b"') })
+    }).toThrow(new JSONRepairError('Invalid character "\\u001f"', 2))
   })
 
   function assertRepair(text: string) {

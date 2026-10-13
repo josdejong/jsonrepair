@@ -648,14 +648,21 @@ export function jsonrepair(text: string): string {
             i += 2
           } else {
             // repair invalid escape character: remove it
-            str += char
+            if (isControlCharacter(char)) {
+              str += controlCharacters[char]
+            } else {
+              if (char !== '' && !isValidStringCharacter(char)) {
+                throwInvalidCharacter(char)
+              }
+              str += char
+            }
             i += 2
           }
         } else {
           // handle regular characters
           const char = text.charAt(i)
 
-          if (char === '"' && text[i - 1] !== '\\') {
+          if (char === '"') {
             // repair unescaped double quote
             str += `\\${char}`
             i++
