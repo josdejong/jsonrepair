@@ -70,6 +70,7 @@ const escapeCharacters: { [key: string]: string } = {
 export function jsonrepair(text: string): string {
   let i = 0 // current index in text
   let output = '' // generated output
+  const openContainers: string[] = [] // opening brackets of the objects and arrays being parsed
 
   parseMarkdownCodeBlock(['```', '[```', '{```'])
 
@@ -274,6 +275,7 @@ export function jsonrepair(text: string): string {
   function parseObject(): boolean {
     if (text[i] === '{') {
       output += '{'
+      openContainers.push('{')
       i++
       parseWhitespaceAndSkipComments()
 
@@ -349,6 +351,8 @@ export function jsonrepair(text: string): string {
         output = insertBeforeLastWhitespace(output, '}')
       }
 
+      openContainers.pop()
+
       return true
     }
 
@@ -361,6 +365,7 @@ export function jsonrepair(text: string): string {
   function parseArray(): boolean {
     if (text[i] === '[') {
       output += '['
+      openContainers.push('[')
       i++
       parseWhitespaceAndSkipComments()
 
@@ -400,6 +405,8 @@ export function jsonrepair(text: string): string {
         // repair missing closing array bracket
         output = insertBeforeLastWhitespace(output, ']')
       }
+
+      openContainers.pop()
 
       return true
     }
@@ -544,7 +551,7 @@ export function jsonrepair(text: string): string {
             (isDelimiter(text[i]) &&
               // only count the brackets inside the string when actually needed,
               // i.e. when the quote is directly followed by a closing bracket
-              !isInsideUnclosedBracket(str, text[i])) ||
+              !isInsideUnclosedBracket(str, text[i], openContainers[openContainers.length - 1])) ||
             (isQuote(text[i]) && !nextQuoteIsEndQuote(i)) ||
             isDigit(text[i])
           ) {

@@ -196,6 +196,14 @@ export function jsonrepairCore({
     )
   }
 
+  /**
+   * Get the opening bracket of the object or array that encloses the current
+   * position, or undefined when not inside an object or array.
+   */
+  function getEnclosingOpenChar(): string | undefined {
+    return stack.type === StackType.object ? '{' : stack.type === StackType.array ? '[' : undefined
+  }
+
   function parseObjectStart(): boolean {
     if (parseCharacter('{')) {
       parseWhitespaceAndSkipComments()
@@ -737,7 +745,11 @@ export function jsonrepairCore({
             (isDelimiter(input.charAt(i)) &&
               // only count the brackets inside the string when actually needed,
               // i.e. when the quote is directly followed by a closing bracket
-              !isInsideUnclosedBracket(input.substring(iBefore, iQuote), input.charAt(i))) ||
+              !isInsideUnclosedBracket(
+                input.substring(iBefore, iQuote),
+                input.charAt(i),
+                getEnclosingOpenChar()
+              )) ||
             (isQuote(input.charAt(i)) && !nextQuoteIsEndQuote(i)) ||
             isDigit(input.charAt(i))
           ) {

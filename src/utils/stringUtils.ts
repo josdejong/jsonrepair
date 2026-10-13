@@ -281,17 +281,27 @@ export function countOccurrences(text: string, char: string): number {
  * `text` is located inside the brackets, for example the quote in
  * `"a (b") c"` is followed by `)` while `(` is still unclosed.
  *
+ * When `closeChar` closes the container that encloses the string (given by its
+ * opening bracket `enclosingOpenChar`, like `{` for an object), it is a
+ * structural character instead of part of the string, for example the `}` in
+ * `{"a": "{"}`. Then, an unclosed bracket inside the string is not an
+ * indication that the string continues, and this function returns false.
+ *
  * Note that the (potentially expensive) counting is only performed when
  * `closeChar` actually is a closing bracket.
  */
-export function isInsideUnclosedBracket(text: string, closeChar: string): boolean {
+export function isInsideUnclosedBracket(
+  text: string,
+  closeChar: string,
+  enclosingOpenChar?: string
+): boolean {
   switch (closeChar) {
     case ')':
       return countOccurrences(text, '(') > countOccurrences(text, ')')
     case ']':
-      return countOccurrences(text, '[') > countOccurrences(text, ']')
+      return enclosingOpenChar !== '[' && countOccurrences(text, '[') > countOccurrences(text, ']')
     case '}':
-      return countOccurrences(text, '{') > countOccurrences(text, '}')
+      return enclosingOpenChar !== '{' && countOccurrences(text, '{') > countOccurrences(text, '}')
     default:
       return false
   }

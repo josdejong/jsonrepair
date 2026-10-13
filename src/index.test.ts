@@ -84,6 +84,24 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       assertRepair('","')
     })
 
+    test('correctly handle strings containing an unclosed bracket inside an object or array', () => {
+      // the closing } or ] after the string closes the enclosing container,
+      // it must not be mistaken for part of the string
+      assertRepair('{"code":"if (x) {"}')
+      assertRepair('{"a":"{"}')
+      assertRepair('{"a":"["}')
+      assertRepair('{"a":"[1,2"}')
+      assertRepair('{"a":"{\\"b\\":"}')
+      assertRepair('["{"]')
+      assertRepair('["[1,2"]')
+      assertRepair('["x","[1,2"]')
+      assertRepair('["x","{a, b"]')
+      assertRepair('[["[", "{"],{"k":"[["}]')
+      assertRepair('{"a":["{","["],"b":{"c":"{[","d":"["}}')
+      assertRepair('{"{":"{","[":"["}')
+      assertRepair('{\n  "code": "if (x) {",\n  "other": "[1,2"\n}')
+    })
+
     test('supports unicode characters in a string', () => {
       expect(jsonrepair('"★"')).toBe('"★"')
       expect(jsonrepair('"\u2605"')).toBe('"\u2605"')
@@ -360,6 +378,11 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
 
       // only a closing parenthesis and no opening one: the quote is the real end of the string
       expect(jsonrepair('["foo)" 2]')).toBe('["foo)", 2]')
+
+      // the same inside an object or array, with a closing bracket of the other kind
+      // than the enclosing container: it cannot close the container, so it is part of the string
+      expect(jsonrepair('{"a":"the list [1, 2"] more"}')).toBe('{"a":"the list [1, 2\\"] more"}')
+      expect(jsonrepair('["the set {a, b"} more"]')).toBe('["the set {a, b\\"} more"]')
     })
 
     test('should replace special white space characters', () => {
