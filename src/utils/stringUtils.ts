@@ -98,8 +98,14 @@ export function isWhitespaceExceptNewline(text: Text, index: number): boolean {
  * unicode variant
  */
 export function isSpecialWhitespace(text: Text, index: number): boolean {
-  const code = text.charCodeAt(index)
+  return isSpecialWhitespaceCode(text.charCodeAt(index))
+}
 
+/**
+ * Check if the given character code is a special whitespace character, some
+ * unicode variant
+ */
+export function isSpecialWhitespaceCode(code: number): boolean {
   return (
     code === codeNonBreakingSpace ||
     code === codeMongolianVowelSeparator ||

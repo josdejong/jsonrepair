@@ -79,6 +79,24 @@ describe('InputBuffer', () => {
     expect(buffer.currentBufferSize()).toEqual(7)
   })
 
+  test('should read pushed chunks before and after flattening', () => {
+    const buffer = createInputBuffer()
+    buffer.push('012')
+    buffer.push('345')
+    expect(buffer.substring(1, 5)).toBe('1234')
+
+    buffer.flatten()
+    buffer.push('678')
+    expect(buffer.charAt(7)).toBe('7')
+
+    buffer.flatten()
+    buffer.flush(4)
+    buffer.push('9')
+    buffer.flatten()
+    expect(buffer.substring(4, 10)).toBe('456789')
+    expect(buffer.currentBufferSize()).toBe(6)
+  })
+
   test('should check whether we have reached the end', () => {
     const { buffer } = testInputBuffer('0123456789')
     buffer.close()

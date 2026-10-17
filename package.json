@@ -50,6 +50,7 @@
     "lint": "biome check",
     "format": "biome check --write",
     "benchmark": "npm run build:esm && node tools/benchmark/run.mjs",
+    "benchmark:stream": "npm run build:esm && node tools/benchmark/stream.mjs",
     "build-and-test": "npm run lint && npm run test:it && npm run build",
     "release": "npm-run-all release:**",
     "release:build-and-test": "npm run build-and-test",

@@ -19,7 +19,7 @@ function getWidths(items) {
   for (const item of items) {
     for (const key of Object.keys(item)) {
       const length = item[key].length
-      const maxLength = widths.get(key)?.length ?? 0
+      const maxLength = widths.get(key) ?? 0
       const keyLength = key.length
 
       widths.set(key, Math.max(length, maxLength, keyLength))

@@ -14,12 +14,11 @@ import {
   isSingleQuote,
   isSingleQuoteEntity,
   isSingleQuoteLike,
-  isSpecialWhitespace,
+  isSpecialWhitespaceCode,
   isStartOfValue,
   isUnquotedStringDelimiter,
   isValidStringCharacter,
   isWhitespace,
-  isWhitespaceExceptNewline,
   matchHtmlEntity,
   maxHtmlEntityLength,
   regexUrlChar,
@@ -48,6 +47,38 @@ const escapeCharacters: { [key: string]: string } = {
   r: '\r',
   t: '\t'
   // note that \u is handled separately in parseString()
+}
+
+const codeTab = 0x9 // "\t"
+const codeNewline = 0xa // "\n"
+const codeReturn = 0xd // "\r"
+const codeSpace = 0x20 // " "
+const codeZero = 0x30 // "0"
+const codeNine = 0x39 // "9"
+const codeDoubleQuote = 0x22 // '"'
+const codeAmpersand = 0x26 // "&"
+const codeQuote = 0x27 // "'"
+const codeBackslash = 0x5c // "\"
+const codeGraveAccent = 0x60 // "`"
+const codeAcuteAccent = 0xb4 // "´"
+const codeLeftSingleQuote = 0x2018 // "‘"
+const codeRightDoubleQuote = 0x201d // "”"
+
+function isDigitCode(code: number): boolean {
+  return code >= codeZero && code <= codeNine
+}
+
+// character codes of the characters in isUnquotedStringDelimiter (except "\n")
+function isUnquotedStringDelimiterCode(code: number): boolean {
+  return (
+    code === 0x2c || // ","
+    code === 0x5b || // "["
+    code === 0x5d || // "]"
+    code === 0x2f || // "/"
+    code === 0x7b || // "{"
+    code === 0x7d || // "}"
+    code === 0x2b // "+"
+  )
 }
 
 export interface JsonRepairCoreOptions {
@@ -88,6 +119,10 @@ export function jsonrepairCore({
   function transform(chunk: string) {
     input.push(chunk)
 
+    if (i < input.currentLength() - bufferSize) {
+      input.flatten()
+    }
+
     while (i < input.currentLength() - bufferSize && parse()) {
       // loop until there is nothing more to process
     }
@@ -97,6 +132,7 @@ export function jsonrepairCore({
 
   function flush() {
     input.close()
+    input.flatten()
 
     while (parse()) {
       // loop until there is nothing more to process
@@ -489,7 +525,10 @@ export function jsonrepairCore({
     return false
   }
 
-  function parseWhitespaceAndSkipComments(skipNewline = true): boolean {
+  // note: this function and parseString do not use default parameters, since
+  // transpiled default parameters are slow in hot functions
+  function parseWhitespaceAndSkipComments(skipNewlineOption?: boolean): boolean {
+    const skipNewline = skipNewlineOption !== false
     const start = i
 
     let changed = parseWhitespace(skipNewline)
@@ -504,24 +543,32 @@ export function jsonrepairCore({
   }
 
   function parseWhitespace(skipNewline: boolean): boolean {
-    const _isWhiteSpace = skipNewline ? isWhitespace : isWhitespaceExceptNewline
+    const start = i
     let whitespace = ''
+    let runStart = i
 
     while (true) {
-      if (_isWhiteSpace(input, i)) {
-        whitespace += input.charAt(i)
+      const code = input.charCodeAt(i)
+
+      if (
+        code === codeSpace ||
+        code === codeTab ||
+        code === codeReturn ||
+        (code === codeNewline && skipNewline)
+      ) {
         i++
-      } else if (isSpecialWhitespace(input, i)) {
+      } else if (isSpecialWhitespaceCode(code)) {
         // repair special whitespace
-        whitespace += ' '
+        whitespace += runStart < i ? `${input.substring(runStart, i)} ` : ' '
         i++
+        runStart = i
       } else {
         break
       }
     }
 
-    if (whitespace.length > 0) {
-      output.push(whitespace)
+    if (i > start) {
+      output.push(runStart < i ? whitespace + input.substring(runStart, i) : whitespace)
       return true
     }
 
@@ -650,7 +697,9 @@ export function jsonrepairCore({
    *   and fixing the string by inserting a quote there, or stopping at a
    *   stop index detected in the first iteration.
    */
-  function parseString(stopAtDelimiter = false, stopAtIndex = -1): boolean {
+  function parseString(stopAtDelimiterOption?: boolean, stopAtIndexOption?: number): boolean {
+    const stopAtDelimiter = stopAtDelimiterOption === true
+    const stopAtIndex = stopAtIndexOption === undefined ? -1 : stopAtIndexOption
     const skipEscapeChars = input.charAt(i) === '\\'
     if (skipEscapeChars) {
       // repair: remove the first escape character
@@ -737,7 +786,7 @@ export function jsonrepairCore({
             (isDelimiter(input.charAt(i)) &&
               // only count the brackets inside the string when actually needed,
               // i.e. when the quote is directly followed by a closing bracket
-              !isInsideUnclosedBracket(input.substring(iBefore, iQuote), input.charAt(i))) ||
+              !isInsideUnclosedBracketAt(iBefore, iQuote, input.charAt(i))) ||
             (isQuote(input.charAt(i)) && !nextQuoteIsEndQuote(i)) ||
             isDigit(input.charAt(i))
           ) {
@@ -862,8 +911,13 @@ export function jsonrepairCore({
             if (!isValidStringCharacter(char)) {
               throwInvalidCharacter(char)
             }
-            output.push(char)
-            i++
+
+            // push the character together with the plain characters following it
+            const end = skipEscapeChars
+              ? i + 1
+              : findEndOfPlainString(i + 1, stopAtIndex, stopAtDelimiter)
+            output.push(end === i + 1 ? char : input.substring(i, end))
+            i = end
           }
         }
 
@@ -927,10 +981,7 @@ export function jsonrepairCore({
       invalid = true
     }
 
-    while (isDigit(input.charAt(i))) {
-      num += input.charAt(i)
-      i++
-    }
+    num += parseDigits()
 
     if (input.charAt(i) === '.') {
       if (num === '' || num === '-') {
@@ -946,10 +997,7 @@ export function jsonrepairCore({
         num += '0'
       }
 
-      while (isDigit(input.charAt(i))) {
-        num += input.charAt(i)
-        i++
-      }
+      num += parseDigits()
     }
 
     if (i > start) {
@@ -971,10 +1019,7 @@ export function jsonrepairCore({
           num += '0'
         }
 
-        while (isDigit(input.charAt(i))) {
-          num += input.charAt(i)
-          i++
-        }
+        num += parseDigits()
       }
 
       // if we're not at the end of the number by this point, allow this to be parsed as another type
@@ -988,6 +1033,19 @@ export function jsonrepairCore({
     }
 
     return false
+  }
+
+  /**
+   * Skip a run of digits and return them
+   */
+  function parseDigits(): string {
+    const start = i
+
+    while (isDigitCode(input.charCodeAt(i))) {
+      i++
+    }
+
+    return i > start ? input.substring(start, i) : ''
   }
 
   /**
@@ -1057,6 +1115,56 @@ export function jsonrepairCore({
     }
 
     return j > i ? j : null
+  }
+
+  /**
+   * Find the end of a run of plain string characters starting at `start`:
+   * characters that parseString would copy to the output as they are. Stops
+   * at the end of the buffered input, at `stopAtIndex`, and at any character
+   * that may need special handling (quotes, escapes, entities, control
+   * characters and, when `stopAtDelimiter` is true, delimiters).
+   */
+  function findEndOfPlainString(
+    start: number,
+    stopAtIndex: number,
+    stopAtDelimiter: boolean
+  ): number {
+    const end =
+      stopAtIndex >= start ? Math.min(stopAtIndex, input.currentLength()) : input.currentLength()
+    let j = start
+
+    while (j < end) {
+      const code = input.charCodeAt(j)
+
+      if (
+        code < codeSpace ||
+        code === codeDoubleQuote ||
+        code === codeBackslash ||
+        code === codeAmpersand ||
+        code === codeQuote ||
+        code === codeGraveAccent ||
+        code === codeAcuteAccent ||
+        (code >= codeLeftSingleQuote && code <= codeRightDoubleQuote) ||
+        (stopAtDelimiter && isUnquotedStringDelimiterCode(code))
+      ) {
+        break
+      }
+
+      j++
+    }
+
+    return j
+  }
+
+  /**
+   * Same as isInsideUnclosedBracket, but only copies the text between start
+   * and end from the input when closeChar actually is a closing bracket.
+   */
+  function isInsideUnclosedBracketAt(start: number, end: number, closeChar: string): boolean {
+    return (
+      (closeChar === ')' || closeChar === ']' || closeChar === '}') &&
+      isInsideUnclosedBracket(input.substring(start, end), closeChar)
+    )
   }
 
   function prevNonWhitespaceIndex(start: number): number {
