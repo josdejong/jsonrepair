@@ -379,7 +379,9 @@ export function jsonrepair(text: string): string {
           }
         }
 
-        skipEllipsis()
+        while (skipEllipsis() || skipCharacter(',')) {
+          parseWhitespaceAndSkipComments()
+        }
 
         const processedValue = parseValue()
         if (!processedValue) {

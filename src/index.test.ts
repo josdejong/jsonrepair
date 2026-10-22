@@ -477,6 +477,27 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[ , 1,2,3]')).toBe('[  1,2,3]')
     })
 
+    test('should strip repeated commas between array values', () => {
+      expect(jsonrepair('[1,,3]')).toBe('[1,3]')
+      expect(jsonrepair('["a",,"b"]')).toBe('["a","b"]')
+      expect(jsonrepair('[1,,2,,3]')).toBe('[1,2,3]')
+      expect(jsonrepair('[1,,,2')).toBe('[1,2]')
+    })
+
+    test('should strip repeated leading and trailing array commas', () => {
+      expect(jsonrepair('[,,,]')).toBe('[]')
+      expect(jsonrepair('[,,1,,]')).toBe('[1]')
+      expect(jsonrepair('[1,,')).toBe('[1]')
+    })
+
+    test('should preserve values and whitespace around repeated array commas', () => {
+      expect(jsonrepair('{"items":[{"id":1},,[2,,3]],"text":",,"}')).toBe(
+        '{"items":[{"id":1},[2,3]],"text":",,"}'
+      )
+      expect(jsonrepair('[1, /* gap */ ,\n2]')).toBe('[1,  \n2]')
+      expect(jsonrepair('[1,,...,2]')).toBe('[1,2]')
+    })
+
     test('should strip a leading comma from an object', () => {
       expect(jsonrepair('{,"message": "hi"}')).toBe('{"message": "hi"}')
       expect(jsonrepair('{/* a */,/* b */"message": "hi"}')).toBe('{"message": "hi"}')

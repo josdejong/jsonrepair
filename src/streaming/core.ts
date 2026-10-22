@@ -132,7 +132,11 @@ export function jsonrepairCore({
         switch (stack.caret) {
           case Caret.beforeValue:
             return (
-              skipEllipsis() || parseValue() || parseRepairTrailingComma() || parseRepairArrayEnd()
+              skipCharacter(',') ||
+              skipEllipsis() ||
+              parseValue() ||
+              parseRepairTrailingComma() ||
+              parseRepairArrayEnd()
             )
           case Caret.afterValue:
             return (

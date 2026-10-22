@@ -22,6 +22,19 @@ describe('core', () => {
     expect(chunks).toEqual(['[1', '2,', '3,', '4,', '5,', '6,', '7]'])
   })
 
+  test('it should strip repeated commas across input and output chunks', () => {
+    const { chunks, transform } = createCore({ bufferSize: 4, chunkSize: 2 })
+    const input = '[0,1,2,3,4,,5,,,6,7,8,9,10,,]'
+
+    for (const character of input) {
+      transform.transform(character)
+    }
+    expect(chunks.length).toBeGreaterThan(0)
+    transform.flush()
+
+    expect(chunks.join('')).toBe('[0,1,2,3,4,5,6,7,8,9,10]')
+  })
+
   test('it should throw an error when having a too small input buffer', () => {
     const { transform } = createCore({ bufferSize: 4, chunkSize: 2 })
     transform.transform('1234')
