@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createReadStream, createWriteStream, readFileSync, renameSync } from 'node:fs'
+import { createReadStream, createWriteStream, readFileSync, renameSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { pipeline as pipelineCallback } from 'node:stream'
 import { fileURLToPath } from 'node:url'
@@ -108,6 +108,16 @@ async function run(options) {
   }
 
   try {
+    if (
+      options.inputFile &&
+      options.outputFile &&
+      isSameFile(options.inputFile, options.outputFile)
+    ) {
+      throw new Error(
+        'cannot use --output: input and output refer to the same file. Use --overwrite to replace it.'
+      )
+    }
+
     const readStream = options.inputFile ? createReadStream(options.inputFile) : process.stdin
     const writeStream = options.outputFile ? createWriteStream(options.outputFile) : process.stdout
     await pipeline(readStream, jsonrepairTransform({ bufferSize: options.bufferSize }), writeStream)
@@ -115,6 +125,22 @@ async function run(options) {
     process.stderr.write(err.toString())
     process.exit(1)
   }
+}
+
+function isSameFile(inputFile, outputFile) {
+  const inputStat = statSync(inputFile, { bigint: true })
+  let outputStat
+
+  try {
+    outputStat = statSync(outputFile, { bigint: true })
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      return false
+    }
+    throw err
+  }
+
+  return inputStat.dev === outputStat.dev && inputStat.ino === outputStat.ino
 }
 
 function outputVersion() {
