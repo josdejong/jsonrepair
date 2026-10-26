@@ -641,6 +641,19 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('.')).toBe('0.0')
     })
 
+    test.each([
+      ['[/total]', '["/total"]'],
+      ['{"path":/total,"absent":[]}', '{"path":"/total","absent":[]}'],
+      ['[/total,1]', '["/total",1]'],
+      ['[/total  ]', '["/total"  ]'],
+      [
+        '{"mappings":[{"schema":"/properties/total","document":[/total]}],"absent":[]}',
+        '{"mappings":[{"schema":"/properties/total","document":["/total"]}],"absent":[]}'
+      ]
+    ])('preserve delimiters after a slash-prefixed value without a closing slash: %s', (text, expected) => {
+      expect(jsonrepair(text)).toBe(expected)
+    })
+
     test('should repair regular expressions', () => {
       expect(jsonrepair('{regex: /standalone-styles.css/}')).toBe(
         '{"regex": "/standalone-styles.css/"}'

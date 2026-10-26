@@ -291,7 +291,22 @@ export function jsonrepairCore({
       while (!input.isEnd(i) && (input.charAt(i) !== '/' || input.charAt(i - 1) === '\\')) {
         i++
       }
-      i++
+      if (!input.isEnd(i)) {
+        i++
+      } else {
+        // Without a closing slash, repair as an unquoted value instead of consuming the document.
+        i = start + 1
+        while (
+          !input.isEnd(i) &&
+          !isUnquotedStringDelimiter(input.charAt(i)) &&
+          !isQuote(input.charAt(i))
+        ) {
+          i++
+        }
+        while (i > start + 1 && isWhitespace(input, i - 1)) {
+          i--
+        }
+      }
 
       output.push(JSON.stringify(input.substring(start, i)))
 

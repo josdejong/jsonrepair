@@ -3,6 +3,20 @@ import { describe, expect, test } from 'vitest'
 import { jsonrepairTransform } from './stream'
 
 describe('stream', () => {
+  test.each([
+    'whole',
+    'characters'
+  ])('repair a slash-prefixed value after flushed output (%s)', async (mode) => {
+    const padding = '0,'.repeat(80)
+    const text = `[${padding}{"path":/total,"absent":[]}]`
+    const input = Readable.from(mode === 'characters' ? [...text] : [text])
+    const output = input.pipe(jsonrepairTransform({ bufferSize: 64, chunkSize: 8 }))
+    const chunks = await streamToChunks(output)
+
+    expect(chunks.length).toBeGreaterThan(1)
+    expect(chunks.join('')).toBe(`[${padding}{"path":"/total","absent":[]}]`)
+  })
+
   test('should create and pipe a jsonrepair transform', async () => {
     const input = new Readable()
     input.push("{name: 'John'}")

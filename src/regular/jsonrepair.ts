@@ -907,7 +907,18 @@ export function jsonrepair(text: string): string {
       while (i < text.length && (text[i] !== '/' || text[i - 1] === '\\')) {
         i++
       }
-      i++
+      if (text[i] === '/') {
+        i++
+      } else {
+        // Without a closing slash, repair as an unquoted value instead of consuming the document.
+        i = start + 1
+        while (i < text.length && !isUnquotedStringDelimiter(text[i]) && !isQuote(text[i])) {
+          i++
+        }
+        while (i > start + 1 && isWhitespace(text, i - 1)) {
+          i--
+        }
+      }
 
       output += JSON.stringify(text.substring(start, i))
 
