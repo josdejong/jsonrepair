@@ -592,6 +592,24 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('["This is C(2)", This is F(3)]')).toBe('["This is C(2)", "This is F(3)"]')
     })
 
+    test.each([
+      ['foo ', '"foo" '],
+      ['foo\t\r', '"foo"\t\r'],
+      ['{a:foo }', '{"a":"foo" }'],
+      ['[foo ]', '["foo" ]'],
+      ['[foo ,bar]', '["foo" ,"bar"]'],
+      ['[undefined ]', '[null ]'],
+      ['{a:undefined \t,b:foo \r}', '{"a":null \t,"b":"foo" \r}'],
+      ['[hello   world \t ]', '["hello   world" \t ]'],
+      ['foo \n', '"foo" \n'],
+      ['[foo \t\r\n]', '["foo" \t\r\n]'],
+      ['["foo ","undefined "]', '["foo ","undefined "]'],
+      ['[foo,undefined]', '["foo",null]'],
+      ['[https://example.com/a ]', '["https://example.com/a" ]']
+    ])('keep trailing whitespace outside an unquoted value: %s', (text, expected) => {
+      expect(jsonrepair(text)).toBe(expected)
+    })
+
     test('should replace Python constants None, True, False', () => {
       expect(jsonrepair('True')).toBe('true')
       expect(jsonrepair('False')).toBe('false')

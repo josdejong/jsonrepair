@@ -267,6 +267,10 @@ export function jsonrepairCore({
         }
       }
 
+      while (j > i && isWhitespace(input, j - 1)) {
+        j--
+      }
+
       const symbol = input.substring(i, j)
       i = j
 
