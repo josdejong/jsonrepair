@@ -46,6 +46,27 @@ describe('stream', () => {
         })
     })
   })
+  describe.each(['whole', 'characters'])('unquoted trailing whitespace (%s)', (mode) => {
+    test.each([
+      ['foo ', '"foo" '],
+      ['foo\t\r', '"foo"\t\r'],
+      ['undefined \t', 'null \t'],
+      ['hello   world \t ', '"hello   world" \t '],
+      ['foo \t\r\n', '"foo" \t\r\n'],
+      ['"foo "', '"foo "'],
+      ['undefined', 'null'],
+      ['https://example.com/a ', '"https://example.com/a" ']
+    ])('keep trailing whitespace outside a value after output is flushed: %s', async (value, repaired) => {
+      const prefix = '0,'.repeat(80)
+      const text = `[${prefix}${value}]`
+      const input = Readable.from(mode === 'characters' ? [...text] : [text])
+      const output = input.pipe(jsonrepairTransform({ bufferSize: 64, chunkSize: 8 }))
+      const chunks = await streamToChunks(output)
+
+      expect(chunks.length).toBeGreaterThan(1)
+      expect(chunks.join('')).toBe(`[${prefix}${repaired}]`)
+    })
+  })
 })
 
 function streamToChunks(stream: Transform): Promise<string[]> {
