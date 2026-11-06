@@ -409,7 +409,7 @@ export function jsonrepairCore({
 
   function parseRepairMissingComma(): boolean {
     // repair missing comma
-    if (!input.isEnd(i) && isStartOfValue(input.charAt(i))) {
+    if (!input.isEnd(i) && (isStartOfValue(input.charAt(i)) || input.charAt(i) === '/')) {
       output.insertBeforeLastWhitespace(',')
       return stack.update(Caret.beforeValue)
     }

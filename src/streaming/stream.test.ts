@@ -3,6 +3,20 @@ import { describe, expect, test } from 'vitest'
 import { jsonrepairTransform } from './stream'
 
 describe('stream', () => {
+  test.each([
+    'whole',
+    'characters'
+  ])('should repair a missing comma before a regular expression after flushed output (%s)', async (mode) => {
+    const padding = '0,'.repeat(80)
+    const text = `[${padding}1 /x/,2]`
+    const input = Readable.from(mode === 'characters' ? [...text] : [text])
+    const output = input.pipe(jsonrepairTransform({ bufferSize: 64, chunkSize: 8 }))
+    const result = await streamToChunks(output)
+
+    expect(result.length).toBeGreaterThan(1)
+    expect(result.join('')).toBe(`[${padding}1, "/x/",2]`)
+  })
+
   test('should create and pipe a jsonrepair transform', async () => {
     const input = new Readable()
     input.push("{name: 'John'}")
