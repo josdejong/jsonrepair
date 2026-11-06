@@ -692,6 +692,28 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[\n{},\n{}\n]')).toBe('[\n{},\n{}\n]')
     })
 
+    test.each([
+      ['[1 /x/]', '[1, "/x/"]'],
+      ['[true /x/]', '[true, "/x/"]'],
+      ['["a" /x/]', '["a", "/x/"]'],
+      ['[null /x/]', '[null, "/x/"]'],
+      ['[{} /x/]', '[{}, "/x/"]'],
+      ['[[] /x/]', '[[], "/x/"]'],
+      ['{"items":[1 /x/ 2]}', '{"items":[1, "/x/", 2]}'],
+      ['[1 /a\\/b/]', '[1, "/a\\\\/b/"]']
+    ])('should repair a missing comma before a regular expression: %s', (text, expected) => {
+      expect(jsonrepair(text)).toBe(expected)
+    })
+
+    test.each([
+      ['[1,/x/]', '[1,"/x/"]'],
+      ['[1 /* comment */ 2]', '[1,  2]'],
+      ['[1 // comment\n2]', '[1, \n2]'],
+      ['[1,/* comment *//x/]', '[1,"/x/"]']
+    ])('should preserve comma and comment handling around slashes: %s', (text, expected) => {
+      expect(jsonrepair(text)).toBe(expected)
+    })
+
     test('should repair missing comma between object properties', () => {
       expect(jsonrepair('{"a":2\n"b":3\n}')).toBe('{"a":2,\n"b":3\n}')
       expect(jsonrepair('{"a":2\n"b":3\nc:4}')).toBe('{"a":2,\n"b":3,\n"c":4}')
