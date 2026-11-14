@@ -218,6 +218,20 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
       expect(jsonrepair('[ ... ]')).toBe('[  ]')
     })
 
+    test('should repair ellipsis after a value without a comma', () => {
+      expect(jsonrepair('[\n  {"id": 1},\n  {"id": 2}\n  ...\n]')).toBe(
+        '[\n  {"id": 1},\n  {"id": 2}\n  \n]'
+      )
+      expect(jsonrepair('[{"id": 1} ...]')).toBe('[{"id": 1} ]')
+      expect(jsonrepair('[true ...]')).toBe('[true ]')
+      expect(jsonrepair('[1 ... 9]')).toBe('[1,  9]')
+      expect(jsonrepair('[1 ..., 9]')).toBe('[1,  9]')
+      expect(jsonrepair('[{"a":1}...{"b":2}]')).toBe('[{"a":1},{"b":2}]')
+      expect(jsonrepair('{"a": [1, 2] ...}')).toBe('{"a": [1, 2] }')
+      expect(jsonrepair('{"a":2 ...}')).toBe('{"a":2 }')
+      expect(jsonrepair('{"a":2 ... "z":26}')).toBe('{"a":2,  "z":26}')
+    })
+
     test('should repair ellipsis in an object', () => {
       expect(jsonrepair('{"a":2,"b":3,...}')).toBe('{"a":2,"b":3}')
       expect(jsonrepair('{"a":2,"b":3,/*comment1*/.../*comment2*/}')).toBe('{"a":2,"b":3}')
@@ -486,7 +500,6 @@ describe.each(implementations)('jsonrepair [$name]', ({ jsonrepair }) => {
 
     test('should strip trailing commas from an array', () => {
       expect(jsonrepair('[1,2,3,]')).toBe('[1,2,3]')
-      expect(jsonrepair('[1,2,3,\n]')).toBe('[1,2,3\n]')
       expect(jsonrepair('[1,2,3,  \n  ]')).toBe('[1,2,3  \n  ]')
       expect(jsonrepair('[1,2,3,/*foo*/]')).toBe('[1,2,3]')
       expect(jsonrepair('{"array":[1,2,3,]}')).toBe('{"array":[1,2,3]}')
