@@ -122,7 +122,12 @@ export function jsonrepairCore({
           case Caret.beforeValue:
             return parseValue() || parseRepairMissingObjectValue()
           case Caret.afterValue:
-            return parseObjectComma() || parseObjectEnd() || parseRepairObjectEndOrComma()
+            return (
+              skipEllipsis() ||
+              parseObjectComma() ||
+              parseObjectEnd() ||
+              parseRepairObjectEndOrComma()
+            )
           default:
             return false
         }
@@ -136,6 +141,7 @@ export function jsonrepairCore({
             )
           case Caret.afterValue:
             return (
+              skipEllipsis() ||
               parseArrayComma() ||
               parseArrayEnd() ||
               parseRepairMissingComma() ||
